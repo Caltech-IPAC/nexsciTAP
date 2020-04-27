@@ -298,7 +298,7 @@ class propFilter:
             logging.debug (f'cookiestr= {self.cookiestr:s}')
             logging.debug (f'usertbl= {self.usertbl:s}')
             logging.debug (f'accesstbl= {self.accesstbl:s}')
-            logging.debug (f'dbtable= {self.dbtable:s}')
+#            logging.debug (f'dbtable= {self.dbtable:s}')
             logging.debug (f'fileid= {self.fileid:s}')
             logging.debug (f'fileid_allowed= {self.fileid_allowed:s}')
             logging.debug (f'accessid= {self.accessid:s}')
@@ -398,6 +398,10 @@ class propFilter:
 #
 #    get dbtable name
 #
+        if self.debug:
+            logging.debug ('')
+            logging.debug (f'extract dbtable from TableNames class')
+
         self.dbtable = ''
         self.ddtable = ''
 
@@ -422,11 +426,11 @@ class propFilter:
 
         if self.debugtime:
             self.time0 = datetime.datetime.now()
-        
-#        self.__parseQuery__ (self.query)
-
-        self.__parseQuery__ (self.query, debug=1)
-
+       
+        if self.debug:
+            self.__parseQuery__ (self.query, debug=1)
+        else:
+            self.__parseQuery__ (self.query)
 
         if self.debug:
             logging.debug ('')
@@ -458,12 +462,14 @@ class propFilter:
                 if self.debug:
                     logging.debug ('')
                     logging.debug (f'call validateUser')
-	    
-                self.__validateUser__ (self.cookiename, self.cookiestr, \
-                    self.propfilter, self.usertbl)
+	   
+                if self.debug:
+                    self.__validateUser__ (self.cookiename, self.cookiestr, \
+	      	        self.propfilter, self.usertbl, debug=1)
+                else:
+                    self.__validateUser__ (self.cookiename, self.cookiestr, \
+                        self.propfilter, self.usertbl)
 
-#                self.__validateUser__ (self.cookiename, self.cookiestr, \
-#		    self.propfilter, self.usertbl, debug=1)
         
                 if self.debug:
                     logging.debug ('')
@@ -492,7 +498,7 @@ class propFilter:
 	    
 
 #
-#    retrieve dd table
+#    retrieve data dictionary
 #
         if self.debug:
             logging.debug ('')
@@ -504,8 +510,10 @@ class propFilter:
         
         self.dd = None 
         try:
-            self.dd = dataDictionary (self.conn, self.ddtable)   
-#            self.dd = dataDictionary (self.conn, self.ddtable, debug=1)   
+            if self.debug:
+                self.dd = dataDictionary (self.conn, self.dbtable, debug=1)   
+            else:
+                self.dd = dataDictionary (self.conn, self.dbtable)   
 
             if self.debug:
                 logging.debug ('')
@@ -557,12 +565,13 @@ class propFilter:
                 if self.debug:
                     logging.debug ('')
                     logging.debug ('call createTmpAccessiddb')
-            
-                self.__createTmpAccessiddb__ (tmp_accessiddbtbl, \
-                    self.userid, self.accessid, self.accesstbl)
-                
-#                self.__createTmpAccessiddb__ (tmp_accessiddbtbl, \
-#                    self.userid, self.accessid, self.accesstbl, debug=1)
+           
+                if self.debug:
+                    self.__createTmpAccessiddb__ (tmp_accessiddbtbl, \
+                        self.userid, self.accessid, self.accesstbl, debug=1)
+                else:
+                    self.__createTmpAccessiddb__ (tmp_accessiddbtbl, \
+                        self.userid, self.accessid, self.accesstbl)
         
                 if self.debug:
                     logging.debug ('')
@@ -610,13 +619,16 @@ class propFilter:
                 logging.debug ('')
                 logging.debug ('call createTmpFileiddb')
                 logging.debug (f'wherestr= {self.wherestr:s}')
-	    
-            self.__createTmpFileiddb__ (tmp_fileidAlloweddbtbl, \
-                self.fileid, self.fileid_allowed, self.dbtable, \
-#                self.wherestr, self.accessid, tmp_accessiddbtbl)
-                
-                self.wherestr, self.accessid, tmp_accessiddbtbl, \
-                debug=1)
+	   
+            if self.debug:
+                self.__createTmpFileiddb__ (tmp_fileidAlloweddbtbl, \
+                    self.fileid, self.fileid_allowed, self.dbtable, \
+                    self.wherestr, self.accessid, tmp_accessiddbtbl, \
+                    debug=1)
+            else:
+                self.__createTmpFileiddb__ (tmp_fileidAlloweddbtbl, \
+                    self.fileid, self.fileid_allowed, self.dbtable, \
+                    self.wherestr, self.accessid, tmp_accessiddbtbl)
                 
             if self.debug:
                 logging.debug ('')
@@ -667,8 +679,8 @@ class propFilter:
 #            "=b." + self.fileid_allowed  
 
 
-        sql = self.selectstr + " from " + self.dbtable + " a " + \
-             "where a." + self.fileid + " in (select " + self.fileid_allowed + \
+        sql = self.selectstr + " from " + self.dbtable + \
+             " where " + self.fileid + " in (select " + self.fileid_allowed + \
              " from " + tmp_fileidAlloweddbtbl + ")"
 
         if self.debug:
@@ -690,11 +702,15 @@ class propFilter:
                 
                 if (i == len_groupbycols-1):
 
-                    groupbystr = groupbystr + 'a.' + \
-                        self.groupbycols[i]
+#                    groupbystr = groupbystr + 'a.' + \
+#                        self.groupbycols[i]
+                    
+                    groupbystr = groupbystr + self.groupbycols[i]
                 else:
-                    groupbystr = groupbystr + 'a.' + \
-                        self.groupbycols[i] + ', '
+#                    groupbystr = groupbystr + 'a.' + \
+#                        self.groupbycols[i] + ', '
+                    
+                    groupbystr = groupbystr + self.groupbycols[i] + ', '
 
             sql = sql + " " + groupbystr
 
@@ -714,11 +730,15 @@ class propFilter:
                 
                 if (i == len_orderbycols-1):
 
-                    orderbystr = orderbystr + 'a.' + \
-                        self.orderbycols[i]
+#                    orderbystr = orderbystr + 'a.' + \
+#                        self.orderbycols[i]
+
+                     orderbystr = orderbystr + self.orderbycols[i]
                 else:
-                    orderbystr = orderbystr + 'a.' + \
-                        self.orderbycols[i] + ', '
+#                    orderbystr = orderbystr + 'a.' + \
+#                        self.orderbycols[i] + ', '
+
+                    orderbystr = orderbystr + self.orderbycols[i] + ', '
 
             sql = sql + " " + orderbystr
 
@@ -729,7 +749,10 @@ class propFilter:
         cursor = self.conn.cursor()
 
         try:
-            self.__executeSql__ (cursor, sql, debug=1)
+            if self.debug:
+                self.__executeSql__ (cursor, sql, debug=1)
+            else:
+                self.__executeSql__ (cursor, sql)
 
         except Exception as e:
         
@@ -887,6 +910,7 @@ class propFilter:
         if debug:
             logging.debug ('')
             logging.debug (f'Enter parseQuery: query= [{query:s}]')
+            logging.debug (f'dbtable= [{self.dbtable:s}]')
 
         instrume = ["hires", \
                     "nirspec", \
@@ -1400,11 +1424,13 @@ class propFilter:
                 if debug:
                     logging.debug ('')
                     logging.debug ('neid: call singleValueResult:')
-                
-                password = self.__singleValueResult__ (cursor, 'password')
+               
+                if debug:
+                    password = self.__singleValueResult__ (cursor, 'password', \
+                        debug=1)
+                else:
+                    password = self.__singleValueResult__ (cursor, 'password')
 
-#                password = self.__singleValueResult__ (cursor, 'password', \
-#                    debug=1)
         
                 if debug:
                     logging.debug ('')
@@ -2197,7 +2223,7 @@ class propFilter:
 #
 #{ 
 #
-        debug =1 
+        debug =0 
 
         if ('debug' in kwargs):
             debug = kwargs['debug']
@@ -2233,7 +2259,7 @@ class propFilter:
 #
 #{ 
 #
-        debug = 1
+        debug = 0
 
         if ('debug' in kwargs):
             debug = kwargs['debug']

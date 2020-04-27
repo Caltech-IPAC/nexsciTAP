@@ -24,7 +24,7 @@ class writeResult:
     delt_dd = 0.0 
 
     debug = 0 
-    debug1 =0 
+    debug1 = 1 
     debugtime = 0 
 
     cursor = None
@@ -130,7 +130,6 @@ class writeResult:
    
         if self.debug:
             logging.debug ('')
-            logging.debug (f'format= {self.format:s}')
             logging.debug (f'maxrec= {self.maxrec:d}')
 
         self.coldesc = 0 
@@ -170,7 +169,7 @@ class writeResult:
 #    cursor description contains a list of tuples, each tuple is a 7-item 
 #    sequences describing each output column:
 #
-#    colname, type, displya_size, internal_size, precision, scale, null_ok
+#    colname, type, display_size, internal_size, precision, scale, null_ok
 #
 #    We use it to determine the columns' datatype and width for the columns 
 #    that  are not in out data dictionary
@@ -248,22 +247,89 @@ class writeResult:
 
                 continue
 
+            
+#
+#{    extract dbdatatype, display_size, precision, scale from col_array:
+#    col[1], col[2], col[4], and col[5] 
+#
+            dbdatatype = ''
+            size = None 
+            precision = None 
+            scale = None 
+            
+            dbdatatypestr = str(col[1])
+
+            ind = dbdatatypestr.find ("cx_Oracle.")
+            if (ind != -1):
+                dbdatatypestr = dbdatatypestr[ind+10:]
+
+            if self.debug1:
+                logging.debug ('')
+                logging.debug (f'dbdatatypestr= {dbdatatypestr:s}')
+
+            ind = dbdatatypestr.find ("'")
+            if (ind != -1):
+                dbdatatype = dbdatatypestr[:ind]
+             
+            if self.debug1:
+                logging.debug ('')
+                logging.debug (f'colname= {colname:s}')
+                logging.debug (f'dbdatatype= {dbdatatype:s}')
+
+            size = None
+            if (col[2] is not None):
+                    
+                size = col[2]
+                if (len(colname) > size):
+                    size = len(colname)
+                
+                if self.debug1:
+                    logging.debug ('')
+                    logging.debug (f'size= {size:d}')
+
+
+            precision = None
+            if (col[4] is not None):
+                precision = col[4]
+                
+                if self.debug1:
+                    logging.debug ('')
+                    logging.debug (f'precision= {precision:d}')
+
+            scale = None
+            if (col[5] is not None):
+                scale = col[5]
+	
+                if self.debug1:
+                    logging.debug ('')
+                    logging.debug (f'scale= {scale:d}')
+
+#
+#}  end  extract dbdatatype, display_size, precision, scale from col_array:
+#    col[1], col[2], col[4], and col[5] 
+
+
 #
 #    check if colname is in DD,
 #
-#    colname in dd: get dbtype, width from DD
+#    colname in dd: if datatype == char/date/timestamp: analyzegdescription
 #
-#    colname NOT in dd: get dbtype, width from col[1], col[2], col[4], 
+#    colname NOT in dd: get dbtype, width, fmt from col[1], col[2], col[4], 
 #        and col[5] 
 #
+            ind = self.__getDDIndex__ (self.dd, colname)
+        
+            if self.debug1:
+                logging.debug ('')
+                logging.debug (f'ind= {ind:d}')
+
+
             dbtype = '' 
             coltype = '' 
             units = '' 
             desc = '' 
             fmt = ''
             width = 0
-        
-            ind = self.__getDDIndex__ (self.dd, colname)
         
             if (ind != -1):
 #
@@ -272,22 +338,19 @@ class writeResult:
                 if self.debug1:
                     logging.debug ('')
                     logging.debug (f'column in dd')
-            
+
                 width = self.dd.colwidth[colname]
                 if self.debug1:
                     logging.debug ('')
                     logging.debug (f'width= {width:d}')
             
-                dbtype = self.dd.coldbtype[colname] 
-                if self.debug1:
-                    logging.debug ('')
-                    logging.debug (f'dbtype= {dbtype:s}')
-            
                 coltype = self.dd.coltype[colname] 
                 if self.debug1:
                     logging.debug ('')
                     logging.debug (f'coltype= {coltype:s}')
-            
+                  
+                dbtype = dbdatatype 
+
                 units = self.dd.colunits[colname] 
                 if self.debug1:
                     logging.debug ('')
@@ -307,6 +370,54 @@ class writeResult:
                 intcntarr.append(0)
                 fltcntarr.append(0)
 
+#
+#{  char/date/datetime/timestamp: varify format with description dbtype 
+#
+                if (dbtype.lower() == 'string'):
+
+                    width = 0 
+                    if (size is not None):
+                        width = size
+                    
+                    if (len(colname) > width):
+                        width = len(colname)
+
+                    coltype = 'char'
+                    dbtype = "varchar(" + str(width) + ")"
+                    fmt = str(width) + 's'
+                
+                elif (dbtype.lower() == 'date'):
+                    
+                    coltype = 'char'
+                    
+                    width = 14
+                    if (len(colname) > width):
+                        width = len(colname)
+                    fmt = str(width) + 's'
+                
+
+                elif (( dbtype.lower() == 'datetime') or \
+                    (dbtype.lower() == 'timestamp')):
+                    
+                    coltype = 'char'
+                    
+                    width = 30
+                    if (len(colname) > width):
+                        width = len(colname)
+                    fmt = str(width) + 's'
+                
+
+                if self.debug1:
+                    logging.debug ('')
+                    logging.debug (f'column in dd: colnamd= {colname:s}')
+                    logging.debug (f'coltype= {coltype:s}')
+                    logging.debug (f'dbtype= {dbtype:s}')
+                    logging.debug (f'fmt= {fmt:s}')
+                    logging.debug (f'width= {width:d}')
+
+#
+#}  end char/date/datetime/timestamp: varify format with description dbtype 
+#
 
 #
 #} end col in dd
@@ -321,58 +432,6 @@ class writeResult:
                     logging.debug ('')
                     logging.debug (f'column not in dd')
 
-#
-#    extract dbdatatype, display_size, precision, scale from col_array:
-#    col[1], col[2], col[4], and col[5] 
-#
-                dbdatatypestr = str(col[1])
-
-                ind = dbdatatypestr.find ("cx_Oracle.")
-                if (ind != -1):
-                    dbdatatypestr = dbdatatypestr[ind+10:]
-
-                if self.debug1:
-                    logging.debug ('')
-                    logging.debug (f'dbdatatypestr= {dbdatatypestr:s}')
-
-                ind = dbdatatypestr.find ("'")
-                if (ind != -1):
-                    dbdatatype = dbdatatypestr[:ind]
-             
-                if self.debug1:
-                    logging.debug ('')
-                    logging.debug (f'colname= {colname:s}')
-                    logging.debug (f'dbdatatype= {dbdatatype:s}')
-
-                size = None
-                if (col[2] is not None):
-                    
-                    size = col[2]
-                    if (len(colname) > size):
-                        size = len(colname)
-                
-                    if self.debug1:
-                        logging.debug ('')
-                        logging.debug (f'size= {size:d}')
-
-
-                precision = None
-                if (col[4] is not None):
-                    precision = col[4]
-                
-                    if self.debug1:
-                        logging.debug ('')
-                        logging.debug (f'precision= {precision:d}')
-
-                scale = None
-                if (col[5] is not None):
-                    scale = col[5]
-	
-                    if self.debug1:
-                        logging.debug ('')
-                    logging.debug (f'scale= {scale:d}')
-
-                
                 if (dbdatatype == 'STRING'):
 #
 #{ dbdatatype == string
@@ -385,7 +444,7 @@ class writeResult:
                         width = len(colname)
 
                     coltype = 'char'
-                    dbtype = "varchar(" + str(width) + ")"
+                    dbtype = dbdatatype
                     fmt = str(width) + 's'
                   		
                     if self.debug1:
@@ -398,6 +457,36 @@ class writeResult:
 #
 #} end dbdatatype == STRING
 #
+                elif ((dbdatatype == 'DATE') or \
+                    (dbdatatype == 'DATETIME') or \
+                    (dbdatatype == 'TIMESTAMP')):
+
+#
+#
+#{ dbdatatype == DATE, TIMESTAMP 
+#
+#    timestamp etc. are not included in the above but most of them should
+#    come out as STRING
+#
+                    coltype = 'char'
+                    dbtype =  dbdatatype
+                    width = 30 
+                    
+                    if (len(colname) > width):
+                        width = len(colname)
+                    fmt = str(width) + 's'
+	        
+                    if self.debug1:
+                        logging.debug ('')
+                        logging.debug (f'here1-2: other column')
+                        logging.debug (f'width= {width:d}')
+                        logging.debug (f'dbtype= {dbtype:s}')
+                        logging.debug (f'coltype= {coltype:s}')
+                        logging.debug (f'fmt= {fmt:s}')
+           
+#
+#} end dbdatatype == DATE, TIMESTAMP 
+#
                 elif (dbdatatype == 'LONG_BINARY'):
 #
 #{ dbdatatype == LONG_BINARY 
@@ -408,8 +497,11 @@ class writeResult:
             
                     coltype = 'long'
                     dbtype = 'long_binary'
-                    fmt = 'd22'
+                    
                     width = 22 
+                    if (len(colname) > width):
+                        width = len(colname)
+                    fmt = str(width) + 'd'
                 
                     if self.debug1:
                         logging.debug ('')
@@ -435,7 +527,12 @@ class writeResult:
                     coltype = 'double'
                     dbtype = 'float'
                     fmt = '22.14e'
+                    
                     width = 22 
+                    if (len(colname) > width):
+                        width = len(colname)
+                    fmt = str(width) + '.14e'
+                
                 
                     if self.debug1:
                         logging.debug ('')
@@ -467,9 +564,13 @@ class writeResult:
                             logging.debug (f'here1-1-0: NUMBER--int')
             
                         coltype = 'int'
-                        dbtype = 'NUMBER'
-                        fmt = '22d'
+                        dbtype = dbdatatype
+                        
                         width = 22 
+                        if (len(colname) > width):
+                            width = len(colname)
+                        fmt = str(width) + 'd'
+                
 
 #                    elif (scale == -127):
                     else:
@@ -479,9 +580,13 @@ class writeResult:
                             logging.debug (f'here1-1-1-1: NUMBER--double')
             
                         coltype = 'double'
-                        dbtype = 'NUMBER'
-                        fmt = '22.14e'
+                        dbtype = dbdatatype
+                        
                         width = 22 
+                        if (len(colname) > width):
+                            width = len(colname)
+                        fmt = str(width) + '.14e'
+                
                 
                     if self.debug1:
                         logging.debug ('')
@@ -497,15 +602,16 @@ class writeResult:
 
                 else: 
 #
-#{ dbdatatype == DATE, TIMESTAMP 
-#
-#    timestamp etc. are not included in the above but most of them should
-#    come out as STRING
+#{ unknown type ?
 #
                     coltype = 'char'
-                    dbtype = 'varchar(30)'
-                    fmt = '30s'
-                    width = 30 
+                    dbtype = dbdatatype
+                    
+                    width = 80 
+                    if (len(colname) > width):
+                        width = len(colname)
+                    fmt = str(width) + 's'
+                
 	        
                     if self.debug1:
                         logging.debug ('')
@@ -516,7 +622,7 @@ class writeResult:
                         logging.debug (f'fmt= {fmt:s}')
            
 #
-#} end dbdatatype == DATE, TIMESTAMP 
+#} end unknown type
 #
 
 #
@@ -535,7 +641,6 @@ class writeResult:
                     if ((dbdatatype == 'NUMBER') and (self.ind_racol != -1)):
 	    
                         width = dd.colwidth[self.racol]
-                        dbtype = dd.coldbtype[self.racol] 
                         coltype = dd.coltype[self.racol] 
                         units = dd.colunits[self.racol] 
                         fmt = dd.colfmt[self.racol] 
@@ -551,7 +656,6 @@ class writeResult:
                     if ((dbdatatype == 'NUMBER') and (self.ind_deccol != -1)):
 	    
                         width = dd.colwidth[self.deccol]
-                        dbtype = dd.coldbtype[self.deccol] 
                         coltype = dd.coltype[self.deccol] 
                         units = dd.colunits[self.deccol] 
                         fmt = dd.colfmt[self.deccol] 
@@ -789,9 +893,11 @@ class writeResult:
                         else:
                             fltcntarr[i] = fltcntarr[i] + 1
 
+                        rowlist.append (row[i]) 
 
-                    if ((dbtypearr[i] == 'date') or \
-                        (dbtypearr[i] == 'timestamp')):
+                    elif ((dbtypearr[i].lower() == 'date') or \
+                        (dbtypearr[i].lower() == 'datetime') or \
+                        (dbtypearr[i].lower() == 'timestamp')):
 
                         if self.debug:
                             logging.debug ('')
@@ -855,20 +961,27 @@ class writeResult:
                             logging.debug ('')
                             logging.debug (f'intcntarr= {intcntarr[i]:d}')
                             logging.debug (f'fltcntarr= {fltcntarr[i]:d}')
+                            logging.debug (f'namearr= {namearr[i]:s}')
 
                         if ((intcntarr[i] > 0) and (fltcntarr[i] == 0)):
                 
                             typearr[i] = 'int'
                             dbtypearr[i] = 'integer'
-                            fmtarr[i] = '22d'
+                            
                             widtharr[i] = 22 
-                
+                            if (len(namearr[i]) > widtharr[i]):
+                                widtharr[i] = len(namearr[i])
+                            
+                            fmtarr[i] = str(widtharr[i]) + 'd'
+
                         else:
                             typearr[i] = 'double'
                             dbtypearr[i] = 'float'
-                            fmtarr[i] = '22.14e'
+                            
                             widtharr[i] = 22 
-
+                            if (len(namearr[i]) > widtharr[i]):
+                                widtharr[i] = len(namearr[i])
+                            fmtarr[i] = str(widtharr[i]) + '.14e'
 
                     if self.debug:
                         logging.debug ('')
@@ -988,7 +1101,7 @@ class writeResult:
         return
 
 #
-#} end of init def 
+#} end of init 
 #
 
     def __getArrIndex__ (self, arr, name):
@@ -1025,7 +1138,7 @@ class writeResult:
 
     def __getDDIndex__ (self, dd, name):
 #
-#{
+#{ 
 #
         debug = 0 
 
@@ -1049,4 +1162,9 @@ class writeResult:
             logging.debug (f'done: ind= {ind:d}')
 
         return (ind)
+
+#
+#} end __getDDIndex
+#
+
 

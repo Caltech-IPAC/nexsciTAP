@@ -72,6 +72,11 @@
 #
 #      write writerecsmodule.c to do the IO in C for speed 
 #       
+#  Revision: April 23, 2020 (Mihseh Kong)
+#
+#      New version using Tap_schema instead of DD for formatting output.
+#       
+
 
 import os
 import sys
@@ -120,13 +125,8 @@ def main():
     debug = 0
     debugfname = ''
 
-#    debugfname = '/neid/cm/ws/mihseh/base/src/wsvc/TAP/tap_' +  \
-#        str(pid) + '.debug'
-#    debugfname = '/koa/cm/ws/mihseh/base/src/wsvc/TAP/tap_' +  \
-#        str(pid) + '.debug'
-#    debugfname = '/home/mihseh/tap/server/tap_' +  str(pid) + '.debug'
-
     debugfname = '/tmp/tap_' + str(pid) + '.debug'
+
     
     form = cgi.FieldStorage()
   
@@ -239,7 +239,7 @@ def main():
             param['request'] = form[key].value
 
         if (key.lower() == 'phase'):
-            param['phase'] = form[key].value
+            param['phase'] = form[key].value.strip()
         
             if debug:
                 logging.debug ('')
@@ -250,7 +250,7 @@ def main():
             querykey = 1
 
         if (key.lower() == 'format'):
-            param['format'] = form[key].value
+            param['format'] = form[key].value.strip()
 
         if (key.lower() == 'responseformat'):
             param['format'] = form[key].value
@@ -270,9 +270,17 @@ def main():
         logging.debug (f"param['format']= {param['format']:s}")
 
     if (len(param['maxrec']) > 0):
-                
+        
         try:
-            maxrec = int(param['maxrec'])
+            maxrec_dbl = float(param['maxrec'])
+            if debug:
+                logging.debug ('')
+                logging.debug (f'maxrec_dbl= [{maxrec_dbl:f}]')
+       
+            maxrec = int(maxrec_dbl)
+            if debug:
+                logging.debug ('')
+                logging.debug (f'maxrec= [{maxrec:d}]')
             
         except Exception as e:
                 
@@ -413,8 +421,10 @@ def main():
 #
     config = None
     try:
-#        config = configParam (configpath, debug=1)
-        config = configParam (configpath)
+        if debug:
+            config = configParam (configpath, debug=1)
+        else:
+            config = configParam (configpath)
     
         if debug:
             logging.debug ('')
@@ -611,11 +621,13 @@ def main():
         if debug:
             logging.debug ('')
             logging.debug ('call writeStatusMessage:')
+            logging.debug (f'maxrec= {maxrec:d}')
 
-#        writeStatusMsg (statuspath, statdict, param)    
-        writeStatusMsg (statuspath, statdict, param, debug=1)    
-    
-    
+        if debug:
+            writeStatusMsg (statuspath, statdict, param, maxrec, debug=1)    
+        else:
+            writeStatusMsg (statuspath, statdict, param, maxrec)
+
         if debug:
             logging.debug ('')
             logging.debug ('returned writeStatusMessage')
@@ -651,9 +663,11 @@ def main():
             logging.debug (f'Case getstatus')
 
         try:
-#            getStatus (workdir, id, statuskey, param)
+            if debug:
+                getStatus (workdir, id, statuskey, param, debug=1)
+            else:
+                getStatus (workdir, id, statuskey, param)
 
-            getStatus (workdir, id, statuskey, param, debug=1)
         
         except Exception as e:
 
@@ -803,9 +817,10 @@ def main():
             logging.debug (f'phase= {statdict["phase"]:s}')
        
 
-#        writeStatusMsg (statuspath, statdict, param)    
-    
-        writeStatusMsg (statuspath, statdict, param, debug=1)    
+        if debug: 
+            writeStatusMsg (statuspath, statdict, param, maxrec, debug=1)    
+        else:
+            writeStatusMsg (statuspath, statdict, param, maxrec)    
     
         if debug:
             logging.debug ('')
@@ -819,9 +834,10 @@ def main():
             logging.debug ('')
             logging.debug ('call printAsyncResponse')
    
-#        printAsyncResponse (statusurl)
-
-        printAsyncResponse (statusurl, debug=1)
+        if debug:
+            printAsyncResponse (statusurl, debug=1)
+        else:
+            printAsyncResponse (statusurl)
 
         if debug:
             logging.debug ('')
@@ -863,20 +879,48 @@ def main():
         logging.debug (f'query_adql= {query_adql:s}')
    
     try:
+        if debug:
+            logging.debug ('')
+            logging.debug (f'here 4-0')
+
         mode = SpatialIndex.HTM
+        if debug:
+            logging.debug ('')
+            logging.debug (f'here 4-1')
+
         if(config.adqlparam['mode'] == 'HPX'):
             mode = SpatialIndex.HPX
 
+        if debug:
+            logging.debug ('')
+            logging.debug (f'mode= {mode:d}')
+
         level   = int(config.adqlparam['level'])
         colname = config.adqlparam['colname']
+
+        if debug:
+            logging.debug ('')
+            logging.debug (f'level= {level:d}')
+            logging.debug (f'colname= {colname:s}')
 
         encoding = SpatialIndex.BASE4
         if(config.adqlparam['encoding'] == 'BASE10'):
             encoding = SpatialIndex.BASE10
 
+        if debug:
+            logging.debug ('')
+            logging.debug (f'encoding= {encoding:d}')
+
         xcol = config.adqlparam['xcol']
         ycol = config.adqlparam['ycol']
         zcol = config.adqlparam['zcol']
+
+        if debug:
+            logging.debug ('')
+            logging.debug (f'xcol= {xcol:s}')
+            logging.debug (f'ycol= {ycol:s}')
+            logging.debug (f'zcol= {zcol:s}')
+
 
         adql = ADQL(mode=mode, level=level, colname=colname, \
             encoding=encoding, xcol=xcol, ycol=ycol, zcol=zcol)
@@ -1004,7 +1048,7 @@ def main():
 #
 #    propflag = 0
 
-    maxrec = int (param['maxrec'])
+#    maxrec = int (param['maxrec'])
     if debug:
         logging.debug ('')
         logging.debug (f'maxrec= {maxrec:d}')
@@ -1289,7 +1333,7 @@ def main():
        
        
 #        time.sleep (2.0)
-        writeStatusMsg (statuspath, statdict, param)    
+        writeStatusMsg (statuspath, statdict, param, maxrec)    
         
         if debug:
             logging.debug ('')
@@ -1692,7 +1736,7 @@ def getStatus (workdir, workspace, key, param, **kwargs):
         (key == 'executionDuration') or \
         (key == 'destruction') or \
         (key == 'jobId') or \
-        (key == 'processId') or \
+        (key == 'runId') or \
         (key == 'ownerId') or \
         (key == 'quote')):
 #
@@ -1708,7 +1752,7 @@ def getStatus (workdir, workspace, key, param, **kwargs):
             (key == 'executionDuration') or \
             (key == 'destruction') or \
             (key == 'jobId') or \
-            (key == 'processId')):
+            (key == 'runId')):
 
             retval = job[keystr]
             outstr = retval
@@ -1975,8 +2019,10 @@ def writeAsyncError (errmsg, statuspath, statdict, param, **kwargs):
         logging.debug ('')
         logging.debug ('call writeStatusMsg')
 
-    writeStatusMsg (statuspath, statdict, param)    
-#    writeStatusMsg (statuspath, statdict, param, debug=1)    
+    if debug:
+        writeStatusMsg (statuspath, statdict, param, maxrec, debug=1)    
+    else:
+        writeStatusMsg (statuspath, statdict, param, maxrec)    
     
     if debug:
         logging.debug ('')
@@ -2134,7 +2180,7 @@ def printAsyncResponse (statusurl, **kwargs):
 #
 #    TAP status result always written in xml format
 #
-def writeStatusMsg (statuspath, statdict, param, **kwargs):
+def writeStatusMsg (statuspath, statdict, param, maxrec, **kwargs):
 
     debug = 0
 
@@ -2148,7 +2194,7 @@ def writeStatusMsg (statuspath, statdict, param, **kwargs):
         logging.debug (f"phase= {statdict['phase']:s}")
         logging.debug (f"errmsg= {statdict['errmsg']:s}")
         logging.debug (f"format= {param['format']:s}")
-        logging.debug (f"maxrec= {param['maxrec']:s}")
+        logging.debug (f"maxrec= {maxrec:d}")
 
     fp = None
     try:
@@ -2193,7 +2239,7 @@ def writeStatusMsg (statuspath, statdict, param, **kwargs):
     fp.write ('<uws:job xmlns:uws="http://www.ivoa.net/xml/UWS/v1.0" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.ivoa.net/xml/UWS/v1.0 http://www.ivoa.net.xml/UWS/v1.0">\n')
         
     fp.write (f"    <uws:jobId>{statdict['jobid']:s}</uws:jobId>\n")
-    fp.write (f"    <uws:processId>{statdict['process_id']:d}</uws:processId>\n")
+    fp.write (f"    <uws:runId>{statdict['process_id']:d}</uws:runId>\n")
     fp.write ('    <uws:ownerId xsi:nil="true"/>\n')
     fp.write (f"    <uws:phase>{statdict['phase'].upper():s}</uws:phase>\n")
     fp.write ('    <uws:quote xsi:nil="true"/>\n')
@@ -2215,11 +2261,6 @@ def writeStatusMsg (statuspath, statdict, param, **kwargs):
     lang = param['lang']
 
     fp.write (f'        <uws:parameter id="lang">{lang:s}</uws:parameter>\n') 
-
-    if (len(param['maxrec']) == 0):
-        maxrec = -1
-    else:
-        maxrec = int (param['maxrec'])
 
     fp.write (f'        <uws:parameter id="maxrec">{maxrec:d}</uws:parameter>\n') 
 

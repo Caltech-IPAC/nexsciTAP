@@ -289,9 +289,11 @@ class runQuery:
         
         self.dd = None 
         try:
-            self.dd = dataDictionary (self.conn, self.ddtable)   
+            if self.debug:
+                self.dd = dataDictionary (self.conn, self.ddtable, debug=1)   
+            else:
+                self.dd = dataDictionary (self.conn, self.ddtable)   
 
-#            self.dd = dataDictionary (self.conn, self.ddtable, debug=1)   
 
             if self.debug:
                 logging.debug ('')
