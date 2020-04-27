@@ -40,6 +40,7 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
     char    msg[1024];
     char    fmt[40];
     char    nullval[20];
+    char    nullval_ipac[20];
     char    strval[1024];
     char    substr[40];
     
@@ -64,12 +65,13 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
     
     sprintf(debugfname, "/tmp/writerec_%d.debug", getpid());
 
+
     if (debug) {
         fp_debug = (FILE *)NULL;
         fp_debug = fopen (debugfname, "w+");
 
         if (fp_debug == (FILE *)NULL) {
-            printf ("Failed to open debug file\n");
+            printf ("From writerecs: Failed to open debug file\n");
             fflush (stdout);
         }
     }
@@ -465,6 +467,7 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
     write header
 */
     strcpy (nullval, "");
+    strcpy (nullval_ipac, "null");
     if (ishdr) {
         
         if (strcasecmp (outfmt, "ipac") == 0) {
@@ -507,7 +510,7 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
             fprintf (fp, "|");
             for (i=0; i<ncols; i++) {
                 sprintf (fmt, "%%-%ds|", widtharr[i]);
-                fprintf (fp, fmt, nullval); 
+                fprintf (fp, fmt, nullval_ipac); 
             }
             fprintf (fp, "\n");
             fflush (fp);
@@ -687,9 +690,15 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
                 
                 if (strcasecmp (outfmt, "ipac") == 0) {
         
-                    fprintf (fp, fmt, nullval);
+                    fprintf (fp, fmt, nullval_ipac);
                     if (i == ncols-1) {
                         fprintf (fp, "\n");
+                        if ((debug1) && (fp_debug != (FILE *)NULL)) {
+                            fprintf (fp_debug, 
+                                "new line written: i= [%d] ncols= [%d]\n", 
+                                i, ncols);
+                            fflush (fp_debug);
+                        }
                     }
                 }
                 else if (strcasecmp (outfmt, "votable") == 0) {
@@ -745,16 +754,24 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
                 if (strcasecmp (outfmt, "ipac") == 0) {
                     
                     sprintf (fmt, "%%-%s ", fmtarr[i]);
-                    fprintf (fp, fmt, strval);
-                
-                    if (i == ncols-1) {
-                        fprintf (fp, "\n");
-                    }
-                
+                    
                     if ((debug1) && (fp_debug != (FILE *)NULL)) {
                         fprintf (fp_debug, "fmt= [%s]\n", fmt);
                         fflush (fp_debug);
                     }
+                    
+                    fprintf (fp, fmt, strval);
+                
+                    if (i == ncols-1) {
+                        fprintf (fp, "\n");
+                        if ((debug1) && (fp_debug != (FILE *)NULL)) {
+                            fprintf (fp_debug, 
+                                "new line written: i= [%d] ncols= [%d]\n", 
+                                i, ncols);
+                            fflush (fp_debug);
+                        }
+                    }
+                
                 }
                 else if (strcasecmp (outfmt, "votable") == 0) {
        
@@ -784,118 +801,175 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
                      (strcasecmp (typearr[i], "long"   ) == 0) ||
                      (strcasecmp (typearr[i], "integer") == 0)) {
 
+                sprintf (fmt, "%%-%s", fmtarr[i]);
+                        
+                if ((debug1) && (fp_debug != (FILE *)NULL)) {
+                    fprintf (fp_debug, "fmt= [%s]\n", fmt);
+                    fflush (fp_debug);
+                }
+                    
+                strcpy (strval, "");
                 if (PyLong_Check (item)) {
                
                     intval = PyLong_AsLong (item);
+                    sprintf (strval, fmt, intval);
+                }
+
+                if ((debug1) && (fp_debug != (FILE *)NULL)) {
+                    fprintf (fp_debug, "i= [%d] intval= [%d]\n", i, intval);
+                    fprintf (fp_debug, "strval= [%s]\n", strval);
+                    fflush (fp_debug);
+                }
+                    
+                if (strcasecmp (outfmt, "ipac") == 0) {
+                    
+                    fprintf (fp, "%s ", strval);
+                    
+                    if (i == ncols-1) {
+                        fprintf (fp, "\n");
+                        if ((debug1) && (fp_debug != (FILE *)NULL)) {
+                            fprintf (fp_debug, 
+                                "new line written: i= [%d] ncols= [%d]\n", 
+                                i, ncols);
+                            fflush (fp_debug);
+                        }
+                    }
+                }
+                else if (strcasecmp (outfmt, "votable") == 0) {
                         
+                    sprintf (strval, "%d", intval);
+                
                     if ((debug1) && (fp_debug != (FILE *)NULL)) {
-                        fprintf (fp_debug, "i= [%d] intval= [%d]\n", 
-                            i, intval);
-                        fprintf (fp_debug, "fmt= [%s]\n", fmt);
+                        fprintf (fp_debug, "votable:\n");
+                        fprintf (fp_debug, "intval= [%d]\n", intval);
+                        fprintf (fp_debug, "strval= [%s]\n", strval);
                         fflush (fp_debug);
                     }
                     
-                    if (strcasecmp (outfmt, "ipac") == 0) {
-        
-                        sprintf (fmt, "%%-%s ", fmtarr[i]);
-                        fprintf (fp, fmt, intval);
-                        
-                        if (i == ncols-1) {
-                            fprintf (fp, "\n");
-                        }
-                    }
-                    else if (strcasecmp (outfmt, "votable") == 0) {
-                        
-                        sprintf (strval, "%d", intval);
-                        fprintf (fp, "        <TD>%s</TD>\n", strval);
-                    }
-                    else if (strcasecmp (outfmt, "csv") == 0) {
+                    fprintf (fp, "        <TD>%s</TD>\n", strval);
+                }
+                else if (strcasecmp (outfmt, "csv") == 0) {
 
-
-                        sprintf (strval, "%d", intval);
-                        if (i == ncols-1) {
-                            fprintf (fp, "%s\n", strval);
-                        }
-                        else {
-                            fprintf (fp, "%s,", strval);
-                        }
+                    sprintf (strval, "%d", intval);
+                    
+                    if (i == ncols-1) {
+                        fprintf (fp, "%s\n", strval);
                     }
-                    else if (strcasecmp (outfmt, "tsv") == 0) {
+                    else {
+                        fprintf (fp, "%s,", strval);
+                    }
+                }
+                else if (strcasecmp (outfmt, "tsv") == 0) {
             
-                        sprintf (strval, "%d", intval);
-                        if (i == ncols-1) {
-                            fprintf (fp, "%s\n", strval);
-                        }
-                        else {
-                            fprintf (fp, "%s\t", strval);
-                        }
-                    }     
-
+                    sprintf (strval, "%d", intval);
+                    
+                    if (i == ncols-1) {
+                        fprintf (fp, "%s\n", strval);
+                    }
+                    else {
+                        fprintf (fp, "%s\t", strval);
+                    }
                 }
             }
             else if ((strcasecmp (typearr[i], "float" ) == 0) || 
                      (strcasecmp (typearr[i], "double") == 0)) {
 
+                if ((debug1) && (fp_debug != (FILE *)NULL)) {
+                    fprintf (fp_debug, "typearr= [%s]\n", typearr[i]);
+                    fprintf (fp_debug, "fmtarr= [%s]\n", fmtarr[i]);
+                    fflush (fp_debug);
+                }
+
+                sprintf (fmt, "%%-%s", fmtarr[i]);
+                
+                if ((debug1) && (fp_debug != (FILE *)NULL)) {
+                    fprintf (fp_debug, "fmt= [%s]\n", fmt);
+                    fflush (fp_debug);
+                }
+
+                if (strcasecmp (outfmt, "ipac") != 0) {
+                    
+/*
+    Non-ipac tables: strip width element from double format
+*/
+                    cptr1 = strchr (fmt, '.');
+                    if (cptr1 != (char *)NULL) {
+                        strcpy (substr, cptr1);
+                        sprintf (fmt, "%%%s", substr);
+                    }
+                }
+                
+                if ((debug1) && (fp_debug != (FILE *)NULL)) {
+                    fprintf (fp_debug, "finale: fmt= [%s]\n", fmt);
+                    fflush (fp_debug);
+                }
+
+                strcpy (strval, "");
                 if (PyFloat_Check (item)) {
                     
                     dblval = PyFloat_AsDouble (item);
-                        
+                    sprintf (strval, fmt, dblval);
+                    
                     if ((debug1) && (fp_debug != (FILE *)NULL)) {
-                        fprintf (fp_debug, "i= [%d] dblval= [%lf]\n", 
-                            i, dblval);
+                        fprintf (fp_debug, 
+                            "i= [%d] dblval= [%lf] strval= [%s]\n", 
+                            i, dblval, strval);
+                        fflush (fp_debug);
+                    }
+                }
+                else if (PyLong_Check (item)) {
+               
+                    intval = PyLong_AsLong (item);
+                    dblval = (float)intval;
+                    sprintf (strval, fmt, dblval);
+                
+                    if ((debug1) && (fp_debug != (FILE *)NULL)) {
+                        fprintf (fp_debug, "i= [%d] intval= [%d]\n", i, intval);
+                        fprintf (fp_debug, "dblval= [%lf] strval= [%s]\n", 
+                            dblval, strval);
+                        fflush (fp_debug);
+                    }
+                }
+
+                if (strcasecmp (outfmt, "ipac") == 0) {
+        
+                    if ((debug1) && (fp_debug != (FILE *)NULL)) {
+                        fprintf (fp_debug, "ipac outfmt\n");
                         fflush (fp_debug);
                     }
 
-                    if (strcasecmp (outfmt, "ipac") == 0) {
-        
-                        sprintf (fmt, "%%-%s ", fmtarr[i]);
-                        fprintf (fp, fmt, dblval);
+                    fprintf (fp, "%s ", strval);
                         
-                        if (i == ncols-1) {
-                            fprintf (fp, "\n");
-                        }
-                    }
-                    else {
-                        sprintf (fmt, "%%-%s", fmtarr[i]);
-                        
-                        strcpy (substr, "");
-                        
-                        cptr1 = (char *)NULL;
-                        cptr1 = strchr (fmt, '.');
-                        if (cptr1 != (char *)NULL) {
-                            strcpy (substr, cptr1);
-                            sprintf (fmt, "%%%s", substr);
-                        }
-                        sprintf (strval, fmt, dblval);
-                        
+                    if (i == ncols-1) {
+                        fprintf (fp, "\n");
                         if ((debug1) && (fp_debug != (FILE *)NULL)) {
-                            fprintf (fp_debug, "fmt= [%s]\n", fmt);
-                            fprintf (fp_debug, "strval= [%s]\n", strval);
+                            fprintf (fp_debug, 
+                                "new line written: i= [%d] ncols= [%d]\n", 
+                                i, ncols);
                             fflush (fp_debug);
                         }
-
-                        if (strcasecmp (outfmt, "votable") == 0) {
+                    }
+                }
+                else if (strcasecmp (outfmt, "votable") == 0) {
                         
-                            fprintf (fp, "        <TD>%s</TD>\n", strval);
-                        }
-                        else if (strcasecmp (outfmt, "csv") == 0) {
+                    fprintf (fp, "        <TD>%s</TD>\n", strval);
+                }
+                else if (strcasecmp (outfmt, "csv") == 0) {
 
-                            if (i == ncols-1) {
-                                fprintf (fp, "%s\n", strval);
-                            }
-                            else {
-                                fprintf (fp, "%s,", strval);
-                            }
-                        }
-                        else if (strcasecmp (outfmt, "tsv") == 0) {
+                    if (i == ncols-1) {
+                        fprintf (fp, "%s\n", strval);
+                    }
+                    else {
+                        fprintf (fp, "%s,", strval);
+                    }
+                }
+                else if (strcasecmp (outfmt, "tsv") == 0) {
             
-                            if (i == ncols-1) {
-                                fprintf (fp, "%s\n", strval);
-                            }
-                            else {
-                                fprintf (fp, "%s\t", strval);
-                            }
-                        }
+                    if (i == ncols-1) {
+                        fprintf (fp, "%s\n", strval);
+                    }
+                    else {
+                        fprintf (fp, "%s\t", strval);
                     }
                 }
             }
