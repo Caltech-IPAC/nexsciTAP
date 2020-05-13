@@ -4,7 +4,7 @@ from setuptools import setup
 from distutils.extension import Extension
 
 setup(name='TAP', 
-    version='1.0.0', 
+    version='1.0.1', 
     author='Mihseh Kong', 
     author_email='mihseh@ipac.caltech.edu', 
     license='LICENSE.txt', 

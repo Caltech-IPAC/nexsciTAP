@@ -780,10 +780,10 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
                 else if (strcasecmp (outfmt, "csv") == 0) {
 
                     if (i == ncols-1) {
-                        fprintf (fp, "%s\n", strval);
+                        fprintf (fp, "\"%s\"\n", strval);
                     }
                     else {
-                        fprintf (fp, "%s,", strval);
+                        fprintf (fp, "\"%s\",", strval);
                     }
                 }
                 else if (strcasecmp (outfmt, "tsv") == 0) {
