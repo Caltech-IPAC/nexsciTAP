@@ -625,8 +625,10 @@ def main():
             logging.debug ('call writeStatusMessage:')
             logging.debug (f'maxrec= {maxrec:d}')
 
-        writeStatusMsg (statuspath, statdict, param)    
-#        writeStatusMsg (statuspath, statdict, param, debug=1)    
+        if debug:
+            writeStatusMsg (statuspath, statdict, param, debug=1)    
+        else:
+            writeStatusMsg (statuspath, statdict, param)    
     
         if debug:
             logging.debug ('')
@@ -818,10 +820,10 @@ def main():
             logging.debug ('call writeStatusMessage:')
             logging.debug (f'phase= {statdict["phase"]:s}')
        
-
-        writeStatusMsg (statuspath, statdict, param)    
-    
-#        writeStatusMsg (statuspath, statdict, param, debug=1)    
+        if debug:
+            writeStatusMsg (statuspath, statdict, param, debug=1)    
+        else: 
+            writeStatusMsg (statuspath, statdict, param)    
     
         if debug:
             logging.debug ('')
@@ -2050,9 +2052,11 @@ def writeAsyncError (errmsg, statuspath, statdict, param, **kwargs):
         logging.debug(f'format= {param["format"]:s}')
         logging.debug(f'maxrec= {param["maxrec"]:d}')
 
-    writeStatusMsg (statuspath, statdict, param)    
-#    writeStatusMsg (statuspath, statdict, param, debug=1)    
-    
+    if debug:
+        writeStatusMsg (statuspath, statdict, param, debug=1)    
+    else:
+        writeStatusMsg (statuspath, statdict, param)    
+
     if debug:
         logging.debug ('')
         logging.debug ('returned writeStatusMsg')
