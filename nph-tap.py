@@ -72,11 +72,6 @@
 #
 #      write writerecsmodule.c to do the IO in C for speed 
 #       
-#  Revision: April 23, 2020 (Mihseh Kong)
-#
-#      New version using Tap_schema instead of DD for formatting output.
-#       
-
 
 import os
 import sys
@@ -126,7 +121,6 @@ def main():
     debugfname = ''
 
     debugfname = '/tmp/tap_' + str(pid) + '.debug'
-
     
     form = cgi.FieldStorage()
   
@@ -135,7 +129,7 @@ def main():
     
     if ('debugtime' in form):
         debugtime = 1
-   
+  
     if ((debug or debugtime) and (len(debugfname) > 0)):
       
         logging.basicConfig (filename=debugfname, level=logging.DEBUG)
@@ -187,7 +181,8 @@ def main():
     param['request'] = 'doQuery'
     param['query'] = ''
     param['format'] = 'votable'
-    param['maxrec'] = ''
+    param['maxrec'] = -1 
+    maxrecstr = '' 
    
     phase = ''
     errmsg = ''
@@ -257,22 +252,40 @@ def main():
 
         if (key.lower() == 'maxrec'):
             
-            param['maxrec'] = form[key].value
+            maxrecstr = form[key].value
             
             if debug:
                 logging.debug ('')
-                logging.debug (f"param['maxrec']= {param['maxrec']:s}")
+                logging.debug (f'maxrecstr= {maxrecstr:s}')
            
     nparam = len(param)
-
+    
     if debug:
         logging.debug ('')
         logging.debug (f"param['format']= {param['format']:s}")
 
-    if (len(param['maxrec']) > 0):
+    format = param['format'].lower()
+    
+    if ((format != 'votable') and \
+        (format != 'ipac') and \
+        (format != 'csv') and \
+        (format != 'tsv')):
+
+        if debug:
+            logging.debug ('')
+            logging.debug ('format error detected')
+      
+        msg = 'Response format (' + format + \
+	    ') must be: votable, ipac, csv, or tsv'
+        
+        printError ('votable', msg)
+  
+
+    maxrec = -1
+    if (len(maxrecstr) > 0):
         
         try:
-            maxrec_dbl = float(param['maxrec'])
+            maxrec_dbl = float(maxrecstr)
             if debug:
                 logging.debug ('')
                 logging.debug (f'maxrec_dbl= [{maxrec_dbl:f}]')
@@ -286,22 +299,25 @@ def main():
                 
             msg = "Failed to convert input maxrec value [" + \
                 param['maxrec'] + "] to integer."
-            printError (param['format'], msg)
-    else:
-        param['maxrec'] = '-1'
+            printError (format, msg)
+
+
+    if debug:
+        logging.debug ('')
+        logging.debug (f'format= {format:s}')
+        logging.debug (f'maxrec= {maxrec:d}')
+    
+    param['maxrec'] = maxrec
 
     if debug:
         logging.debug ('')
         logging.debug (f'nparam= {nparam:d}')
         for key in param:
-            logging.debug (f'key= {key:s} value= {param[key]:s}')
+            if (key == 'maxrec'):
+                logging.debug (f'key= {key:s} value= {param[key]:d}')
+            else:
+                logging.debug (f'key= {key:s} value= {param[key]:s}')
 
-    format = param['format'].lower()
-    
-    if debug:
-        logging.debug ('')
-        logging.debug (f'format= {format:s}')
-        logging.debug (f'maxrec= {maxrec:d}')
     
     tapcontext = ''
     getstatus = 0
@@ -315,7 +331,7 @@ def main():
 
     if (len(pathinfo) == 0):
         msg = 'Failed to find PATH_INFO (e.g. sync, async) in URL.'
-        printError (param['format'], msg)
+        printError (format, msg)
 
     if debug:
         logging.debug ('')
@@ -349,7 +365,7 @@ def main():
         
         if (len(id) == 0):
             msg = 'Failed to find jobid for retrieving job status.'
-            printError (param['format'], msg)
+            printError (format, msg)
 
 
         len_id = len(id)
@@ -369,19 +385,6 @@ def main():
         logging.debug (f'setstatus= {setstatus:d}')
         logging.debug (f'id= {id:s}')
 
-    if ((format != 'votable') and \
-        (format != 'ipac') and \
-        (format != 'csv') and \
-        (format != 'tsv')):
-
-        if debug:
-            logging.debug ('')
-            logging.debug ('format error detected')
-      
-        msg = 'Response format (' + format + \
-	    ') must be: votable, ipac, csv, or tsv'
-        printError (param['format'], msg)
-   
         
 #    if ((getstatus == 0) and (querykey == 0)):
 #        msg = "TAP keyword: 'query' not found."
@@ -421,10 +424,8 @@ def main():
 #
     config = None
     try:
-        if debug:
-            config = configParam (configpath, debug=1)
-        else:
-            config = configParam (configpath)
+#        config = configParam (configpath, debug=1)
+        config = configParam (configpath)
     
         if debug:
             logging.debug ('')
@@ -581,9 +582,7 @@ def main():
   
 
     resulttbl = ''
-    if (format == 'json'):
-        resulttbl = 'result.json'
-    elif (format == 'votable'):
+    if (format == 'votable'):
         resulttbl = 'result.xml'
     elif (format == 'ipac'):
         resulttbl = 'result.tbl'
@@ -591,8 +590,11 @@ def main():
         resulttbl = 'result.csv'
     elif (format == 'tsv'):
         resulttbl = 'result.tsv'
-    elif (format == 'html'):
-        resulttbl = 'result.html'
+
+#    elif (format == 'html'):
+#        resulttbl = 'result.html'
+#    elif (format == 'json'):
+#        resulttbl = 'result.json'
 
     resultpath = userWorkdir + '/' + resulttbl
     resulturl = httpurl + workurl + '/TAP/' + workspace + '/' \
@@ -623,11 +625,9 @@ def main():
             logging.debug ('call writeStatusMessage:')
             logging.debug (f'maxrec= {maxrec:d}')
 
-        if debug:
-            writeStatusMsg (statuspath, statdict, param, maxrec, debug=1)    
-        else:
-            writeStatusMsg (statuspath, statdict, param, maxrec)
-
+        writeStatusMsg (statuspath, statdict, param)    
+#        writeStatusMsg (statuspath, statdict, param, debug=1)    
+    
         if debug:
             logging.debug ('')
             logging.debug ('returned writeStatusMessage')
@@ -663,11 +663,9 @@ def main():
             logging.debug (f'Case getstatus')
 
         try:
-            if debug:
-                getStatus (workdir, id, statuskey, param, debug=1)
-            else:
-                getStatus (workdir, id, statuskey, param)
+            getStatus (workdir, id, statuskey, param)
 
+#            getStatus (workdir, id, statuskey, param, debug=1)
         
         except Exception as e:
 
@@ -721,7 +719,7 @@ def main():
             logging.debug ('param: (from input)')
             logging.debug (f'format= {param["format"]:s}')
             logging.debug (f'lang= {param["lang"]:s}')
-            logging.debug (f'maxrec= {param["maxrec"]:s}')
+            logging.debug (f'maxrec= {param["maxrec"]:d}')
             logging.debug (f'query= {param["query"]:s}')
             logging.debug (f'phase= {param["phase"]:s}')
             
@@ -755,26 +753,30 @@ def main():
        
             parameter = parameters.find (id='query')
             param['query'] = parameter.string
+            if debug:
+                logging.debug ('')
+                logging.debug (f'query= {param["query"]:s}')
 
             parameter = parameters.find (id='format')
             param['format'] = parameter.string
+            if debug:
+                logging.debug ('')
+                logging.debug (f'format= {param["format"]:s}')
 
             parameter = parameters.find (id='maxrec')
-            param['maxrec'] = parameter.string
+            maxrecstr = parameter.string
+            if debug:
+                logging.debug ('')
+                logging.debug (f'maxrecstr= {maxrecstr:s}')
+
+            param['maxrec'] = int(parameter.string)
+            if debug:
+                logging.debug ('')
+                logging.debug (f'maxrecstr= {param["maxrec"]:d}')
 
             parameter = parameters.find (id='lang')
             param['lang'] = parameter.string
         
-
-            if debug:
-                logging.debug ('')
-                logging.debug ('param: (after retrieved from status.xml')
-                logging.debug (f'format= {param["format"]:s}')
-                logging.debug (f'lang= {param["lang"]:s}')
-                logging.debug (f'maxrec= {param["maxrec"]:s}')
-                logging.debug (f'query= {param["query"]:s}')
-                logging.debug (f'phase= {param["phase"]:s}')
-            
 #
 #    rewrite statustbl
 #   
@@ -817,10 +819,9 @@ def main():
             logging.debug (f'phase= {statdict["phase"]:s}')
        
 
-        if debug: 
-            writeStatusMsg (statuspath, statdict, param, maxrec, debug=1)    
-        else:
-            writeStatusMsg (statuspath, statdict, param, maxrec)    
+        writeStatusMsg (statuspath, statdict, param)    
+    
+#        writeStatusMsg (statuspath, statdict, param, debug=1)    
     
         if debug:
             logging.debug ('')
@@ -834,10 +835,9 @@ def main():
             logging.debug ('')
             logging.debug ('call printAsyncResponse')
    
-        if debug:
-            printAsyncResponse (statusurl, debug=1)
-        else:
-            printAsyncResponse (statusurl)
+        printAsyncResponse (statusurl)
+
+#        printAsyncResponse (statusurl, debug=1)
 
         if debug:
             logging.debug ('')
@@ -1032,6 +1032,23 @@ def main():
         logging.debug ('')
         logging.debug (f'propflag= [{propflag:d}]')
 
+
+#
+#    check if dbtable is tap_schema tables
+#
+    ind = dbtable.lower().find ('tap_schema') 
+
+    if (ind != -1):
+        propflag = 0
+        
+        if debug:
+            logging.debug ('')
+            logging.debug (f'tap_schema table queries: set propflag to 0')
+
+    if debug:
+        logging.debug ('')
+        logging.debug (f'propflag= [{propflag:d}]')
+
     if debugtime:
         time1 = datetime.datetime.now()
         delt = (time1 - time0).total_seconds()
@@ -1052,7 +1069,7 @@ def main():
     if debug:
         logging.debug ('')
         logging.debug (f'maxrec= {maxrec:d}')
-            
+    
 
     if (propflag == 0):
 #
@@ -1064,7 +1081,7 @@ def main():
             if debug:
                 logging.debug ('')
                 logging.debug ('will call runQuery')
-            
+                logging.debug (f'maxrec= {maxrec:d} format= {format:s}')
 
             if (debug and debugtime):
 
@@ -1266,7 +1283,12 @@ def main():
                 if debug:
                     logging.debug ('')
                     logging.debug (f'call writeAsyncError')
-
+                    for key in param:
+                        if (key == 'maxrec'):
+                            logging.debug (f'key= {key:s} val= {param[key]:d}')
+                        else:
+                            logging.debug (f'key= {key:s} val= {param[key]:s}')
+                
                 writeAsyncError (str(e), statuspath, statdict, param)
             
                 if debug:
@@ -1333,7 +1355,7 @@ def main():
        
        
 #        time.sleep (2.0)
-        writeStatusMsg (statuspath, statdict, param, maxrec)    
+        writeStatusMsg (statuspath, statdict, param)    
         
         if debug:
             logging.debug ('')
@@ -1983,8 +2005,7 @@ def writeAsyncError (errmsg, statuspath, statdict, param, **kwargs):
 #
 # { 
 #
-
-    debug = 0 
+    debug = 1 
 
     if ('debug' in kwargs):
         debug = kwargs['debug']
@@ -1998,6 +2019,13 @@ def writeAsyncError (errmsg, statuspath, statdict, param, **kwargs):
         logging.debug ('Enter writeAsyncError')
         logging.debug (f'statuspath= {statuspath:s}')
         logging.debug (f'errmsg= {errmsg:s}')
+        logging.debug (f'format= {param["format"]:s}')
+        logging.debug (f'phase= {statdict["phase"]:s}')
+        for key in param:
+            if (key == 'maxrec'):
+                logging.debug (f'key= {key:s} val= {param[key]:d}')
+            else:
+                logging.debug (f'key= {key:s} val= {param[key]:s}')
 
 
 #
@@ -2018,11 +2046,12 @@ def writeAsyncError (errmsg, statuspath, statdict, param, **kwargs):
     if debug:
         logging.debug ('')
         logging.debug ('call writeStatusMsg')
+        logging.debug(f'statuspath= {statuspath:s}')
+        logging.debug(f'format= {param["format"]:s}')
+        logging.debug(f'maxrec= {param["maxrec"]:d}')
 
-    if debug:
-        writeStatusMsg (statuspath, statdict, param, maxrec, debug=1)    
-    else:
-        writeStatusMsg (statuspath, statdict, param, maxrec)    
+    writeStatusMsg (statuspath, statdict, param)    
+#    writeStatusMsg (statuspath, statdict, param, debug=1)    
     
     if debug:
         logging.debug ('')
@@ -2097,7 +2126,9 @@ def printSyncResult (resultpath, format, **kwargs):
 #   place holder for re-direct sync response case
 #
 def printSyncResponse (status, msg, resulturl, format, **kwargs):
-
+#
+# {
+#
     debug = 0
 
     if ('debug' in kwargs):
@@ -2138,6 +2169,10 @@ def printSyncResponse (status, msg, resulturl, format, **kwargs):
         logging.debug ('done')
 
     return
+#
+#}
+#
+
 
 #
 #    async: return statusurl and kill the parent process
@@ -2180,9 +2215,11 @@ def printAsyncResponse (statusurl, **kwargs):
 #
 #    TAP status result always written in xml format
 #
-def writeStatusMsg (statuspath, statdict, param, maxrec, **kwargs):
-
-    debug = 0
+def writeStatusMsg (statuspath, statdict, param, **kwargs):
+#
+# { end writeStatusMsg
+#
+    debug = 1
 
     if ('debug' in kwargs):
         debug = kwargs['debug']
@@ -2193,7 +2230,20 @@ def writeStatusMsg (statuspath, statdict, param, maxrec, **kwargs):
         logging.debug (f"statuspath= {statuspath:s}")
         logging.debug (f"phase= {statdict['phase']:s}")
         logging.debug (f"errmsg= {statdict['errmsg']:s}")
-        logging.debug (f"format= {param['format']:s}")
+        
+        for key in param:
+            if (key == 'maxrec'):
+                logging.debug (f'key= {key:s} val= {param[key]:d}')
+            else:
+                logging.debug (f'key= {key:s} val= {param[key]:s}')
+
+
+    format = param['format'].lower()
+    maxrec = param['maxrec']
+
+    if debug:
+        logging.debug ('')
+        logging.debug (f"format= {format:s}")
         logging.debug (f"maxrec= {maxrec:d}")
 
     fp = None
@@ -2202,7 +2252,7 @@ def writeStatusMsg (statuspath, statdict, param, maxrec, **kwargs):
         os.chmod(statuspath, 0o664)
     except Exception as e:
         msg = 'Failed to open/create status file.'
-        printError (msg)
+        printError (format, msg)
 
     if debug:
         logging.debug ('')
@@ -2217,7 +2267,7 @@ def writeStatusMsg (statuspath, statdict, param, maxrec, **kwargs):
             logging.debug ('')
             logging.debug (f'{msg:s}: {str(e):s}')
 
-        printError (msg)
+        printError (format, msg)
 
     if debug:
         logging.debug ('')
@@ -2296,7 +2346,7 @@ def writeStatusMsg (statuspath, statdict, param, maxrec, **kwargs):
         logging.debug (f'final query str1= [{str1:s}]')
          
 
-    fp.write (f'        <uws:parameter id="query">{str1:s}\n')
+    fp.write (f'        <uws:parameter id="query">{str1:s}')
     fp.write ('        </uws:parameter>\n')
     
     fp.write ('    </uws:parameters>\n')
@@ -2309,7 +2359,7 @@ def writeStatusMsg (statuspath, statdict, param, maxrec, **kwargs):
   
     elif (phase.lower() == 'error'):
 
-        fp.write ('    <uws:errorSummary>\n')
+        fp.write ('    <uws:errorSummary type="transient" hasDetail="true">\n')
         fp.write (f'        <uws:message>{errmsg:s}</uws:message>\n')
         fp.write ('    </uws:errorSummary>\n')
   
@@ -2327,7 +2377,9 @@ def writeStatusMsg (statuspath, statdict, param, maxrec, **kwargs):
         logging.debug ('done writeStatusMsg')
 
     return
-
+#
+# } end writeStatusMsg
+#
 
 
 def getDatalevel (dbtable, **kwargs):

@@ -1118,6 +1118,8 @@ class ADQL:
         patched_adql = re.sub('polygon\s*\(',  'polygon(',  patched_adql, flags=re.IGNORECASE)
         patched_adql = re.sub('circle\s*\(',   'circle(',   patched_adql, flags=re.IGNORECASE)
         patched_adql = re.sub('point\s*\(',    'point(',    patched_adql, flags=re.IGNORECASE)
+        patched_adql = re.sub('box\s*\(',    'box(',    patched_adql, flags=re.IGNORECASE)
+
 
         tags = patched_adql.split(' ')
 

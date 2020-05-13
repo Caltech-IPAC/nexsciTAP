@@ -19,7 +19,7 @@ class dataDictionary:
     returnMsg = ""
 
     conn = None
-    ddtable = ''
+    dbtable = ''
 
 #
 #    dd columns
@@ -29,7 +29,6 @@ class dataDictionary:
 
     colfmt   = {}
     coltype  = {}
-    coldbtype = {}
     coldesc  = {}
     colunits = {}
     colwidth = {}
@@ -43,22 +42,18 @@ class dataDictionary:
 	a database table; it is used for re-formating the output IPAC ASCII 
 	table.
 
-        name:          colnam in DB table,
-	original_name: original colname,
-        description:   column description,
-	units:         unit,
-	intype:        input data type (char, integer, double, date),
-        format:        output format (20s, 20.10f, 10d, etc...),
-	dbtype:        data type in DB table (varchar(20), integer, float, date,
-	               timestamp, etc...),
-	nulls:         whether null value if allowed,
+        colname (char):       column name in DB table,
+        datatype (char):      data type (char, integer, double, date),
+        description (char):   description,
+        units (char):         unit,
+        format (char):        output format (20s, 20.10f, 10d, etc...),
         
        
 	Required Input:
 
 	    conn:              database connection handle,
 	
-	    table (char):      database dictionary table name,
+	    table (char):      database table name,
         
          	
 	Usage:
@@ -75,11 +70,11 @@ class dataDictionary:
             logging.debug (f'Enter dataDictionary.init')
 
         self.conn = conn
-        self.ddtable = table
+        self.dbtable = table
 
         if self.debug:
             logging.debug ('')
-            logging.debug (f'ddtable= {self.ddtable:s}')
+            logging.debug (f'dbtable= {self.dbtable:s}')
        
 
 #
@@ -92,7 +87,10 @@ class dataDictionary:
             logging.debug (cursor)
         
 
-        sql = 'select * from ' + self.ddtable + ' order by cntr'
+#        sql = 'select * from ' + self.ddtable + ' order by cntr'
+
+        sql = "select * from TAP_SCHEMA.columns where table_name = " + \
+            "'" + self.dbtable + "'"
         
         if self.debug:
             logging.debug ('')
@@ -118,29 +116,29 @@ class dataDictionary:
             logging.debug ('select dd statement executed')
         
 #        
-#    Retrieve dd table to determine datatype, unit, colwidth, and format
+#    Retrieve column name, dtype, format, units from 
+#    TAP_SCHEMA.columns table.
 #
-#    col1: colname,
-#    col3: description,
-#    col4: unit,
-#    col5: datatype,
-#    col6: format (in the form of 11d, 12.6f, 25.25s etc..,
-#    col7: db format (in the form of varchar, integer, float, date, timestamp, 
-#          etc..,
-#    col8: nulls,
+#    col0: table_name (not used),
+#    col1: colname (column_name),
+#    col2: datatype (datatype),
+#    col6: description (all nulls),
+#    col8: unit (all nulls),
+#    col14: format (format: in the form of 11d, 12.6f, 25.25s etc..,
 #        
         cursor.arraysize = self.nfetch
         
         self.colfmt   = {}
         self.coltype  = {}
-        self.coldbtype = {}
         self.coldesc  = {}
         self.colunits = {}
         self.colwidth = {}
         self.ncols = 0
         
         while True:
-        
+#
+#{ while loop
+#
             rows = cursor.fetchmany()
       
             if self.debug:
@@ -156,7 +154,9 @@ class dataDictionary:
 
             i = 0
             for row in rows:
-
+#
+#{ for loop: each row in the file represent a column in data dictionary
+#
                 col_str = str(row[1]).strip().upper()
 
 #                if (col_str.lower() == 'ra2000'):
@@ -173,31 +173,13 @@ class dataDictionary:
                     logging.debug (\
 		        f'i=[{i:d}] colname= {self.colname[i]:s}')
                 
-                if (row[3] is None):
-                    self.coldesc[col_str] = ''
-                else:
-                    self.coldesc[col_str] = str(row[3]).strip()
-                 
-                if self.debug:
-                    logging.debug ('')
-                    logging.debug (f'coldesc= {self.coldesc[col_str]:s}')
-                
-                
-                if (row[4] is None):
-                    self.colunits[col_str] = ''
-                else:
-                    self.colunits[col_str] = str(row[4]).strip()
-                 
-
-                if self.debug:
-                    logging.debug ('')
-                    logging.debug (f'colunits= {self.colunits[col_str]:s}')
-                
-                
-                if (row[5] is None):
+#
+#    datatype 
+#
+                if (row[2] is None):
                     self.coltype[col_str] = ''
                 else:
-                    self.coltype[col_str] = str(row[5]).strip()
+                    self.coltype[col_str] = str(row[2]).strip()
 
                 if self.debug:
                     logging.debug ('')
@@ -206,26 +188,41 @@ class dataDictionary:
                 if (self.coltype[col_str] == 'integer'):
                     self.coltype[col_str] = 'int'
                 
-                if (row[6] is None):
+#
+#    format 
+#
+                if (row[14] is None):
                     self.colfmt[col_str] = ''
                 else:
-                    self.colfmt[col_str] = str(row[6]).strip().replace('i', 'd')
+                    self.colfmt[col_str] = str(row[14]).strip().replace('i', 'd')
                  
-
                 if self.debug:
                     logging.debug ('')
                     logging.debug (f'colfmt= {self.colfmt[col_str]:s}')
                 
-                
-                if (row[7] is None):
-                    self.coldbtyp[col_str] = ''
+#
+#    unit 
+#
+                if (row[8] is None):
+                    self.colunits[col_str] = ''
                 else:
-                    self.coldbtype[col_str] = str(row[7]).strip()
+                    self.colunits[col_str] = str(row[8]).strip()
                  
                 if self.debug:
                     logging.debug ('')
-                    logging.debug (f'coldbtype= {self.coldbtype[col_str]:s}')
+                    logging.debug (f'colunits= {self.colunits[col_str]:s}')
                 
+#
+#    desc 
+#
+                if (row[6] is None):
+                    self.coldesc[col_str] = ''
+                else:
+                    self.coldesc[col_str] = str(row[6]).strip()
+                 
+                if self.debug:
+                    logging.debug ('')
+                    logging.debug (f'coldesc= {self.coldesc[col_str]:s}')
                 
                 if self.debug:
                     logging.debug ('')
@@ -234,151 +231,216 @@ class dataDictionary:
                     logging.debug (f'coltype= {self.coltype[col_str]:s}')
                     logging.debug (f'colunits= {self.colunits[col_str]:s}')
                     logging.debug (f'colfmt= {self.colfmt[col_str]:s}')
-                    logging.debug (f'coldbtype= {self.coldbtype[col_str]:s}')
-
 
 #
-#    default width for various datatype 
+#    determine width and fmt from colfmt arrary:
 #
                 fmtstr = ''
                 width = 0
 
-                if (len(self.colfmt[col_str]) == 0):
-		
-                    if self.debug:
-                        logging.debug ('')
-                        logging.debug ('colfmt blank')
-			    
-                    if (self.coltype[col_str] == 'char'):
-
-                        if (self.coldbtype[col_str] == 'timestamp'):
-                            
-                            if self.debug:
-                                logging.debug ('')
-                                logging.debug (\
-				    'col not found: dbtype timestamp')
-			    
-                            fmtstr = '30s'
-                            width = 30
-                        
-                        elif (self.coldbtype[col_str] == 'date'):
-                            
-                            if self.debug:
-                                logging.debug ('')
-                                logging.debug (\
-				    'col not found: dbtype date')
-			    
-                            fmtstr = '30s'
-                            width = 30 
-                        
-                        else:
-                            if self.debug:
-                                logging.debug ('')
-                                logging.debug (\
-				    'col not found: dbtype varchar')
-			    
-                            ind1 = self.coldbtype[col_str].find ('(')
-                            ind2 = self.coldbtype[col_str].find (')')
-                
-                            fmtstr = self.coldbtype[col_str][ind1+1:ind2] + 's'
-                            widthstr = self.coldbtype[col_str][ind1+1:ind2]
-                            width = int(widthstr)
-
-                    elif (self.coltype[col_str] == 'date'):
-                            
-                        if self.debug:
-                            logging.debug ('')
-                            logging.debug ('xxx date coltype')
-			    
-                        fmtstr = '30s'
-                        width = 30 
-                        
-                    elif (self.coltype[col_str] == 'integer'):
-                        fmtstr = '12d'
-                        width = 12 
-
-                    elif (self.coltype[col_str] == 'int'):
-                        fmtstr = '12d'
-                        width = 12 
-
-                    elif (self.coltype[col_str] == 'long'):
-                        fmtstr = '20d'
-                        width = 20
-
-                    elif (self.coltype[col_str] == 'double'):
-                        fmtstr = '20.11f'
-                        width = 20
-                      
-                    elif (self.coltype[col_str] == 'float'):
-                        fmtstr = '20.11f'
-                        width = 20
-                      
-                    if self.debug:
-                        logging.debug ('')
-                        logging.debug ('xxx1:')
-                        logging.debug (f'fmtstr= {fmtstr:s}')
+                if ((self.coltype[col_str] == 'char') or \
+                    (self.coltype[col_str] == 'date')):
 #
-#    colfmt not blank
+#{ coltype = char, date
 #
-                else:
-                    if self.debug:
-                        logging.debug ('')
-                        logging.debug ('colfmt NOT blank')
-			    
-                    if (self.coldbtype[col_str] == 'date'):
 
-                        fmtstr = '30s'
-                        width = 30
-
-                    elif (self.coltype[col_str] == 'char'):
-
+                    if (self.colfmt[col_str] != 'null'):
 #
-#    if char type, use dbtype format is more accurate
-#
-                        ind1 = self.coldbtype[col_str].find ('(')
-                        ind2 = self.coldbtype[col_str].find (')')
-                
-                        fmtstr = self.coldbtype[col_str][ind1+1:ind2] + 's'
-                        widthstr = self.coldbtype[col_str][ind1+1:ind2]
-                        width = int(widthstr)
-
-                        if self.debug:
-                            logging.debug ('')
-                            logging.debug ('char col, use dbtype to find width')
-                            logging.debug (f'fmtstr= {fmtstr:s}')
-                            logging.debug (f'widthstr= {widthstr:s}')
-               
-#
-#    others: int and double
-#
-                    else:
+# { extract width from colfmt
+#   
                         fmtstr = self.colfmt[col_str]
                     
                         if self.debug:
                             logging.debug ('')
+                            logging.debug ('extract width from fmtstr')
                             logging.debug (f'fmtstr= {fmtstr:s}')
+			    
+                        if ((self.coltype[col_str] == 'date') or \
+                            (self.coltype[col_str] == 'char')):
 
-                        wstr = itertools.takewhile(str.isdigit, fmtstr)
-                        if self.debug:
-                            logging.debug ('')
-                            logging.debug ('wstr=')
-                            logging.debug (wstr)
+                            ind= fmtstr.find('s')
+                       
+                            if (ind != -1):
+                                widthstr = fmtstr[0:ind]
+                                if self.debug:
+                                    logging.debug ('')
+                                    logging.debug (f'widthstr= [{widthstr:s}]')
+
+                                width = int (widthstr)
                         
-                        width = (int)(''.join(wstr))
-               
+#
+# } end extract width from colfmt
+#   
+                        
+                    if self.debug:
+                        logging.debug ('')
+                        logging.debug (f'width= [{width:d}]')
+
+#
+#    failed to extract width from colfmt
+#
+                    if (width == 0):
+                       width = 80
+
+                    if (len(col_str) > width):
+                        width = len(col_str)
+                    if (len(self.coltype[col_str]) > width):
+                        width = len(self.coltype[col_str])
+                    if (len(self.colunits[col_str]) > width):
+                        width = len(self.colunits[col_str])
+                        
+                    fmtstr = str(width) + 's'
+                        
+                    if self.debug:
+                        logging.debug ('')
+                        logging.debug (f'width= [{width:d}]')
+                        logging.debug (f'fmtstr= [{fmtstr:s}]')
+
+#
+# } end coltype == 'char'/'date'
+#
+                        
+                elif ((self.coltype[col_str] == 'integer') or \
+                    (self.coltype[col_str] == 'int') or \
+                    (self.coltype[col_str] == 'short')):
+#
+#{ coltype == 'int/short': extract width from fmt
+#
+                    width = 12
+                    if (self.colfmt[col_str] != 'null'):
+#
+# { extract width from colfmt
+#   
+                        fmtstr = self.colfmt[col_str]
+                    
                         if self.debug:
                             logging.debug ('')
-                            logging.debug (f'width= {width:d}')
-                
-                if (len(col_str) > width):
-                    width = len(col_str)
-        
-                if (len(self.coltype[col_str]) > width):
-                    width = len(self.coltype[col_str])
-        
-                if (len(self.colunits[col_str]) > width):
-                    width = len(self.colunits[col_str])
-        
+                            logging.debug ('extract width from fmtstr')
+                            logging.debug (f'fmtstr= {fmtstr:s}')
+                        
+                        ind = fmtstr.find ('d')
+                        
+                        if (ind != -1):
+                            widthstr = fmtstr[0:ind]
+                            width = int (widthstr)
+#
+# } end extract width from colfmt
+#   
+                    if self.debug:
+                        logging.debug ('')
+                        logging.debug (f'width= {width:d}')
+                    
+                    if (len(col_str) > width):
+                        width = len(col_str)
+                    if (len(self.coltype[col_str]) > width):
+                        width = len(self.coltype[col_str])
+                    if (len(self.colunits[col_str]) > width):
+                        width = len(self.colunits[col_str])
+                    fmtstr = str(width) + 'd'
+                        
+                    if self.debug:
+                        logging.debug ('')
+                        logging.debug (f'width= {width:d}')
+                        logging.debug (f'fmtstr= {fmtstr:s}')
+                        
+                        
+#
+#} end coltype == 'int/short'
+#
+                elif (self.coltype[col_str] == 'long'): 
+#
+# { coltype == 'long': default 20
+#
+                    width = 20
+                    if (self.colfmt[col_str] != 'null'):
+
+                        fmtstr = self.colfmt[col_str]
+                    
+                        if self.debug:
+                            logging.debug ('')
+                            logging.debug ('extract width from fmtstr')
+                            logging.debug (f'fmtstr= {fmtstr:s}')
+			    
+                        ind = fmtstr.find ('d')
+                        
+                        if (ind != -1):
+                            widthstr = fmtstr[0:ind]
+                            width = int (widthstr)
+
+                    if (len(col_str) > width):
+                        width = len(col_str)
+                    if (len(self.coltype[col_str]) > width):
+                        width = len(self.coltype[col_str])
+                    if (len(self.colunits[col_str]) > width):
+                        width = len(self.colunits[col_str])
+                    fmtstr = str(width) + 'd'
+                    
+                    if self.debug:
+                        logging.debug ('')
+                        logging.debug (f'width= {width:d}')
+                        logging.debug (f'fmtstr= {fmtstr:s}')
+                        
+#
+#  } end coltype == 'long'
+#
+                elif ((self.coltype[col_str] == 'double') or \
+                    (self.coltype[col_str] == 'float')):
+#
+#
+#  { coltype == 'double/float'
+#
+                    width = 0
+                    if (self.colfmt[col_str] != 'null'):
+
+                        fmtstr = self.colfmt[col_str]
+                    
+                        if self.debug:
+                            logging.debug ('')
+                            logging.debug ('extract width from fmtstr')
+                            logging.debug (f'fmtstr= {fmtstr:s}')
+			    
+                        ind = fmtstr.find ('.')
+                        
+                        if (ind != -1):
+                            widthstr = fmtstr[0:ind]
+                            width = int (widthstr)
+
+                            if self.debug:
+                                logging.debug ('')
+                                logging.debug (f'widthstr= {widthstr:s}')
+                                logging.debug (f'width= {width:d}')
+  
+                            remstr = fmtstr[ind+1:]
+
+                            if self.debug:
+                                logging.debug ('')
+                                logging.debug (f'remstr= {remstr:s}')
+                        else:
+                            width = 20
+                            remstr = '11e' 
+
+                    else:
+                        width = 20
+                        remstr = '11e' 
+                        
+                    if (len(col_str) > width):
+                        width = len(col_str)
+                    if (len(self.coltype[col_str]) > width):
+                        width = len(self.coltype[col_str])
+                    if (len(self.colunits[col_str]) > width):
+                        width = len(self.colunits[col_str])
+                   
+                    fmtstr = str(width) + '.' + remstr
+
+                    if self.debug:
+                        logging.debug ('')
+                        logging.debug (f'width= {width:d}')
+                        logging.debug (f'fmtstr= {fmtstr:s}')
+                        
+#
+#} end coltype == 'double/float'
+#
+
                 self.colwidth[col_str] = width
                 self.colfmt[col_str] = fmtstr 
                     
@@ -389,10 +451,16 @@ class dataDictionary:
                     logging.debug (f'colfmt= {self.colfmt[col_str]:s}')
                 
                 i = i + 1
+#
+#}  end for loop
+#
             
             if len(rows) < cursor.arraysize:
                 break
 
+#
+#} end while loop
+#
         if self.debug:
             logging.debug ('')
             logging.debug ('done with dd retrieval')
