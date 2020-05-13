@@ -578,13 +578,36 @@ class ADQL:
             logging.debug(f'Enter __geomConstraint: i= {i:d}')
     
         func1 = self.geomFuncs[2*i]
+        
+        if self.debug:
+            logging.debug('func1:')
+            logging.debug(func1)
+        
+        
         func2 = self.geomFuncs[2*i+1]
-    
+        
+        if self.debug:
+            logging.debug('func2:')
+            logging.debug(func2)
+        
         args1 = self.geomArgs[2*i]
+        
+        if self.debug:
+            logging.debug('args1:')
+            logging.debug(args1)
+        
         args2 = self.geomArgs[2*i+1]
     
+        if self.debug:
+            logging.debug('args2:')
+            logging.debug(args2)
+        
         val   = self.geomVals[i]
     
+        if self.debug:
+            logging.debug('val:')
+            logging.debug(val)
+        
     
         # Point in circle
     
@@ -1118,8 +1141,8 @@ class ADQL:
         patched_adql = re.sub('polygon\s*\(',  'polygon(',  patched_adql, flags=re.IGNORECASE)
         patched_adql = re.sub('circle\s*\(',   'circle(',   patched_adql, flags=re.IGNORECASE)
         patched_adql = re.sub('point\s*\(',    'point(',    patched_adql, flags=re.IGNORECASE)
-        patched_adql = re.sub('box\s*\(',    'box(',    patched_adql, flags=re.IGNORECASE)
 
+        patched_adql = re.sub('box\s*\(',    'box(',    patched_adql, flags=re.IGNORECASE)
 
         tags = patched_adql.split(' ')
 
@@ -1208,6 +1231,7 @@ class ADQL:
         
         for i in range(len(self.adql_tokens)):
         
+
             if(self.adql_tokens[i] == 'GEOM'):
         
                 # Check for "= 1" after 'GEOM'
@@ -1295,6 +1319,7 @@ class ADQL:
                         continue
         
         
+
         if(self.debug):
             logging.debug('============================')
             logging.debug('geomFuncs: ')
@@ -1308,10 +1333,10 @@ class ADQL:
             logging.debug(self.geomVals)
             logging.debug('')
             logging.debug('============================')
+
         outstr = ''
         
         indx = 0
-        
 
         # Check for the location of the start and end of the WHERE clause.
         # Not needed if we don't have a 'TOP n' constraint.
@@ -1362,6 +1387,8 @@ class ADQL:
         for i in range(len(self.adql_tokens)):
 
             if(self.debug):
+                logging.debug('')
+                logging.debug('here1-1')
                 logging.debug('processing token: ' + self.adql_tokens[i])
 
 
@@ -1370,6 +1397,8 @@ class ADQL:
             if(self.adql_tokens[i] == 'GEOM'):
 
                 if(self.debug):
+                    logging.debug('')
+                    logging.debug('here1-1-0')
                     logging.debug(f'call __geomConstraint: indx= {indx:d}')
 
                 constraint = self._geomConstraint(indx)
@@ -1383,11 +1412,13 @@ class ADQL:
             # Start of 'WHERE'
 
             elif(haveTop and i == where_start):
+                
                 outstr = outstr + self.adql_tokens[i] + ' ( '
 
             # End of 'WHERE'
             
             elif(haveTop and i == where_end):
+                
                 if(where_start == -1):
                     outstr = outstr + ' WHERE ROWNUM <= ' + str(count) + ' ' +  self.adql_tokens[i]
                 else:
@@ -1396,6 +1427,10 @@ class ADQL:
             # Everything else
 
             else:
+                if(self.debug):
+                    logging.debug('')
+                    logging.debug('here1-1-3')
+
                 outstr = outstr + self.adql_tokens[i]
 
             if(self.debug):
@@ -1404,9 +1439,11 @@ class ADQL:
 
 
         if(haveTop and where_start == -1 and where_end == -1):
+                
                 outstr = outstr + ' WHERE ROWNUM <= ' + str(count)
 
         if(haveTop and where_start != -1 and where_end == imax+1):
+                
                 outstr = outstr + ') AND ROWNUM <= ' + str(count)
 
         
