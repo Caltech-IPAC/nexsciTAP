@@ -40,5 +40,3 @@ install :		      $(progs) installdirs
 							rm -rf $(CGIDIR)/*
 							$(INSTALL_PROGRAM) $(progs) $(CGIDIR)
 							python setup.py bdist_wheel
-							pip install --upgrade dist/*.whl
-
