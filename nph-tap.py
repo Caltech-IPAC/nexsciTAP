@@ -924,7 +924,7 @@ def main():
             logging.debug (f'zcol= {zcol:s}')
 
 
-        adql = ADQL(mode=mode, level=level, colname=colname, \
+        adql = ADQL(mode=mode, level=level, indxcol=colname, \
             encoding=encoding, xcol=xcol, ycol=ycol, zcol=zcol)
 
         query = adql.sql (query_adql)

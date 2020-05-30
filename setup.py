@@ -11,4 +11,5 @@ setup(name='TAP',
     keywords='astronomy, database, web-service', 
     url = 'https://github.com/Caltech-IPAC/TAP',
     description='VO Table Access Protocol (TAP) web service', 
-    ext_modules=[Extension('writerecs', ['writerecsmodule.c'])])
+    ext_modules=[Extension('writerecs', ['writerecsmodule.c'])],
+    install_requires=['ADQL', 'spatial_index'])
