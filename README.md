@@ -1,4 +1,4 @@
-# TAP
+# nexsciTAP
 NExScI Python Table Access Protocol (TAP) Server
 
 TAP (Table Access Protocol) is a proposed standard by the IVOA (International Virtual Astronomy Alliance).  It defines a web service for searching tables in relational databases using a dialect of SQL called ADQL (Astronomical Data Query Language).  ADQL includes functions that support spatial constraints (<i>e.g.,</i> all records with a degree on the sky of specified coordinates).
