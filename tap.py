@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 #
-#  nph-tap.py 
+#  tap.py 
 #
 #  This is the cgi program to process the TAP query submitted by client  
 # 
@@ -48,7 +48,7 @@
 #
 #      Write database retrieval modules in python, added/modified:
 #
-#      nph-tap.py,
+#      tap.py,
 #      configparam.py,
 #      datadictionary.py,
 #      runquery.py,
@@ -139,7 +139,7 @@ def main():
 
     if debug:
         logging.debug ('')
-        logging.debug (f'Enter nph-tap: pid= {pid:d}')
+        logging.debug (f'Enter TAP service: pid= {pid:d}')
 
 #
 #    print all environ keys, retrieve async/sync spec from PATH_INFO
@@ -162,7 +162,7 @@ def main():
         time00 = datetime.datetime.now()
         time0 = datetime.datetime.now()
         logging.debug ('')
-        logging.debug ('nph-tap start:')
+        logging.debug ('TAP service start:')
 
     sql = ''
     servername = ''
@@ -706,7 +706,7 @@ def main():
         
 #        statustbl = 'status.xml'
 #        statuspath = userWorkdir + '/' + statustbl
-#        statusurl = httpurl + '/cgi-bin/TAP/nph-tap.py/' + \
+#        statusurl = httpurl + '/cgi-bin/TAP/tap.py/' + \
 #            tapcontext + '/' + workspace
 
         if debug:
@@ -1371,7 +1371,7 @@ def main():
 
             delt = (time1 - time00).total_seconds()
             logging.debug ('')
-            logging.debug (f'time (total nph-tap completion): {delt:f}s')
+            logging.debug (f'time (total TAP service completion): {delt:f}s')
 
     else:
         if debug:
@@ -1400,11 +1400,11 @@ def main():
             delt = (time1 - time00).total_seconds()
             logging.debug ('')
             logging.debug (
-                f'time (total nph-tap completion): {delt:f}s, ntot= {ntot:d}')
+                f'time (total TAP service completion): {delt:f}s, ntot= {ntot:d}')
 
     if debug:
         logging.debug ('')
-        logging.debug ('nph-tap done')
+        logging.debug ('TAP service done')
 
     sys.exit()
 
