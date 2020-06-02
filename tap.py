@@ -100,7 +100,7 @@ import numpy as np
 from astropy.io import ascii 
 from astropy.table import Table, Column
 
-from adql import ADQL
+from ADQL.adql import ADQL
 from spatial_index import SpatialIndex
 from datadictionary import dataDictionary
 from runquery import runQuery
