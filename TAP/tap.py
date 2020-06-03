@@ -101,13 +101,14 @@ from astropy.io import ascii
 from astropy.table import Table, Column
 
 from ADQL.adql import ADQL
-from spatial_index import SpatialIndex
-from datadictionary import dataDictionary
-from runquery import runQuery
-from configparam import configParam
-from propfilter import propFilter
 
-from tablenames import TableNames 
+from spatial_index import SpatialIndex
+
+from TAP.datadictionary import dataDictionary
+from TAP.runquery import runQuery
+from TAP.configparam import configParam
+from TAP.propfilter import propFilter
+from TAP.tablenames import TableNames 
 
 
 def main():

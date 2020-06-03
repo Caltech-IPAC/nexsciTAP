@@ -10,7 +10,7 @@ import datetime
 import time
 import cx_Oracle
 
-import writerecs
+from TAP import writerecs
     
 class writeResult:
 

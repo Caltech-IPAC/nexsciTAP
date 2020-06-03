@@ -11,9 +11,9 @@ import cx_Oracle
 import argparse
 import configobj
 
-from writeresult import writeResult
-from datadictionary import dataDictionary
-from tablenames import TableNames
+from TAP.writeresult import writeResult
+from TAP.datadictionary import dataDictionary
+from TAP.tablenames import TableNames
 
 
 class propFilter:

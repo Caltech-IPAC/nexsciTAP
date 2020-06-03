@@ -12,9 +12,9 @@ import cx_Oracle
 import argparse
 import configobj
 
-from datadictionary import dataDictionary
-from writeresult import writeResult 
-from tablenames import TableNames
+from TAP.datadictionary import dataDictionary
+from TAP.writeresult import writeResult 
+from TAP.tablenames import TableNames
 
 
 class runQuery:
