@@ -4,7 +4,7 @@ The NExScI TAP Service
 
 .. toctree::
    :maxdepth: 2
-   :caption: Getting Up and Running
+   :caption: Getting "Up and Running"
 
    install
    configure
