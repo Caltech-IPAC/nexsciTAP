@@ -1,0 +1,325 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Configuration Instructions &mdash; nexsciTAP 1.1.3 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Operations Issues" href="operations.html" />
+    <link rel="prev" title="Installation Instructions" href="install.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> nexsciTAP
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Getting Up and Running</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation Instructions</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Configuration Instructions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="operations.html">Operations Issues</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Appendices</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tap_architecture.html">Behind the Scenes: How the TAP Service Works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tap_schema.html">Setting up Your TAP_SCHEMA Tables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="spatial_index.html">DBMS-Agnostic Spatial Indexing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="loading.html">Adding Spatial Indexing to Your Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ADQL_translation.html">Converting ADQL to Local SQL</a></li>
+<li class="toctree-l1"><a class="reference internal" href="extending.html">Extending the Service</a></li>
+</ul>
+<p class="caption"><span class="caption-text">The Code</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="spatial_index_docs.html">spatial_index Docstrings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="adql_docs.html">ADQL Docstrings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tap_docs.html">TAP Docstrings</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">nexsciTAP</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Configuration Instructions</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/configure.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="configuration-instructions">
+<h1>Configuration Instructions<a class="headerlink" href="#configuration-instructions" title="Permalink to this headline">¶</a></h1>
+<p>Here we have a little bit of a chicken-and-egg problem.  A few of the parameters
+in the configuration file presumes some understanding of the spatial indexing.
+We will describe the parameters as we encounter them but for a real understanding
+please refer to later sections.</p>
+<p>As we say in the previous section, starting the NExScI TAP service does not require
+any parameters but of course there are a number of things it needs before it can
+really do anything.  Many of these parameters (such as where to put workspace files
+and the password to log into the DBMS) cannot be known to the end users.</p>
+<p>To consolidate this all in one place, the service reads a number of configuration
+parameters from a file, found by referring to an environment variable “TAP_CONFIG”.
+This file is read using the fairly standard ConfigObj package and uses the common
+INI format, originally from Windows.  The data is is simple line-based keyword/value
+format and has (optionally) section labels (in square brackets).  It can be
+hierarchical, though we don’t need or use that complexity.</p>
+<p>We will illustrate our TAP.conf file through a complete example.  Note that a
+number of these parameters can be defaulted, though it is generally a good idea
+to be explicit for clarity:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">webserver</span><span class="p">]</span>
+<span class="n">DSN</span><span class="o">=</span><span class="n">exo_tap</span>
+<span class="n">TAP_WORKDIR</span><span class="o">=/</span><span class="n">work</span>
+<span class="n">TAP_WORKURL</span><span class="o">=/</span><span class="n">workspace</span>
+<span class="n">ISIS_TMPDIR</span><span class="o">=/</span><span class="n">tmp</span>
+<span class="n">HTTP_URL</span><span class="o">=</span><span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">exoplanetarchive</span><span class="o">.</span><span class="n">ipac</span><span class="o">.</span><span class="n">caltech</span><span class="o">.</span><span class="n">edu</span>
+<span class="n">HTTP_PORT</span><span class="o">=</span><span class="mi">80</span>
+<span class="n">CGI_PGM</span><span class="o">=/</span><span class="n">TAP</span>
+
+<span class="c1"># Spatial indexing settings</span>
+<span class="n">ADQL_MODE</span><span class="o">=</span><span class="n">HTM</span>
+<span class="n">ADQL_LEVEL</span><span class="o">=</span><span class="mi">20</span>
+<span class="n">ADQL_COLNAME</span><span class="o">=</span><span class="n">htm20</span>
+<span class="n">ADQL_ENCODING</span><span class="o">=</span><span class="n">BASE10</span>
+<span class="n">ADQL_XCOL</span><span class="o">=</span><span class="n">x</span>
+<span class="n">ADQL_YCOL</span><span class="o">=</span><span class="n">y</span>
+<span class="n">ADQL_ZCOL</span><span class="o">=</span><span class="n">z</span>
+
+<span class="p">[</span><span class="n">exo_tap</span><span class="p">]</span>
+<span class="n">Driver</span><span class="o">=/</span><span class="n">usr</span><span class="o">/</span><span class="n">lib</span><span class="o">/</span><span class="n">oracle</span><span class="o">/</span><span class="mf">12.2</span><span class="o">/</span><span class="n">client64</span><span class="o">/</span><span class="n">lib</span><span class="o">/</span><span class="n">libsqora</span><span class="o">.</span><span class="n">so</span><span class="o">.</span><span class="mf">12.1</span>
+<span class="n">Description</span><span class="o">=</span><span class="n">Oracle</span> <span class="mi">12</span><span class="n">g</span> <span class="n">ODBC</span> <span class="n">driver</span>
+<span class="n">ServerName</span><span class="o">=</span><span class="n">exodev</span>
+<span class="n">UserID</span><span class="o">=</span><span class="n">exo_tap</span>
+<span class="n">Password</span><span class="o">=</span><span class="n">XXXXXXXX</span>
+</pre></div>
+</div>
+<p>In order, here is what each parameter means, starting with the ones describing
+the machine and service configuration:</p>
+<ul class="simple">
+<li><p><strong>DSN</strong> We are leveraging the Oracle formalism in our initial release and will
+probaby generalize this as we add DBMSs.  Here DSN stands for “Data Source Name”
+and the entry (“exo_tap”) refers to the block of five parameters at the bottom
+of this file. All very Oracle-specific and likely to be different for other databases.</p></li>
+<li><p><strong>TAP_WORKDIR</strong> This is a the absolute path to the disk space NExScI TAP is supposed
+to use as working space.  It will create a “TAP” subdirectory here and then a collection
+of temporary, uniquely-named session subdirectories of that.</p></li>
+<li><p><strong>TAP_WORKURL</strong> The above disk space needs to be URL-accessible (and you have to
+arrange with your web server to make it so).  This is the base URL to the same space.</p></li>
+<li><p><strong>ISIS_TMPDIR</strong> There are a few truly transient files that get create (and deleted)
+here and there in the processing.  We just put these in /tmp but you have the option
+to use some other space instead.</p></li>
+<li><p><strong>HTTP_URL</strong> A TAP session can involve multiple HTTP connections for various bits
+of information.  So the machine address needs to be folded in in several places.</p></li>
+<li><p><strong>HTTP_PORT</strong> And the port number as well (often the standard 80).</p></li>
+<li><p><strong>CGI_PGM</strong> Similarly, we need to know how to address the NExScI TAP service
+executable.  By default, this would be something like “/cgi-bin/nph-tap.py” but
+you may want to use an alias to streamline the address (we do in this example).
+Setting that up is again a matter on web server configuration.</p></li>
+</ul>
+<p>Spatial Indexing Settings.  Refer to the indexing documentation for a better
+understanding.  Here we will be terse:</p>
+<ul class="simple">
+<li><p><strong>ADQL_MODE</strong> We support two sky tesselations for our spatial indexing. Here we
+are using HTM (Heirarchical Triangular Mesh) as opposed to HPX (HEALPix).</p></li>
+<li><p><strong>ADQL_LEVEL</strong> Any tesselation recurse arbitrarily deeply.  The level specify
+how deep this is and correspond to a smallest “cell” size (here HTM 20 cells are
+about 0.3 arcseconds on a side).</p></li>
+<li><p><strong>ADQL_COLNAME</strong> For our custom spatial indexing to work, tables need to include
+the index value column explicitly.  The obvious name here would be “htm20” (it is
+for us) but you may have some reason to use another name.</p></li>
+<li><p><strong>ADQL_ENCODING</strong> This one is arcane and only really applies to HTM in practice.
+Since tesselations are based on recursive decomposition of spatial cells into
+four, sometimes (and mostly for debugging) it is nice to have database values
+be base 4 numbers.  But this increasing the number of digits by a lot and normally
+regular base 10 numbers are easier to store.</p></li>
+<li><p><strong>ADQL_XCOL</strong> The spatial indexing cell numbers allow very quick subsetting but
+the results are only approximate (<em>i.e.</em> some of the records in a “matching” cell
+are outside the exact geometry defined (like a cone on the sky).  Including the
+(x,y,z) geometric tree-vector coordinates of the location allow us to perform an
+exact secondary filter of the data.  Again, you may not want to use the name ‘x’
+for this x-column so we let you set the name explicitly here.</p></li>
+<li><p><strong>ADQL_YCOL</strong> Ditto for the y-column name.</p></li>
+<li><p><strong>ADQL_ZCOL</strong> And the z-column name.</p></li>
+</ul>
+<p>Database DSN (Data Source Name) Parameters.  Setting up the DBMS is up to you.  In
+the case of Oracle, the following are well-known quantities you can get from your
+DBA:</p>
+<ul class="simple">
+<li><p><strong>Driver</strong> The path to the Oracle connection library.</p></li>
+<li><p><strong>Description</strong> We probably don’t need this ourselves but it is part of the set
+of standard connection parameters.</p></li>
+<li><p><strong>ServerName</strong> The core information for making a connection is the “server name”
+as configured in Oracle.</p></li>
+<li><p><strong>UserID</strong> Once you initiate a connection, you will need a valid user iD.</p></li>
+<li><p><strong>Password</strong> And password.  These three parameters are the arguments to the
+cx_Oracle Python package initiation.  cx_Oracle is conformant to the Python DB
+API 2.0 spec.  Other databases will have different detailed connection parameters.</p></li>
+</ul>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="operations.html" class="btn btn-neutral float-right" title="Operations Issues" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="install.html" class="btn btn-neutral float-left" title="Installation Instructions" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, NExScI / IPAC / Caltech
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
