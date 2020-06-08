@@ -161,8 +161,8 @@ memory structure like the following::
    [ ]
    [desc]
 
-From this, we identify the "geometry" block (actually any specially identified
-function and replace them with a placeholder token::
+From this, we identify the "geometry" blocks (actually any specially identified
+functions) and replace them with placeholder` tokens::
 
    token  0:   [select]
    token  1:   [ ]
