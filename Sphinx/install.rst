@@ -11,7 +11,7 @@ CGI programs, you can just do the following::
 
     pip install nexsciTAP
 
-the create a Python executable in you "/cgi-bin" directory tree (whereever
+then create a Python executable in your "/cgi-bin" directory tree (wherever
 you have that set up (we use .../cgi-bin/TAP/nph-tap.py under Apache)::
 
     /bin/env python
@@ -20,7 +20,7 @@ you have that set up (we use .../cgi-bin/TAP/nph-tap.py under Apache)::
 
     tap.main()
 
-You now have an operational TAP service (that won't work).  
+You now have an operational TAP service (that can't do anything).  
 
 Before it can do its job, you need to give it a bunch of configuration
 information, including:
@@ -50,7 +50,7 @@ Once you have these downloaded, you can run the standard::
 
    python setup.py bdist_wheel
 
-command and then "pip install" the wheel file in the ./dist subdirectory
+command and then "pip install" the wheel file this builds in the ./dist subdirectory
 for each package.  This gets us to the same place as the "pip install" in the
 Quickstart.  We still have to add the same CGI program and configuration file.
 
