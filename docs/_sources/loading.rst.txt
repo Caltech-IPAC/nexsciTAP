@@ -23,9 +23,10 @@ Augmenting Your Tables with the Necessary Columns
 There are four columns you will need to add if you are going to support our built-in 
 spatial indexing: x, y, z and spt_ind.  The first three are the unit sphere geometry
 three-vector of the point and are calculated simply as::
-x = sin(RA) * cos(Dec)
-y = cos(RA) * cos(Dec)
-z = sin(Dec)
+
+   x = sin(RA) * cos(Dec)
+   y = cos(RA) * cos(Dec)
+   z = sin(Dec)
 
 It is best to maintain theses as full double precision numbers.
 
