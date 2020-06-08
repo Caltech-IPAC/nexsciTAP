@@ -385,7 +385,7 @@ a form usable by the DBMS:</p>
 <p>With these data structures, we can fairly easily move the TOP specification inside the WHERE
 clause as a constraint on ROWNUM and convert each CONTAINS() block into the equivalent constraints
 on the (x,y,z) and spatial index (here ‘htm20’) columns using the tools
-described <a class="reference external" href="spatial_index">here</a>:</p>
+described in <a class="reference internal" href="spatial_index.html"><span class="doc">DBMS-Agnostic Spatial Indexing</span></a> xxxxx:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">select</span> <span class="n">ra</span><span class="p">,</span> <span class="n">dec</span>
 <span class="kn">from</span> <span class="nn">iraspsc</span>
 <span class="n">where</span> <span class="p">(((</span><span class="o">-</span><span class="mf">0.797580403011</span><span class="o">*</span><span class="n">x</span><span class="p">)</span><span class="o">+</span><span class="p">(</span><span class="mf">0.603104711077</span><span class="o">*</span><span class="n">y</span><span class="p">)</span><span class="o">+</span><span class="p">(</span><span class="o">-</span><span class="mf">0.011410881210</span><span class="o">*</span><span class="n">z</span><span class="p">)</span><span class="o">&gt;=</span><span class="mf">9.999999945169e-01</span><span class="p">)</span>

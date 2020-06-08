@@ -223,7 +223,7 @@ a form usable by the DBMS::
 With these data structures, we can fairly easily move the TOP specification inside the WHERE 
 clause as a constraint on ROWNUM and convert each CONTAINS() block into the equivalent constraints 
 on the (x,y,z) and spatial index (here 'htm20') columns using the tools 
-described `here <spatial_index>`__::
+described in :doc:`spatial_index` xxxxx::
 
    select ra, dec
    from iraspsc
