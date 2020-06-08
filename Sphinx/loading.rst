@@ -38,3 +38,6 @@ is a dependency of nexsciTAP.  If you are working in C, download the source
 
 Computing Values for the New Columns
 ------------------------------------
+There is code for computing all this in the SpatialIndex package.  The underlying
+libraries there are written in C and there is an example program (SpatialIndex/src/sptIndx.c)
+that adds (x,y,z) and both HTM and HPX spatial index ID columns to a CSV file.
