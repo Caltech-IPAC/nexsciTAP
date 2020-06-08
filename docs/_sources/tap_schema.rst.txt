@@ -11,6 +11,9 @@ describing your holdings.  Pretty much everything about these tables is fixed:
 
 - They must reside in a separate DBMS "schema" named TAP_SCHEMA
 
+See the TAP specification (http://www.ivoa.net/documents/TAP/), section 4 for
+details.
+
 All of this is in aid of data mining; a user can issue a set of canned queries
 against your database to determine your holdings and they can find columns 
 by their function (*e.g.,* coordinates).
