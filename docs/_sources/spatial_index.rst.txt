@@ -117,8 +117,8 @@ four in such a way as to maintain equal area in each sub-cell.  This is importan
 for the original use but doesn't matter for database indexing.
 
 
-Optimization
-------------
+Optimal Tesselation
+-------------------
 There is no best tesselation and the "best" tesselation depth depends on the 
 set of queries that are most commonly sent to your DBMS.  Level 20 depth (as
 we used above) results in ~arcsecond cells and level 7 is around half a degree.

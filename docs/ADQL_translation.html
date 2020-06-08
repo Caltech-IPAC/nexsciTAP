@@ -92,7 +92,10 @@
 <li class="toctree-l1"><a class="reference internal" href="tap_schema.html">Setting up Your TAP_SCHEMA Tables</a></li>
 <li class="toctree-l1"><a class="reference internal" href="spatial_index.html">DBMS-Agnostic Spatial Indexing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="loading.html">Adding Spatial Indexing to Your Data</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Converting ADQL to Local SQL</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Converting ADQL to Local SQL</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#our-approach">Our Approach</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="extending.html">Extending the Service</a></li>
 </ul>
 <p class="caption"><span class="caption-text">The Code</span></p>
@@ -166,6 +169,239 @@
             
   <div class="section" id="converting-adql-to-local-sql">
 <h1>Converting ADQL to Local SQL<a class="headerlink" href="#converting-adql-to-local-sql" title="Permalink to this headline">¶</a></h1>
+<p>Like most standards, SQL left enough ambiguity and there were enough things missing
+that existing implementations vary enough to be noticeable.  In defining the
+Astronomical Data Query Language (ADQL) the VO community picked specific solutions
+for some of this.</p>
+<p>An example of this is the mechanism for cutting off the number of returned records.
+Different systems use the following to achieve this effect:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">select</span> <span class="o">*</span> <span class="kn">from</span> <span class="nn">mytbl</span> <span class="n">LIMIT</span> <span class="mi">100</span>
+
+<span class="n">select</span> <span class="n">TOP</span> <span class="mi">100</span> <span class="o">*</span> <span class="kn">from</span> <span class="nn">mytbl</span>
+
+<span class="n">select</span> <span class="n">FIRST</span> <span class="mi">100</span> <span class="o">*</span> <span class="kn">from</span> <span class="nn">mytbl</span>
+
+<span class="n">select</span> <span class="o">*</span> <span class="kn">from</span> <span class="nn">mytbl</span> <span class="n">WHERE</span> <span class="n">ROWNUM</span> <span class="o">&lt;=</span> <span class="mi">100</span>
+</pre></div>
+</div>
+<p>ADQL chose to go with the TOP construct.</p>
+<p>But the main difference between ADQL and SQL was the addition of a suite of
+geometric functions to support spatial queries (and the assumption that there
+would be spatial indexing underneath them to provide speed).  This is not
+supported intrinsically in any variant of SQL, though there are extensions
+to several DBMSs that provide the underpinnings this functionality would need.</p>
+<p>In the absence of any standard, the VO community defined a set of functions
+to be implemented as necessary.  For example, a cone search would be
+accomplished with the “CONTAINS()” function (as in “circle contains database
+point”):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">where</span> <span class="n">CONTAINS</span><span class="p">(</span><span class="n">POINT</span><span class="p">(</span><span class="s1">&#39;icrs&#39;</span><span class="p">,</span> <span class="n">ra</span><span class="p">,</span> <span class="n">dec</span><span class="p">),</span> <span class="n">CIRCLE</span><span class="p">(</span><span class="s1">&#39;icrs&#39;</span><span class="p">,</span> <span class="mf">34.</span><span class="p">,</span> <span class="mf">45.</span> <span class="mf">0.1</span><span class="p">))</span> <span class="o">=</span> <span class="mi">1</span>
+</pre></div>
+</div>
+<p>Here we have defined a circle (in the ICRS coordinate system) centered at
+(34.,45.) and having a radius of 0.1 degrees and are comparing it to the
+set of points on the sky defined by the RA and Dec columns from a database
+table (also in the ICRS coordinate system).  Since CONTAINS() is a function
+it has to have a value and CONTAINS() value returns 1 or 0 for True/False.</p>
+<p>In a simple system with a single CONTAINS() constraint, this could be
+implemented as a post-filter but this approach rapidly falls apart, both
+as the table gets large and if the function is used repeatedly in an
+AND/OR query.</p>
+<div class="section" id="our-approach">
+<h2>Our Approach<a class="headerlink" href="#our-approach" title="Permalink to this headline">¶</a></h2>
+<p>Rather than dive into the guts of all the DBMSs, we have chosen a simpler
+approach.  Since the bulk of any ADQL query is going to match the local
+DBMS SQL just fine, we decided to pre-process the ADQL into local SQL
+before giving it to the engine.</p>
+<p>We use Oracle internally (because of a Caltech site license), so that is
+our first implementation.</p>
+<p>We will start with the following ADQL:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">select</span> <span class="n">TOP</span> <span class="mi">100</span> <span class="n">ra</span><span class="p">,</span> <span class="n">dec</span>
+<span class="kn">from</span> <span class="nn">iraspsc</span>
+<span class="n">where</span> <span class="n">contains</span><span class="p">(</span><span class="n">point</span><span class="p">(</span><span class="s1">&#39;icrs&#39;</span><span class="p">,</span> <span class="n">ra</span><span class="p">,</span> <span class="n">dec</span><span class="p">),</span> <span class="n">circle</span><span class="p">(</span><span class="s1">&#39;GALACTIC&#39;</span><span class="p">,</span> <span class="mf">234.56</span><span class="p">,</span> <span class="mf">34.567</span><span class="p">,</span> <span class="mf">0.006</span><span class="p">))</span> <span class="o">=</span> <span class="mi">1</span>
+      <span class="ow">and</span> <span class="n">glat</span> <span class="o">&gt;</span> <span class="mf">34.567</span>
+<span class="n">order</span> <span class="n">by</span> <span class="n">dec</span> <span class="n">desc</span>
+</pre></div>
+</div>
+<p>In order to modify the construction of the statement, we need to first
+take the ADQL apart.  However, we don’t need to fully characterize it in
+the way a database engine would and in particular we don’t need to
+“validate” the structure (or column names or anything else;  the DBMS
+is going to do that later).  We just need to have the pieces of the query
+in a form that can be put back together and where the principal components
+are identified (<em>e.g.,</em> the beginning and end of the WHERE clause, where
+each CONTAINS() function appears (and other functions like POINT(),
+CIRCLE(), POLYGON() and DISTANCE()).</p>
+<p>For this we can use a non-validating parser package like the pure
+Python ‘sqlparse’.  Sqlparse turns an SQL (ADQL) statement into a
+memory structure like the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">select</span><span class="p">]</span>
+<span class="p">[</span> <span class="p">]</span>
+<span class="n">Identifier</span><span class="p">:</span> <span class="p">[</span><span class="n">ra</span><span class="p">]</span>
+<span class="n">TokenList</span><span class="p">:</span>
+   <span class="p">[</span><span class="n">ra</span><span class="p">]</span>
+<span class="p">[,]</span>
+<span class="p">[</span> <span class="p">]</span>
+<span class="p">[</span><span class="n">dec</span><span class="p">]</span>
+<span class="p">[</span> <span class="p">]</span>
+<span class="p">[</span><span class="n">from</span><span class="p">]</span>
+<span class="p">[</span> <span class="p">]</span>
+<span class="n">Identifier</span><span class="p">:</span> <span class="p">[</span><span class="n">iraspsc</span><span class="p">]</span>
+<span class="n">TokenList</span><span class="p">:</span>
+   <span class="p">[</span><span class="n">iraspsc</span><span class="p">]</span>
+<span class="p">[</span> <span class="p">]</span>
+<span class="n">Where</span><span class="p">:</span>
+   <span class="p">[</span><span class="n">where</span><span class="p">]</span>
+   <span class="p">[</span> <span class="p">]</span>
+   <span class="n">TokenList</span><span class="p">:</span>
+      <span class="n">TokenList</span><span class="p">:</span>
+         <span class="n">Identifier</span><span class="p">:</span> <span class="p">[</span><span class="n">contains</span><span class="p">]</span>
+         <span class="n">TokenList</span><span class="p">:</span>
+            <span class="p">[</span><span class="n">contains</span><span class="p">]</span>
+         <span class="n">TokenList</span><span class="p">:</span>
+            <span class="p">[(]</span>
+            <span class="n">IdentifierList</span><span class="p">:</span>
+               <span class="n">TokenList</span><span class="p">:</span>
+                  <span class="n">Identifier</span><span class="p">:</span> <span class="p">[</span><span class="n">point</span><span class="p">]</span>
+                  <span class="n">TokenList</span><span class="p">:</span>
+                     <span class="p">[</span><span class="n">point</span><span class="p">]</span>
+                  <span class="n">TokenList</span><span class="p">:</span>
+                     <span class="p">[(]</span>
+                     <span class="n">IdentifierList</span><span class="p">:</span>
+                        <span class="p">[</span><span class="s1">&#39;icrs&#39;</span><span class="p">]</span>
+                        <span class="p">[,]</span>
+                        <span class="p">[</span> <span class="p">]</span>
+                        <span class="n">Identifier</span><span class="p">:</span> <span class="p">[</span><span class="n">ra</span><span class="p">]</span>
+                        <span class="n">TokenList</span><span class="p">:</span>
+                           <span class="p">[</span><span class="n">ra</span><span class="p">]</span>
+                     <span class="p">[,]</span>
+                     <span class="p">[</span> <span class="p">]</span>
+                     <span class="p">[</span><span class="n">dec</span><span class="p">]</span>
+                     <span class="p">[)]</span>
+               <span class="p">[,]</span>
+               <span class="p">[</span> <span class="p">]</span>
+               <span class="n">TokenList</span><span class="p">:</span>
+                  <span class="n">Identifier</span><span class="p">:</span> <span class="p">[</span><span class="n">circle</span><span class="p">]</span>
+                  <span class="n">TokenList</span><span class="p">:</span>
+                     <span class="p">[</span><span class="n">circle</span><span class="p">]</span>
+                  <span class="n">TokenList</span><span class="p">:</span>
+                     <span class="p">[(]</span>
+                     <span class="n">IdentifierList</span><span class="p">:</span>
+                        <span class="p">[</span><span class="s1">&#39;GALACTIC&#39;</span><span class="p">]</span>
+                        <span class="p">[,]</span>
+                        <span class="p">[</span> <span class="p">]</span>
+                        <span class="p">[</span><span class="mf">234.56</span><span class="p">]</span>
+                        <span class="p">[,]</span>
+                        <span class="p">[</span> <span class="p">]</span>
+                        <span class="p">[</span><span class="mf">34.567</span><span class="p">]</span>
+                        <span class="p">[,]</span>
+                        <span class="p">[</span> <span class="p">]</span>
+                        <span class="p">[</span><span class="mf">0.006</span><span class="p">]</span>
+                     <span class="p">[)]</span>
+            <span class="p">[)]</span>
+      <span class="p">[</span> <span class="p">]</span>
+      <span class="p">[</span><span class="o">=</span><span class="p">]</span>
+      <span class="p">[</span> <span class="p">]</span>
+      <span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+   <span class="p">[</span> <span class="p">]</span>
+   <span class="p">[</span><span class="ow">and</span><span class="p">]</span>
+   <span class="p">[</span> <span class="p">]</span>
+   <span class="n">TokenList</span><span class="p">:</span>
+      <span class="n">Identifier</span><span class="p">:</span> <span class="p">[</span><span class="n">glat</span><span class="p">]</span>
+      <span class="n">TokenList</span><span class="p">:</span>
+         <span class="p">[</span><span class="n">glat</span><span class="p">]</span>
+      <span class="p">[</span> <span class="p">]</span>
+      <span class="p">[</span><span class="o">&gt;</span><span class="p">]</span>
+      <span class="p">[</span> <span class="p">]</span>
+      <span class="p">[</span><span class="mf">34.567</span><span class="p">]</span>
+   <span class="p">[</span> <span class="p">]</span>
+<span class="p">[</span><span class="n">order</span> <span class="n">by</span><span class="p">]</span>
+<span class="p">[</span> <span class="p">]</span>
+<span class="p">[</span><span class="n">dec</span><span class="p">]</span>
+<span class="p">[</span> <span class="p">]</span>
+<span class="p">[</span><span class="n">desc</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>From this, we identify the “geometry” block (actually any specially identified
+function and replace them with a placeholder token:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">token</span>  <span class="mi">0</span><span class="p">:</span>   <span class="p">[</span><span class="n">select</span><span class="p">]</span>
+<span class="n">token</span>  <span class="mi">1</span><span class="p">:</span>   <span class="p">[</span> <span class="p">]</span>
+<span class="n">token</span>  <span class="mi">2</span><span class="p">:</span>   <span class="p">[</span><span class="n">ra</span><span class="p">]</span>
+<span class="n">token</span>  <span class="mi">3</span><span class="p">:</span>   <span class="p">[,]</span>
+<span class="n">token</span>  <span class="mi">4</span><span class="p">:</span>   <span class="p">[</span> <span class="p">]</span>
+<span class="n">token</span>  <span class="mi">5</span><span class="p">:</span>   <span class="p">[</span><span class="n">dec</span><span class="p">]</span>
+<span class="n">token</span>  <span class="mi">6</span><span class="p">:</span>   <span class="p">[</span> <span class="p">]</span>
+<span class="n">token</span>  <span class="mi">7</span><span class="p">:</span>   <span class="p">[</span><span class="n">from</span><span class="p">]</span>
+<span class="n">token</span>  <span class="mi">8</span><span class="p">:</span>   <span class="p">[</span> <span class="p">]</span>
+<span class="n">token</span>  <span class="mi">9</span><span class="p">:</span>   <span class="p">[</span><span class="n">iraspsc</span><span class="p">]</span>
+<span class="n">token</span> <span class="mi">10</span><span class="p">:</span>   <span class="p">[</span> <span class="p">]</span>
+<span class="n">token</span> <span class="mi">11</span><span class="p">:</span>   <span class="p">[</span><span class="n">where</span><span class="p">]</span>
+<span class="n">token</span> <span class="mi">12</span><span class="p">:</span>   <span class="p">[</span> <span class="p">]</span>
+<span class="n">token</span> <span class="mi">13</span><span class="p">:</span>   <span class="p">[</span><span class="n">GEOM</span><span class="p">]</span>
+<span class="n">token</span> <span class="mi">14</span><span class="p">:</span>   <span class="p">[]</span>
+<span class="n">token</span> <span class="mi">15</span><span class="p">:</span>   <span class="p">[]</span>
+<span class="n">token</span> <span class="mi">16</span><span class="p">:</span>   <span class="p">[]</span>
+<span class="n">token</span> <span class="mi">17</span><span class="p">:</span>   <span class="p">[]</span>
+<span class="n">token</span> <span class="mi">18</span><span class="p">:</span>   <span class="p">[</span> <span class="p">]</span>
+<span class="n">token</span> <span class="mi">19</span><span class="p">:</span>   <span class="p">[</span><span class="ow">and</span><span class="p">]</span>
+<span class="n">token</span> <span class="mi">20</span><span class="p">:</span>   <span class="p">[</span> <span class="p">]</span>
+<span class="n">token</span> <span class="mi">21</span><span class="p">:</span>   <span class="p">[</span><span class="n">glat</span><span class="p">]</span>
+<span class="n">token</span> <span class="mi">22</span><span class="p">:</span>   <span class="p">[</span> <span class="p">]</span>
+<span class="n">token</span> <span class="mi">23</span><span class="p">:</span>   <span class="p">[</span><span class="o">&gt;</span><span class="p">]</span>
+<span class="n">token</span> <span class="mi">24</span><span class="p">:</span>   <span class="p">[</span> <span class="p">]</span>
+<span class="n">token</span> <span class="mi">25</span><span class="p">:</span>   <span class="p">[</span><span class="mf">34.567</span><span class="p">]</span>
+<span class="n">token</span> <span class="mi">26</span><span class="p">:</span>   <span class="p">[</span> <span class="p">]</span>
+<span class="n">token</span> <span class="mi">27</span><span class="p">:</span>   <span class="p">[</span><span class="n">order</span> <span class="n">by</span><span class="p">]</span>
+<span class="n">token</span> <span class="mi">28</span><span class="p">:</span>   <span class="p">[</span> <span class="p">]</span>
+<span class="n">token</span> <span class="mi">29</span><span class="p">:</span>   <span class="p">[</span><span class="n">dec</span><span class="p">]</span>
+<span class="n">token</span> <span class="mi">30</span><span class="p">:</span>   <span class="p">[</span> <span class="p">]</span>
+<span class="n">token</span> <span class="mi">31</span><span class="p">:</span>   <span class="p">[</span><span class="n">desc</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>The geometry information is saved in a structure the will be converted into
+a form usable by the DBMS:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">funcData</span><span class="p">:</span>
+<span class="p">[</span>
+  <span class="p">{</span>
+    <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;contains&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;args&#39;</span><span class="p">:</span>
+    <span class="p">[</span>
+      <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;point&#39;</span><span class="p">,</span>
+       <span class="s1">&#39;args&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;&#39;icrs&#39;&quot;</span><span class="p">,</span> <span class="s1">&#39;ra&#39;</span><span class="p">,</span> <span class="s1">&#39;dec&#39;</span><span class="p">]},</span>
+
+      <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;circle&#39;</span><span class="p">,</span>
+       <span class="s1">&#39;args&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;&#39;GALACTIC&#39;&quot;</span><span class="p">,</span> <span class="s1">&#39;234.56&#39;</span><span class="p">,</span> <span class="s1">&#39;34.567&#39;</span><span class="p">,</span> <span class="s1">&#39;0.006&#39;</span><span class="p">]}</span>
+    <span class="p">],</span>
+
+    <span class="s1">&#39;val&#39;</span><span class="p">:</span> <span class="s1">&#39;1&#39;</span>
+  <span class="p">}</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+<p>With these data structures, we can fairly easily move the TOP specification inside the WHERE
+clause as a constraint on ROWNUM and convert each CONTAINS() block into the equivalent constraints
+on the (x,y,z) and spatial index (here ‘htm20’) columns using the tools
+described <a class="reference external" href="spatial_index">here</a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">select</span> <span class="n">ra</span><span class="p">,</span> <span class="n">dec</span>
+<span class="kn">from</span> <span class="nn">iraspsc</span>
+<span class="n">where</span> <span class="p">(((</span><span class="o">-</span><span class="mf">0.797580403011</span><span class="o">*</span><span class="n">x</span><span class="p">)</span><span class="o">+</span><span class="p">(</span><span class="mf">0.603104711077</span><span class="o">*</span><span class="n">y</span><span class="p">)</span><span class="o">+</span><span class="p">(</span><span class="o">-</span><span class="mf">0.011410881210</span><span class="o">*</span><span class="n">z</span><span class="p">)</span><span class="o">&gt;=</span><span class="mf">9.999999945169e-01</span><span class="p">)</span>
+      <span class="n">AND</span> <span class="p">(</span>   <span class="p">(</span><span class="n">htm14</span> <span class="o">=</span> <span class="mi">2569468753</span><span class="p">)</span>
+           <span class="n">OR</span> <span class="p">(</span><span class="n">htm14</span> <span class="o">=</span> <span class="mi">2569468758</span><span class="p">)</span>
+           <span class="n">OR</span> <span class="p">(</span><span class="n">htm14</span> <span class="o">=</span> <span class="mi">2569468766</span><span class="p">)</span>
+           <span class="n">OR</span> <span class="p">(</span><span class="n">htm14</span> <span class="n">BETWEEN</span> <span class="mi">2569468865</span> <span class="n">AND</span> <span class="mi">2569468879</span><span class="p">))</span>
+       <span class="ow">and</span> <span class="n">glat</span> <span class="o">&gt;</span> <span class="mf">34.567</span><span class="p">)</span>
+      <span class="n">AND</span> <span class="n">ROWNUM</span> <span class="o">&lt;=</span> <span class="mi">100</span>
+<span class="n">order</span> <span class="n">by</span> <span class="n">dec</span> <span class="n">desc</span>
+</pre></div>
+</div>
+<p>Note that the spatial part of this translation is DBMS-agnostic; it would work just as
+well with PostgreSQL or SQLite.  The conversion of the TOP directive is actually hardest
+for Oracle; other DBMSs would be even easier.</p>
+<p>Our databases do not contain records which themselves have extended geometry and we
+can therefore forego ADQL functions like OVERLAPS().  To address this, we would first
+choose a DBMS with intrinsic multi-dimensional support (<em>e.g.,</em> a R-Tree index).
+Our translator could then convert the geometric functions into the extended local
+DBMS syntax.</p>
+</div>
 </div>
 
 

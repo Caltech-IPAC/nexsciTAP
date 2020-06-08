@@ -95,7 +95,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#composite-indices">Composite Indices</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#tesselation">Tesselation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#htm-and-hpx">HTM and HPX</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#optimization">Optimization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#optimal-tesselation">Optimal Tesselation</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="loading.html">Adding Spatial Indexing to Your Data</a></li>
@@ -274,8 +274,8 @@ characteristics.  The HEALPix cells are diamonds on the sky and get divided into
 four in such a way as to maintain equal area in each sub-cell.  This is important
 for the original use but doesn’t matter for database indexing.</p>
 </div>
-<div class="section" id="optimization">
-<h2>Optimization<a class="headerlink" href="#optimization" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="optimal-tesselation">
+<h2>Optimal Tesselation<a class="headerlink" href="#optimal-tesselation" title="Permalink to this headline">¶</a></h2>
 <p>There is no best tesselation and the “best” tesselation depth depends on the
 set of queries that are most commonly sent to your DBMS.  Level 20 depth (as
 we used above) results in ~arcsecond cells and level 7 is around half a degree.
