@@ -166,6 +166,21 @@
             
   <div class="section" id="setting-up-your-tap-schema-tables">
 <h1>Setting up Your TAP_SCHEMA Tables<a class="headerlink" href="#setting-up-your-tap-schema-tables" title="Permalink to this headline">¶</a></h1>
+<p>The TAP specification requires that you maintain in your database a set of tables
+describing your holdings.  Pretty much everything about these tables is fixed:</p>
+<ul class="simple">
+<li><p>They have fixed names (like TABLES and COLUMNS)</p></li>
+<li><p>They contain a minimum set of columns with fixed names (like COLUMN_NAME)</p></li>
+<li><p>They must reside in a separate DBMS “schema” named TAP_SCHEMA</p></li>
+</ul>
+<p>All of this is in aid of data mining; a user can issue a set of canned queries
+against your database to determine your holdings and they can find columns
+by their function (<em>e.g.,</em> coordinates).</p>
+<p>The NExScI TAP service makes use of the TAP_SCHEMA tables to inform the
+presentation of data.  In particular, if you want fine control over the
+formatting of output, you can add a FORMAT column to the COLUMNS table
+and populate it with C/Python format strings like “6d” to get six-digit
+integers or “20s” for twenty-character strings.</p>
 </div>
 
 
