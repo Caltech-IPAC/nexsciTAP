@@ -1,5 +1,8 @@
 Converting ADQL to Local SQL
 ============================
+
+SQL Variations Between DBMSs
+----------------------------
 Like most standards, SQL left enough ambiguity and there were enough things missing
 that existing implementations vary enough to be noticeable.  In defining the
 Astronomical Data Query Language (ADQL) the VO community picked specific solutions
@@ -238,8 +241,15 @@ Note that the spatial part of this translation is DBMS-agnostic; it would work j
 well with PostgreSQL or SQLite.  The conversion of the TOP directive is actually hardest
 for Oracle; other DBMSs would be even easier.
 
+Extending the Paradigm
+----------------------
 Our databases do not contain records which themselves have extended geometry and we 
 can therefore forego ADQL functions like OVERLAPS().  To address this, we would first 
 choose a DBMS with intrinsic multi-dimensional support (*e.g.,* a R-Tree index).  
 Our translator could then convert the geometric functions into the extended local
 DBMS syntax.
+
+We tried to write the ADQL translation code in particular to facilitate extension
+and reuse.  If you have a different DBMS or need for extended objects or even 
+new special functions for your own use, we would be happy to work with you to
+extend this capability.

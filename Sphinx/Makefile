@@ -22,3 +22,4 @@ help:
 github:
 	@make html
 	@cp -rv _build/html/* ../docs/
+	@(cd ../docs; git add --verbose .)

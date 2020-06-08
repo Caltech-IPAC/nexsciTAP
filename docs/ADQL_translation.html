@@ -93,7 +93,9 @@
 <li class="toctree-l1"><a class="reference internal" href="spatial_index.html">DBMS-Agnostic Spatial Indexing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="loading.html">Adding Spatial Indexing to Your Data</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Converting ADQL to Local SQL</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#sql-variations-between-dbmss">SQL Variations Between DBMSs</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#our-approach">Our Approach</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#extending-the-paradigm">Extending the Paradigm</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="extending.html">Extending the Service</a></li>
@@ -169,6 +171,8 @@
             
   <div class="section" id="converting-adql-to-local-sql">
 <h1>Converting ADQL to Local SQL<a class="headerlink" href="#converting-adql-to-local-sql" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="sql-variations-between-dbmss">
+<h2>SQL Variations Between DBMSs<a class="headerlink" href="#sql-variations-between-dbmss" title="Permalink to this headline">¶</a></h2>
 <p>Like most standards, SQL left enough ambiguity and there were enough things missing
 that existing implementations vary enough to be noticeable.  In defining the
 Astronomical Data Query Language (ADQL) the VO community picked specific solutions
@@ -206,6 +210,7 @@ it has to have a value and CONTAINS() value returns 1 or 0 for True/False.</p>
 implemented as a post-filter but this approach rapidly falls apart, both
 as the table gets large and if the function is used repeatedly in an
 AND/OR query.</p>
+</div>
 <div class="section" id="our-approach">
 <h2>Our Approach<a class="headerlink" href="#our-approach" title="Permalink to this headline">¶</a></h2>
 <p>Rather than dive into the guts of all the DBMSs, we have chosen a simpler
@@ -396,11 +401,18 @@ described <a class="reference external" href="spatial_index">here</a>:</p>
 <p>Note that the spatial part of this translation is DBMS-agnostic; it would work just as
 well with PostgreSQL or SQLite.  The conversion of the TOP directive is actually hardest
 for Oracle; other DBMSs would be even easier.</p>
+</div>
+<div class="section" id="extending-the-paradigm">
+<h2>Extending the Paradigm<a class="headerlink" href="#extending-the-paradigm" title="Permalink to this headline">¶</a></h2>
 <p>Our databases do not contain records which themselves have extended geometry and we
 can therefore forego ADQL functions like OVERLAPS().  To address this, we would first
 choose a DBMS with intrinsic multi-dimensional support (<em>e.g.,</em> a R-Tree index).
 Our translator could then convert the geometric functions into the extended local
 DBMS syntax.</p>
+<p>We tried to write the ADQL translation code in particular to facilitate extension
+and reuse.  If you have a different DBMS or need for extended objects or even
+new special functions for your own use, we would be happy to work with you to
+extend this capability.</p>
 </div>
 </div>
 
