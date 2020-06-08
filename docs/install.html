@@ -179,7 +179,7 @@ CGI programs, you can just do the following:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">nexsciTAP</span>
 </pre></div>
 </div>
-<p>the create a Python executable in you “/cgi-bin” directory tree (whereever
+<p>then create a Python executable in your “/cgi-bin” directory tree (wherever
 you have that set up (we use …/cgi-bin/TAP/nph-tap.py under Apache):</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">env</span> <span class="n">python</span>
 
@@ -188,7 +188,7 @@ you have that set up (we use …/cgi-bin/TAP/nph-tap.py under Apache):</p>
 <span class="n">tap</span><span class="o">.</span><span class="n">main</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>You now have an operational TAP service (that won’t work).</p>
+<p>You now have an operational TAP service (that can’t do anything).</p>
 <p>Before it can do its job, you need to give it a bunch of configuration
 information, including:</p>
 <ul class="simple">
@@ -212,7 +212,7 @@ packages), you can build them yourself from source in GitHub.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">setup</span><span class="o">.</span><span class="n">py</span> <span class="n">bdist_wheel</span>
 </pre></div>
 </div>
-<p>command and then “pip install” the wheel file in the ./dist subdirectory
+<p>command and then “pip install” the wheel file this builds in the ./dist subdirectory
 for each package.  This gets us to the same place as the “pip install” in the
 Quickstart.  We still have to add the same CGI program and configuration file.</p>
 </div>

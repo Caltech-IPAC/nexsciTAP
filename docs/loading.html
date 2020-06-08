@@ -188,10 +188,12 @@ You can add the spatial capabilities later (though it will require reloading the
 <h2>Augmenting Your Tables with the Necessary Columns<a class="headerlink" href="#augmenting-your-tables-with-the-necessary-columns" title="Permalink to this headline">¶</a></h2>
 <p>There are four columns you will need to add if you are going to support our built-in
 spatial indexing: x, y, z and spt_ind.  The first three are the unit sphere geometry
-three-vector of the point and are calculated simply as::
-x = sin(RA) * cos(Dec)
-y = cos(RA) * cos(Dec)
-z = sin(Dec)</p>
+three-vector of the point and are calculated simply as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">x</span> <span class="o">=</span> <span class="n">sin</span><span class="p">(</span><span class="n">RA</span><span class="p">)</span> <span class="o">*</span> <span class="n">cos</span><span class="p">(</span><span class="n">Dec</span><span class="p">)</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">cos</span><span class="p">(</span><span class="n">RA</span><span class="p">)</span> <span class="o">*</span> <span class="n">cos</span><span class="p">(</span><span class="n">Dec</span><span class="p">)</span>
+<span class="n">z</span> <span class="o">=</span> <span class="n">sin</span><span class="p">(</span><span class="n">Dec</span><span class="p">)</span>
+</pre></div>
+</div>
 <p>It is best to maintain theses as full double precision numbers.</p>
 <p>The fourth is the spatial index value (an integer).  If you need to generate this, use
 our SpatialIndex package.  If you are working in Python, you already have this as it

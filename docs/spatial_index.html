@@ -90,7 +90,14 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="tap_architecture.html">Behind the Scenes: How the TAP Service Works</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tap_schema.html">Setting up Your TAP_SCHEMA Tables</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">DBMS-Agnostic Spatial Indexing</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">DBMS-Agnostic Spatial Indexing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#b-tree">B-Tree</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#composite-indices">Composite Indices</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#tesselation">Tesselation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#htm-and-hpx">HTM and HPX</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#optimization">Optimization</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="loading.html">Adding Spatial Indexing to Your Data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ADQL_translation.html">Converting ADQL to Local SQL</a></li>
 <li class="toctree-l1"><a class="reference internal" href="extending.html">Extending the Service</a></li>
@@ -166,6 +173,118 @@
             
   <div class="section" id="dbms-agnostic-spatial-indexing">
 <h1>DBMS-Agnostic Spatial Indexing<a class="headerlink" href="#dbms-agnostic-spatial-indexing" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="b-tree">
+<h2>B-Tree<a class="headerlink" href="#b-tree" title="Permalink to this headline">¶</a></h2>
+<p>There is a standard technique all DBMSs use to speed up queries.  If you have a constraint
+like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">where</span> <span class="n">ra</span> <span class="n">between</span> <span class="mf">214.</span> <span class="ow">and</span> <span class="mf">215.</span> <span class="ow">and</span> <span class="n">dec</span> <span class="n">between</span> <span class="mf">34.</span> <span class="ow">and</span> <span class="mf">35.</span>
+</pre></div>
+</div>
+<p>the DMBS checks to see if it has an “index” on either ra or dec.  The index itself is
+based on a sorted list of the parameter values; going through this list in order between
+the low and high value allows the database to jump from record to record in the table,
+therefore only having to do two I/Os for every record touched (<em>i.e.,</em> the index and
+the table record).  If this is a small fraction of the table total, the overall time
+is much small than reading through the whole table (the alternative).</p>
+<p>Only one of the constraints can be used for any given query (we can only step through
+the records in one order).  The DBM also contains a histogram of the values for each
+indexed columns and estimates up front which constraint will involve the smaller
+number of I/Os.  In the same way, it can determine whether the index chosen is worth
+the effort.  For instance, a range that would touch half the records would actually
+take longer than “scanning” just the data records.</p>
+<p>This technology is referred to as a “B+-Tree”.</p>
+<p>There are a number of practical consequences of this approach.  Some columns have values
+that are distributed in ways that make indexing ineffective.  Index too many columns and
+you waste too much time deciding on the right index.  Indices on columns no one ever
+constrains are pointless.</p>
+</div>
+<div class="section" id="composite-indices">
+<h2>Composite Indices<a class="headerlink" href="#composite-indices" title="Permalink to this headline">¶</a></h2>
+<p>DBMSs also support “composite” indices but these are of limited use.  Essentially, if
+you can make a sorted list on one parameter and this ends up collecting records into
+groups where all the records have the same value for that parameter, you can the sort
+inside the group by a second parameter.  And if the nested sorting helps in queries
+then a composite index is useful.</p>
+<p>Our primary goal here is to speed up spatial queries and for position parameters in
+astronomical tables neither of the above conditions is satisfied:  If you sort on
+RA first you don’t get large groups of equal RA so then sorting on Dec gets you nowhere
+and even if the RAs did group, a composite index of this sort doesn’t help with
+region queries.</p>
+</div>
+<div class="section" id="tesselation">
+<h2>Tesselation<a class="headerlink" href="#tesselation" title="Permalink to this headline">¶</a></h2>
+<p>Somewhat surprisingly, there is a technique that allows the basic B-Tree index to
+speed up 2D spatial queries.  It involves subdividing the sky into little regions
+(<em>e.g.,</em> RA/Dec boxes though that particular “tesselation” has a bunch of problems)
+and assigning a single integer ID to each region in such a way that IDs that are
+close together numerically have a strong tendency to be close together on the sky.</p>
+<p>This is accomplished using a Z-ordered curve (<a class="reference external" href="https://en.wikipedia.org/wiki/Z-order_curve">https://en.wikipedia.org/wiki/Z-order_curve</a>).
+There are different “tesselations” of the sky (our library supports two) but the
+choice has little effect on query speed.  More important is how “deep” you go in
+the heirarchical subdivision though even this is a secondary effect.</p>
+<p>Basically, for each record you identify a cell ID and save this in the database
+record.   All coordinates inside the same cell will get the same ID.  The ID column is
+indexed using the DBMS built-in B-Tree functionality.</p>
+<p>Then later when processing search request that asks for all the records in a cone on the
+sky, you determine which cell IDs overlap the region (in whole or in part).  A further
+refinement is to turn this list into a set of ID ranges.</p>
+<p>Sending this constraint on ID to the DBMS, you would get back all the records in all
+those cells, a superset of the data you want.  But if you also store in the database
+columns giving the 3-vector coordinates of each point you can augment the query
+with a constraint that weeds out just the records matching the exact geometry.</p>
+<p>Here’s a concrete example.  Tesselating the sky using HTM cells (more on that later),
+we can turn a constraint like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">within</span> <span class="mi">1</span> <span class="n">degree</span> <span class="n">of</span> <span class="p">(</span><span class="mf">293.5607117</span><span class="p">,</span><span class="o">-</span><span class="mf">23.1312775</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>into the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">where</span> <span class="p">((</span><span class="mf">0.367585916751</span><span class="o">*</span><span class="n">x</span><span class="p">)</span><span class="o">+</span><span class="p">(</span><span class="o">-</span><span class="mf">0.842946005983</span><span class="o">*</span><span class="n">y</span><span class="p">)</span><span class="o">+</span><span class="p">(</span><span class="o">-</span><span class="mf">0.392839184405</span><span class="o">*</span><span class="n">z</span><span class="p">)</span><span class="o">&gt;=</span><span class="mf">9.998476951564e-01</span><span class="p">)</span>
+      <span class="n">AND</span> <span class="p">(</span>   <span class="p">(</span><span class="n">htm20</span> <span class="n">BETWEEN</span> <span class="mi">12301323534336</span> <span class="n">AND</span> <span class="mi">12301390315519</span><span class="p">)</span>
+           <span class="n">OR</span> <span class="p">(</span><span class="n">htm20</span> <span class="n">BETWEEN</span> <span class="mi">12301457686528</span> <span class="n">AND</span> <span class="mi">12301591642111</span><span class="p">)</span>
+           <span class="n">OR</span> <span class="p">(</span><span class="n">htm20</span> <span class="n">BETWEEN</span> <span class="mi">12303202516992</span> <span class="n">AND</span> <span class="mi">12303336472575</span><span class="p">)</span>
+           <span class="n">OR</span> <span class="p">(</span><span class="n">htm20</span> <span class="n">BETWEEN</span> <span class="mi">12303411970048</span> <span class="n">AND</span> <span class="mi">12303470133123</span><span class="p">)</span>
+           <span class="n">OR</span> <span class="p">(</span><span class="n">htm20</span> <span class="n">BETWEEN</span> <span class="mi">12303604908032</span> <span class="n">AND</span> <span class="mi">12303621685247</span><span class="p">)</span>
+           <span class="n">OR</span> <span class="p">(</span><span class="n">htm20</span> <span class="n">BETWEEN</span> <span class="mi">12303739125760</span> <span class="n">AND</span> <span class="mi">12303755902975</span><span class="p">)</span>
+           <span class="n">OR</span> <span class="p">(</span><span class="n">htm20</span> <span class="n">BETWEEN</span> <span class="mi">12303776874496</span> <span class="n">AND</span> <span class="mi">12303805452032</span><span class="p">)</span>
+           <span class="n">OR</span> <span class="p">(</span><span class="n">htm20</span> <span class="n">BETWEEN</span> <span class="mi">12304074670080</span> <span class="n">AND</span> <span class="mi">12304103830527</span><span class="p">)</span>
+           <span class="n">OR</span> <span class="p">(</span><span class="n">htm20</span> <span class="n">BETWEEN</span> <span class="mi">12304130244608</span> <span class="n">AND</span> <span class="mi">12304138559487</span><span class="p">)</span>
+           <span class="n">OR</span> <span class="p">(</span><span class="n">htm20</span> <span class="n">BETWEEN</span> <span class="mi">12304276258816</span> <span class="n">AND</span> <span class="mi">12304544432127</span><span class="p">)</span>
+           <span class="n">OR</span> <span class="p">(</span><span class="n">htm20</span> <span class="n">BETWEEN</span> <span class="mi">12304814964736</span> <span class="n">AND</span> <span class="mi">12304879861755</span><span class="p">)</span>
+           <span class="n">OR</span> <span class="p">(</span><span class="n">htm20</span> <span class="n">BETWEEN</span> <span class="mi">12304947085312</span> <span class="n">AND</span> <span class="mi">12305047748607</span><span class="p">)</span>
+           <span class="n">OR</span> <span class="p">(</span><span class="n">htm20</span> <span class="n">BETWEEN</span> <span class="mi">12305065050112</span> <span class="n">AND</span> <span class="mi">12305079143739</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>So the DBMS does all the work.  This query may look long-winded but it is no problem
+for the DBMS and quite fast.</p>
+</div>
+<div class="section" id="htm-and-hpx">
+<h2>HTM and HPX<a class="headerlink" href="#htm-and-hpx" title="Permalink to this headline">¶</a></h2>
+<p>As we said, the choice of tessselation scheme doesn’t matter too much.  In fact,
+we have done a study for NASA that demonstrates this.  But since we have the
+capability (from that study) we have include two in our software suite.</p>
+<p>Heirarchical Triangular Mesh (HTM) subdivides the sky into triangles.  The base
+level is the set of eight triangles defined by the poles and the cardinal points
+around the equator.  The nesting of the levels is done by finding the midpoints
+of the upper triangle sides and connecting them.  This subdivides the triangle
+into four roughly equal parts; three containing the original corners and one
+in the center.</p>
+<p>HPX is base on the HEALPix tesselation.  HEALPix was originally developed to
+support numerical integration on the sphere and has a number of interesting
+characteristics.  The HEALPix cells are diamonds on the sky and get divided into
+four in such a way as to maintain equal area in each sub-cell.  This is important
+for the original use but doesn’t matter for database indexing.</p>
+</div>
+<div class="section" id="optimization">
+<h2>Optimization<a class="headerlink" href="#optimization" title="Permalink to this headline">¶</a></h2>
+<p>There is no best tesselation and the “best” tesselation depth depends on the
+set of queries that are most commonly sent to your DBMS.  Level 20 depth (as
+we used above) results in ~arcsecond cells and level 7 is around half a degree.
+In test we ran of the full range of cell sizes and a with cone searches on
+the sky ranging from arcsecond to a few degrees, uniformly distributed
+in log(radius), the optimum was somewhere in the center (around level 14).</p>
+<p>See the next section for information on software tools to help populate the
+x, y, z and spatial-index columns.</p>
+</div>
 </div>
 
 
