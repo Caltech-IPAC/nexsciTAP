@@ -244,7 +244,7 @@ for Oracle; other DBMSs would be even easier.
 Extending the Paradigm
 ----------------------
 Our databases do not contain records which themselves have extended geometry and we 
-can therefore forego ADQL functions like OVERLAPS().  To address this, we would first 
+can therefore forego ADQL functions like INTERSECTS().  To address this, we would first 
 choose a DBMS with intrinsic multi-dimensional support (*e.g.,* a R-Tree index).  
 Our translator could then convert the geometric functions into the extended local
 DBMS syntax.
@@ -253,3 +253,36 @@ We tried to write the ADQL translation code in particular to facilitate extensio
 and reuse.  If you have a different DBMS or need for extended objects or even 
 new special functions for your own use, we would be happy to work with you to
 extend this capability.
+
+
+What's Not Implemented in ADQL
+------------------------------
+There are a few ADQL geometry functions we have not implemented.  Here is a complete list:
+
+
+- **INTERSECTS** Test whether two geometric objects intersect.  Specifically, whether a
+  geometric object stored in the database intersects with a region defined by the user.
+  This is a very useful capability be requires R-Tree indexing to implement correctly.
+  We will address this in future with DBMSs that have R-Trees built in but can't with 
+  the generic tesselation spatial index we have here.
+
+- **AREA, CENTROID**  Calculate the area/centroid of a geometric object. Most useful if
+  applied to geometric objects in the database.  Less so (as here) where the user would
+  be creating a region definition themselves and could easily do these calculations on
+  it.  We could implement this if someone defines a use case but for now we are leaving
+  it out.
+
+- **COORD1, COORD2, COORDSYS**  Extract the coordinate values or coordinate system from
+  a POINT() object.  Again, most useful if there are stored POINT objects in the database
+  but we could implement if a use case is defined.
+
+- **REGION** A generic approach to region specification in string form.  This may well be
+  of great use in the future but at the moment there wouldn't appear to be a great call
+  for it.
+
+There are also constructs that are technically possible (like CONTAINS(CIRCLE(), CIRCLE())
+but again this makes the most sense where we are talking about CIRCLE objects stored in 
+the database.  Most other use can be achieve by using CONTAINS(POINT(), CIRCLE()) and padding
+the size of the second circle with the radius of the first.  Again, if someone can define
+a real need, we will revisit this.
+
