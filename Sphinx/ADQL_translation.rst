@@ -292,8 +292,8 @@ Convex Polygons
 In the ADQL specification there is no specification that polygons should be convex
 (actually, it doesn't even specify that the line can't cross).  This distinction is
 important in practice since the usual way of checking whether a point is in a polygon
-(go around the outside of the polygon and see if the point is alway on the same side 
-of the edge lines by doing cross- and dot-products (fails for a concave polygon).
+(*i.e.,* go around the outside of the polygon and see if the point is alway on the same side 
+of the edge lines by doing cross- and dot-products) fails for a concave polygon.
 
 There are various ways to compensate for this, including decomposing the concave 
 polygon into a set of convex ones or finding the bounding convex polygon for the 
