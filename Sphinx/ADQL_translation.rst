@@ -286,3 +286,17 @@ the database.  Most other use can be achieve by using CONTAINS(POINT(), CIRCLE()
 the size of the second circle with the radius of the first.  Again, if someone can define
 a real need, we will revisit this.
 
+
+Convex Polygons
+---------------
+In the ADQL specification there is no specification that polygons should be convex
+(actually, it doesn't even specify that the line can't cross).  This distinction is
+important in practice since the usual way of checking whether a point is in a polygon
+(go around the outside of the polygon and see if the point is alway on the same side 
+of the edge lines by doing cross- and dot-products (fails for a concave polygon).
+
+There are various ways to compensate for this, including decomposing the concave 
+polygon into a set of convex ones or finding the bounding convex polygon for the 
+region and post-filtering the database points found.  None of these is easy to 
+implement in practice, so for now we consider it an error to use anything but a
+convex polygon.
