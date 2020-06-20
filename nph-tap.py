@@ -2,4 +2,4 @@
 
 from TAP import tap
 
-tap.main()
+tap.Tap()
