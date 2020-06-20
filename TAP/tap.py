@@ -1,78 +1,3 @@
-#!/usr/bin/env python
-#
-#
-#  tap.py 
-#
-#  This is the cgi program to process the TAP query submitted by client  
-# 
-#    1.  extract input CGI parameters,
-#
-#    2.  extract parameters from TAP config file (configparam.py), 
-#        the config file name is TAP.ini and its path is specified by 
-#        the environment variable 'TAP_CONF',
-#
-#        config parameters include web server and database server parameters,
-#
-#    3.  convert ADQL query to ORACLE query (adql.py),
-#
-#    4.  perform database retrieval (runquery.py), or
-#        database retrieval with proprietary filtering (propfilter.py)
-#
-#
-#  Inputs parameters:
-#
-#    query (char):  an ADQL query
-#    format (char): votable, ipac, cvs, or tvs format (alternatively 'responseformat')
-#    maxrec (int): integer number of records to be returned
-#
-#
-#  Default inputs:
-#
-#        REQUEST:  doQuery,
-#        LANG:     ADQL,
-#        PHASE:    RUN,
-#        FORMAT:   votable,
-#        MAXREC:   0 (i.e. unlimited)
-#
-#  Date: February 05, 2019 (Mihseh Kong)
-#
-#      Database retrieval module is in C
-#
-#
-#  Revision: June 03, 2019 (Mihseh Kong)
-#
-#      Consolidate all config parameters to Tap.ini in IBM .ini format
-#
-#
-#  Revision: July 19, 2019 (Mihseh Kong)
-#
-#      Write database retrieval modules in python, added/modified:
-#
-#      tap.py,
-#      configparam.py,
-#      datadictionary.py,
-#      runquery.py,
-#      propfilter.py,
-#      writeresult.py
-#
-#
-#  Revision: August 1, 2019 (Mihseh Kong)
-#
-#      Add two input columns: fileid and accessid in TAP.ini so different 
-#      projects (KOA and NEID) may share the same propfilter.py module.
-#
-#  Revision: August 8, 2019 (Mihseh Kong)
-#
-#      make up output format for columns not in DD based on cx_Oracle
-#      cursor description array, and added them to DD
-#       
-#      Add racol, deccol in config file
-#
-#  Revision: December 01, 2019 (Mihseh Kong)
-#
-#      write writerecsmodule.c to do the IO in C for speed 
-#       
-
 import os
 import sys
 import fcntl
@@ -111,214 +36,86 @@ from TAP.propfilter import propFilter
 from TAP.tablenames import TableNames 
 
 
-def main():
+class Tap:
+    
+    """
+    This class is the main program to process the TAP query submitted by client,
+    it performs the following functionality:
+ 
+    1.  extract input parameters,
+
+    2.  read parameters from TAP configuration file (TAP.ini), the path of the 
+        config file is specified by the environment variable 'TAP_CONF',
+
+        'TAP.ini' contains web server info, database server info, spatial 
+        index setting, and special column names for filtering the proprietary
+        data.
+
+    3.  convert ADQL query to ORACLE query,
+
+    4.  retrieve metadata from database, applies proprietary filter if
+        it is specified by the project.
+
+
+    Input TAP parameters:
+    ---------------------
+
+        query (char):  an ADQL query (required)
+   
+        phase (char): the phase it input is either PENDING or RUN, 
+                      if not specified, set to PENDING.
+
+        format (char): output metadata table format: 
+                       votable, ipac, cvs, or tvs; default is votable.
+    
+        maxrec (int): integer number of records to be returned; 
+                      if not specified, all records are returned.
+
+    
+    Date: February 05, 2019 (Mihseh Kong)
+    """       
+
 #
-# { 
+# {  class tap 
 #
+    
     pid = os.getpid()
+    form = cgi.FieldStorage()
    
     debugtime = 0
+    time00 = None
+
     debug = 0
     debugfname = ''
 
     debugfname = '/tmp/tap_' + str(pid) + '.debug'
+    debugfname = '/home/mihseh/tap/server/src.git/nexsciTAP/tap_' + str(pid) + '.debug'
     
-    form = cgi.FieldStorage()
-  
-    if ('debug' in form):
-        debug = 1
-    
-    if ('debugtime' in form):
-        debugtime = 1
-  
-    if ((debug or debugtime) and (len(debugfname) > 0)):
-      
-        logging.basicConfig (filename=debugfname, level=logging.DEBUG)
-    
-        with open (debugfname, 'w') as fdebug:
-            pass
-
-    if debug:
-        logging.debug ('')
-        logging.debug (f'Enter TAP service: pid= {pid:d}')
-
-#
-#    print all environ keys, retrieve async/sync spec from PATH_INFO
-#    environ variable
-#
-    if debug:
-        logging.debug ('')
-        logging.debug ('Environment parameters:')
-        logging.debug ('')
-
-        for key in os.environ.keys():
-            logging.debug (f'{key:s}: {os.environ[key]:20s}')
-  
-    if debug:
-        logging.debug ('')
-        logging.debug ('got here 0')
-        logging.debug ('')
-
-    if debugtime:
-        time00 = datetime.datetime.now()
-        time0 = datetime.datetime.now()
-        logging.debug ('')
-        logging.debug ('TAP service start:')
-
     sql = ''
     servername = ''
     dbtable = ''
     ddtable = ''
-    
     dd = None
-    
-#
-#    default values; initialize phase to PENDING
-#
+  
     param = dict()
-    
-    param['lang'] = 'ADQL'
-    param['phase'] = ''
-    param['request'] = 'doQuery'
-    param['query'] = ''
-    param['format'] = 'votable'
-    param['maxrec'] = -1 
-    maxrecstr = '' 
-   
+    statdict = dict()
+
+
     phase = ''
     errmsg = ''
 
     propflag = -1 
     datalevel = ''
+    instrument = ''
+
     overflow = 0
     maxrec = -1 
+    maxrecstr = ''
 
     ntot = 0
 
-#
-#    retrieve input parameters
-#
     status = ''
     msg = ''
-    
-#    form = cgi.FieldStorage()
-  
-    if debug:
-        logging.debug ('')
-        logging.debug (f'here0')
-   
-
-    querykey = 0
-    for key in form:
-        
-        if debug:
-            logging.debug ('')
-            logging.debug (f'key= {key:s} val= {form[key].value:s}')
-    
-        if (key.lower() == 'propflag'):
-            
-            propflag = int(form[key].value)
-            
-            if debug:
-                logging.debug ('')
-                logging.debug (
-                    f'input propflag= [{propflag:d}]')
-
-        if debug:
-            logging.debug ('')
-            logging.debug (f'propflag= {propflag:d}')
-
-        if (key.lower() == 'lang'):
-            param['lang'] = form[key].value
-
-        if (key.lower() == 'request'):
-            param['request'] = form[key].value
-
-        if (key.lower() == 'phase'):
-            param['phase'] = form[key].value.strip()
-        
-            if debug:
-                logging.debug ('')
-                logging.debug (f'phase= {param["phase"]:s}')
-
-        if (key.lower() == 'query'):
-            param['query'] = form[key].value.strip()
-            querykey = 1
-
-        if (key.lower() == 'format'):
-            param['format'] = form[key].value.strip()
-
-        if (key.lower() == 'responseformat'):
-            param['format'] = form[key].value
-
-        if (key.lower() == 'maxrec'):
-            
-            maxrecstr = form[key].value
-            
-            if debug:
-                logging.debug ('')
-                logging.debug (f'maxrecstr= {maxrecstr:s}')
-           
-    nparam = len(param)
-    
-    if debug:
-        logging.debug ('')
-        logging.debug (f"param['format']= {param['format']:s}")
-
-    format = param['format'].lower()
-    
-    if ((format != 'votable') and \
-        (format != 'ipac') and \
-        (format != 'csv') and \
-        (format != 'tsv')):
-
-        if debug:
-            logging.debug ('')
-            logging.debug ('format error detected')
-      
-        msg = 'Response format (' + format + \
-	    ') must be: votable, ipac, csv, or tsv'
-        
-        printError ('votable', msg)
-  
-
-    maxrec = -1
-    if (len(maxrecstr) > 0):
-        
-        try:
-            maxrec_dbl = float(maxrecstr)
-            if debug:
-                logging.debug ('')
-                logging.debug (f'maxrec_dbl= [{maxrec_dbl:f}]')
-       
-            maxrec = int(maxrec_dbl)
-            if debug:
-                logging.debug ('')
-                logging.debug (f'maxrec= [{maxrec:d}]')
-            
-        except Exception as e:
-                
-            msg = "Failed to convert input maxrec value [" + \
-                param['maxrec'] + "] to integer."
-            printError (format, msg)
-
-
-    if debug:
-        logging.debug ('')
-        logging.debug (f'format= {format:s}')
-        logging.debug (f'maxrec= {maxrec:d}')
-    
-    param['maxrec'] = maxrec
-
-    if debug:
-        logging.debug ('')
-        logging.debug (f'nparam= {nparam:d}')
-        for key in param:
-            if (key == 'maxrec'):
-                logging.debug (f'key= {key:s} value= {param[key]:d}')
-            else:
-                logging.debug (f'key= {key:s} value= {param[key]:s}')
-
     
     tapcontext = ''
     getstatus = 0
@@ -326,1014 +123,1873 @@ def main():
     id = ''
     statuskey = ''
 
+    configpath = ''
     pathinfo = ''
-    if ("PATH_INFO" in os.environ):
-        pathinfo = os.environ["PATH_INFO"]
-
-    if (len(pathinfo) == 0):
-        msg = 'Failed to find PATH_INFO (e.g. sync, async) in URL.'
-        printError (format, msg)
-
-    if debug:
-        logging.debug ('')
-        logging.debug (f'pathinfo= {pathinfo:s}')
     
-    if (pathinfo[0] == '/'):
-        pathinfo = pathinfo[1:]
+    cookiestr = ''
+    cookiename = ''
 
-    if debug:
-        logging.debug ('')
-        logging.debug (f'pathinfo= {pathinfo:s}')
+    workdir = ''
+    workurl = ''
+    httpurl = ''
+    cgipgm  = ''
+
+    userWorkdir = ''
+    workspace = ''
+
+    statustbl = ''
+    statuspath = ''
+    statusurl = ''
+
+    resulttbl = ''
+    resultpath = ''
+    resulturl = ''
+
+    query = ''
+
+
+    def __init__ (self, **kwargs):
+#
+# {  tap.init() 
+#
+        
+        self.form = cgi.FieldStorage()
+  
+        if ('debug' in self.form):
+            self.debug = 1
+   
+        if ('debugtime' in self.form):
+            self.debugtime = 1
+  
+        if ((self.debug or self.debugtime) and (len(self.debugfname) > 0)):
+      
+            logging.basicConfig (filename=self.debugfname, level=logging.DEBUG)
     
-    arr = pathinfo.split ('/')
-    narr = len(arr)
+            with open (self.debugfname, 'w') as fdebug:
+                pass
 
-    if debug:
-        logging.debug ('')
-        logging.debug (f'narr= {narr:d}')
-        for i in range (narr):
-            logging.debug (f'i= {i:d} arr= {arr[i]:s}')
+        if self.debug:
+            logging.debug ('')
+            logging.debug (f'Enter Tap.init(): pid= {self.pid:d}')
+
+#
+#    print all environ keys, retrieve async/sync spec from PATH_INFO
+#    environ variable
+#
+        if self.debug:
+            logging.debug ('')
+            logging.debug ('Environment parameters:')
+            logging.debug ('')
+
+            for key in os.environ.keys():
+                logging.debug (f'{key:s}: {os.environ[key]:20s}')
+  
+        if self.debug:
+            logging.debug ('')
+            logging.debug ('got here 0')
+            logging.debug ('')
+
+        if self.debugtime:
+            self.time00 = datetime.datetime.now()
+            time0 = datetime.datetime.now()
+            logging.debug ('')
+            logging.debug ('TAP service start:')
+
+#
+#    default values; initialize phase to PENDING
+#
+    
+        self.param['lang'] = 'ADQL'
+        self.param['phase'] = ''
+        self.param['request'] = 'doQuery'
+        self.param['query'] = ''
+        self.param['format'] = 'votable'
+        self.param['maxrec'] = -1 
+    
+  
+        if self.debug:
+            logging.debug ('')
+            logging.debug (f'here0')
+   
+
+        self.querykey = 0
+        for key in self.form:
+        
+            if self.debug:
+                logging.debug ('')
+                logging.debug (f'key= {key:s} val= {self.form[key].value:s}')
+    
+            if (key.lower() == 'propflag'):
+            
+                self.propflag = int(self.form[key].value)
+            
+                if self.debug:
+                    logging.debug ('')
+                    logging.debug (f'input propflag= [{self.propflag:d}]')
+
+            if self.debug:
+                logging.debug ('')
+                logging.debug (f'propflag= {self.propflag:d}')
+
+            if (key.lower() == 'lang'):
+                self.param['lang'] = self.form[key].value
+
+            if (key.lower() == 'request'):
+                self.param['request'] = self.form[key].value
+
+            if (key.lower() == 'phase'):
+                self.param['phase'] = self.form[key].value.strip()
+        
+                if self.debug:
+                    logging.debug ('')
+                    logging.debug (f'phase= {self.param["phase"]:s}')
+
+            if (key.lower() == 'query'):
+                self.param['query'] = self.form[key].value.strip()
+                self.querykey = 1
+
+            if (key.lower() == 'format'):
+                self.param['format'] = self.form[key].value.strip()
+
+            if (key.lower() == 'responseformat'):
+                self.param['format'] = self.form[key].value.strip()
+
+            if (key.lower() == 'maxrec'):
+            
+                self.maxrecstr = self.form[key].value
+            
+                if self.debug:
+                    logging.debug ('')
+                    logging.debug (f'maxrecstr= {self.maxrecstr:s}')
+           
+        self.nparam = len(self.param)
+    
+        if self.debug:
+            logging.debug ('')
+            logging.debug (f"param['format']= {self.param['format']:s}")
+
+        self.format = self.param['format'].lower()
+    
+        if ((self.format != 'votable') and \
+            (self.format != 'ipac') and \
+            (self.format != 'csv') and \
+            (self.format != 'tsv')):
+
+            if self.debug:
+                logging.debug ('')
+                logging.debug ('format error detected')
+      
+            self.msg = 'Response format (' + self.format + \
+	        ') must be: votable, ipac, csv, or tsv'
+        
+            self.__printError__ ('votable', self.msg)
+  
+
+        self.maxrec = -1
+        if (len(self.maxrecstr) > 0):
+        
+            try:
+                maxrec_dbl = float(self.maxrecstr)
+                if self.debug:
+                    logging.debug ('')
+                    logging.debug (f'maxrec_dbl= [{maxrec_dbl:f}]')
+       
+                self.maxrec = int(maxrec_dbl)
+                if self.debug:
+                    logging.debug ('')
+                    logging.debug (f'maxrec= [{self.maxrec:d}]')
+            
+            except Exception as e:
+                
+                self.msg = "Failed to convert input maxrec value [" + \
+                    self.param['maxrec'] + "] to integer."
+                self.__printError__ (self.format, self.msg)
+
+
+        if self.debug:
+            logging.debug ('')
+            logging.debug (f'format= {self.format:s}')
+            logging.debug (f'maxrec= {self.maxrec:d}')
+    
+        self.param['maxrec'] = self.maxrec
+
+        if self.debug:
+            logging.debug ('')
+            logging.debug (f'nparam= {self.nparam:d}')
+            
+            for key in self.param:
+                if (key == 'maxrec'):
+                    logging.debug (f'key= {key:s} value= {self.param[key]:d}')
+                else:
+                    logging.debug (f'key= {key:s} value= {self.param[key]:s}')
+
+    
+        if ("PATH_INFO" in os.environ):
+            self.pathinfo = os.environ["PATH_INFO"]
+
+        if (len(self.pathinfo) == 0):
+            self.msg = 'Failed to find PATH_INFO (e.g. sync, async) in URL.'
+            self.__printError__ (self.format, self.msg)
+
+        if self.debug:
+            logging.debug ('')
+            logging.debug (f'pathinfo= {self.pathinfo:s}')
+    
+        if (self.pathinfo[0] == '/'):
+            self.pathinfo = self.pathinfo[1:]
+
+        if self.debug:
+            logging.debug ('')
+            logging.debug (f'pathinfo= {self.pathinfo:s}')
+    
+        arr = self.pathinfo.split ('/')
+        narr = len(arr)
+
+        if self.debug:
+            logging.debug ('')
+            logging.debug (f'narr= {narr:d}')
+            for i in range (narr):
+                logging.debug (f'i= {i:d} arr= {arr[i]:s}')
          
-    if (arr[0] == "async"):
-        tapcontext = 'async'
-    elif (arr[0] == "sync"):
-        tapcontext = 'sync'
+        if (arr[0] == "async"):
+            self.tapcontext = 'async'
+        elif (arr[0] == "sync"):
+            self.tapcontext = 'sync'
  
-    if (narr > 1):
+        if (narr > 1):
         
-        getstatus = 1
-        id = arr[1]
+            self.getstatus = 1
+            self.id = arr[1]
         
-        if (len(id) == 0):
-            msg = 'Failed to find jobid for retrieving job status.'
-            printError (format, msg)
+            if (len(self.id) == 0):
+                self.msg = 'Failed to find jobid for retrieving job status.'
+                self.__printError__ (self.format, self.msg)
 
 
-        len_id = len(id)
-        ind = pathinfo.find(id)
-        i = ind+len_id + 1
-        statuskey = pathinfo[i:]
+            len_id = len(self.id)
+            ind = self.pathinfo.find(self.id)
+            i = ind+len_id + 1
+            self.statuskey = self.pathinfo[i:]
 
-        if (param['phase'] == 'RUN'):
-            getstatus = 0
-            setstatus = 1
+            if (self.param['phase'] == 'RUN'):
+                self.getstatus = 0
+                self.setstatus = 1
 
-    if debug:
-        logging.debug ('')
-        logging.debug (f'statuskey= {statuskey:s}')
-        logging.debug (f'tapcontext= {tapcontext:s}')
-        logging.debug (f'getstatus= {getstatus:d}')
-        logging.debug (f'setstatus= {setstatus:d}')
-        logging.debug (f'id= {id:s}')
+        if self.debug:
+            logging.debug ('')
+            logging.debug (f'statuskey= {self.statuskey:s}')
+            logging.debug (f'tapcontext= {self.tapcontext:s}')
+            logging.debug (f'getstatus= {self.getstatus:d}')
+            logging.debug (f'setstatus= {self.setstatus:d}')
+            logging.debug (f'id= {self.id:s}')
 
         
-#    if ((getstatus == 0) and (querykey == 0)):
-#        msg = "TAP keyword: 'query' not found."
-#        printError (param['format'], msg)
+#        if ((self.getstatus == 0) and (self.querykey == 0)):
+#            msg = "TAP keyword: 'query' not found."
+#            self.__printError__ (param['format'], msg)
 
 #
 #    retrieve cookiestr
 #
-    cookiestr = ''
-    cookiestr = os.getenv ('HTTP_COOKIE', default='')
+        self.cookiestr = os.getenv ('HTTP_COOKIE', default='')
 
-    if debug:
-        logging.debug ('')
-        logging.debug (f'cookiestr= {cookiestr:s}') 
+        if self.debug:
+            logging.debug ('')
+            logging.debug (f'cookiestr= {self.cookiestr:s}') 
 
 #
 #    extract configfile name from TAP_CONF environment variable
 #    Note: make sure TAP_CONF env var is set
 #
-    configpath = ''
-    if ('TAP_CONF' in os.environ):
-        configpath = os.environ['TAP_CONF']
-    else:
-        if debug:
-            logging.debug ('')
-            logging.debug ('Failed to find TAP_CONF environment variable.')
+        if ('TAP_CONF' in os.environ):
+            self.configpath = os.environ['TAP_CONF']
+        else:
+            if self.debug:
+                logging.debug ('')
+                logging.debug ('Failed to find TAP_CONF environment variable.')
         
-        msg = 'Failed to find TAP_CONF environment variable.'
-        printError (format, msg)
+            self.msg = 'Failed to find TAP_CONF environment variable.'
+            self.__printError__ (self.format, self.msg)
 
-    if debug:
-        logging.debug ('')
-        logging.debug (f'configpath= {configpath:s}')
+        if self.debug:
+            logging.debug ('')
+            logging.debug (f'configpath= {self.configpath:s}')
 
 #
 #    retrieve config variables
 #
-    config = None
-    try:
-#        config = configParam (configpath, debug=1)
-        config = configParam (configpath)
+        self.config = None
+        try:
+#            self.config = configParam (self.configpath, debug=1)
+            self.config = configParam (self.configpath)
     
-        if debug:
-            logging.debug ('')
-            logging.debug ('returned config')
+            if self.debug:
+                logging.debug ('')
+                logging.debug ('returned config')
 
-    except Exception as e:
+        except Exception as e:
 
-        if debug:
-            logging.debug ('')
-            logging.debug (f'config exception: {str(e):s}') 
+            if self.debug:
+                logging.debug ('')
+                logging.debug (f'config exception: {str(e):s}') 
         
-        printError (format, str(e))
+            self.__printError__ (self.format, str(e))
 
-    workdir = config.workdir
-    workurl = config.workurl
-    httpurl = config.httpurl
-    cgipgm  = config.cgipgm 
-    cookiename = config.cookiename
+        self.workdir = self.config.workdir
+        self.workurl = self.config.workurl
+        self.httpurl = self.config.httpurl
+        self.cgipgm  = self.config.cgipgm 
+        self.cookiename = self.config.cookiename
    
-    if debug:
-        logging.debug ('')
-        logging.debug (f'workdir= {workdir:s}') 
-        logging.debug (f'workurl= {workurl:s}') 
-        logging.debug (f'httpurl= {httpurl:s}') 
-        logging.debug (f'cgipgm= {cgipgm:s}') 
-        logging.debug (f'cookiename= {cookiename:s}') 
-        logging.debug (f'fileid= {config.fileid:s}') 
-        logging.debug (f'accessid= {config.accessid:s}') 
-        logging.debug (f'racol= {config.racol:s}') 
-        logging.debug (f'deccol= {config.deccol:s}') 
-        logging.debug (f'propfilter= {config.propfilter:s}') 
+        if self.debug:
+            logging.debug ('')
+            logging.debug (f'workdir= {self.workdir:s}') 
+            logging.debug (f'workurl= {self.workurl:s}') 
+            logging.debug (f'httpurl= {self.httpurl:s}') 
+            logging.debug (f'cgipgm= {self.cgipgm:s}') 
+            logging.debug (f'cookiename= {self.cookiename:s}') 
+            logging.debug (f'fileid= {self.config.fileid:s}') 
+            logging.debug (f'accessid= {self.config.accessid:s}') 
+            logging.debug (f'racol= {self.config.racol:s}') 
+            logging.debug (f'deccol= {self.config.deccol:s}') 
+            logging.debug (f'propfilter= {self.config.propfilter:s}') 
 
 #
 #    initialize statdict dict
 #
-    statdict = dict()
-
-        
-    statdict['process_id'] = pid 
-    statdict['owneridlabel'] = 'ownerId xsi:nil="true"'
-    statdict['quotelabel'] = 'quote xsi:nil="true"'
-    statdict['errmsg'] = ''
+        self.statdict['process_id'] = self.pid 
+        self.statdict['owneridlabel'] = 'ownerId xsi:nil="true"'
+        self.statdict['quotelabel'] = 'quote xsi:nil="true"'
+        self.statdict['errmsg'] = ''
     
-    statdict['phase'] = ''
-    statdict['jobid'] = '' 
+        self.statdict['phase'] = ''
+        self.statdict['jobid'] = '' 
     
-    statdict['starttime'] = '' 
-    statdict['destruction'] =  '' 
-    statdict['endtime'] = '' 
-    statdict['duration'] = '0' 
+        self.statdict['starttime'] = '' 
+        self.statdict['destruction'] =  '' 
+        self.statdict['endtime'] = '' 
+        self.statdict['duration'] = '0' 
 
-    statdict['resulturl'] = ''
+        self.statdict['resulturl'] = ''
 
 #
 #    sync or async without input workspace id: make workspace, 
 #    otherwise retrieve workspace from getstatus id
 #
-    userWorkdir = ''
-    workspace = ''
-    
-    if ((tapcontext == 'sync') or \
-        ((tapcontext == 'async') and \
-        (getstatus == 0) and \
-        (setstatus == 0))):
+        if ((self.tapcontext == 'sync') or \
+            ((self.tapcontext == 'async') and \
+            (self.getstatus == 0) and \
+            (self.setstatus == 0))):
 #
-#{  make workspace
-#
-        if debug:
-            logging.debug ('')
-            logging.debug (f'Async without workspace id: make workspace')
-
-#
-#    make TAP subdir if it doesn't exist 
-#
-        tapdir = workdir + '/TAP'
-
-        try:
-            os.makedirs (tapdir, exist_ok=True)
-            os.chmod (tapdir, 0o775)
-    
-        except Exception as e:
-            msg = 'Failed to create ' + tapdir + ': ' + str(e)
-            printError (format , msg) 
-
-        if debug:
-            logging.debug ('')
-            logging.debug (f'tapdir: {tapdir:s} created')
-
-#
+#{   make workspace:
+#    make TAP subdir if it doesn't exist, and 
 #    make a workspace name with unique id
 #
-        try:
-            userWorkdir = tempfile.mkdtemp (prefix='tap_', dir=tapdir)
-    
-        except Exception as e:
-            msg = 'tempfile.mkdtemp exception: ' + str(e)
-            printError (format, msg) 
+            if self.debug:
+                logging.debug ('')
+                logging.debug (f'Async without workspace id: make workspace')
 
-        if debug:
-            logging.debug ('')
-            logging.debug (f'returned tempfile.mkdtemp {userWorkdir:s}')
-   
-        ind = userWorkdir.rfind ('/') 
-        if (ind > 0):
-            workspace = userWorkdir[ind+1:]
+            tapdir = self.workdir + '/TAP'
 
-        if debug:
-            logging.debug ('')
-            logging.debug (f'workspace= {workspace:s}')
-   
-   
-        try:
-            os.makedirs(userWorkdir, exist_ok=True)
-            os.chmod (userWorkdir, 0o775)
+            try:
+                os.makedirs (tapdir, exist_ok=True)
+                os.chmod (tapdir, 0o775)
     
-        except Exception as e:
+            except Exception as e:
+                self.msg = 'Failed to create ' + tapdir + ': ' + str(e)
+                self.__printError__ (self.format , self.msg) 
+
+            if self.debug:
+                logging.debug ('')
+                logging.debug (f'tapdir: {tapdir:s} created')
+
+            
+            try:
+                self.userWorkdir = tempfile.mkdtemp (prefix='tap_', dir=tapdir)
+    
+            except Exception as e:
+                self.msg = 'tempfile.mkdtemp exception: ' + str(e)
+                self.__printError__ (self.format, self.msg) 
+
+            if self.debug:
+                logging.debug ('')
+                logging.debug (
+                    f'returned tempfile.mkdtemp {self.userWorkdir:s}')
+   
+            ind = self.userWorkdir.rfind ('/') 
+            if (ind > 0):
+                self.workspace = self.userWorkdir[ind+1:]
+
+            if self.debug:
+                logging.debug ('')
+                logging.debug (f'workspace= {self.workspace:s}')
+   
+   
+            try:
+                os.makedirs(self.userWorkdir, exist_ok=True)
+                os.chmod (self.userWorkdir, 0o775)
+    
+            except Exception as e:
         
-            msg = 'os.makedir exception: ' + str(e)
-            printError (format, msg) 
+                self.msg = 'os.makedir exception: ' + str(e)
+                self.__printError__ (self.format, self.msg) 
 
-        if debug:
-            logging.debug ('')
-            logging.debug (f'userWorkdir {userWorkdir:s} created')
+            if self.debug:
+                logging.debug ('')
+                logging.debug (f'userWorkdir {self.userWorkdir:s} created')
 #
 #} end of make workspace
 #
-    else:
+        else:
 #
 #{ retrieve workspace from id 
 #
-        workspace = id
-        userWorkdir = workdir + '/TAP/' + workspace
+            self.workspace = self.id
+            self.userWorkdir = self.workdir + '/TAP/' + self.workspace
         
 #
 #} end of retrieve workspace 
 #
-    if debug:
-        logging.debug ('')
-        logging.debug (f'workspace= {workspace:s}')
-        logging.debug (f'userWorkdir= {userWorkdir:s}')
+        if self.debug:
+            logging.debug ('')
+            logging.debug (f'workspace= {self.workspace:s}')
+            logging.debug (f'userWorkdir= {self.userWorkdir:s}')
 
 #
 #   make up status and result table names
 #
-    statustbl = 'status.xml'
-    statuspath = userWorkdir + '/' + statustbl
-    statusurl = httpurl + '/' + cgipgm + \
-        '/' + tapcontext + '/' + workspace
+        self.statustbl = 'status.xml'
+        self.statuspath = self.userWorkdir + '/' + self.statustbl
+        self.statusurl = self.httpurl + '/' + self.cgipgm + \
+            '/' + self.tapcontext + '/' + self.workspace
 
-    if debug:
-        logging.debug ('')
-        logging.debug (f'statuspath= {statuspath:s}')
-        logging.debug (f'statusurl= {statusurl:s}')
+        if self.debug:
+            logging.debug ('')
+            logging.debug (f'statuspath= {self.statuspath:s}')
+            logging.debug (f'statusurl= {self.statusurl:s}')
   
 
-    resulttbl = ''
-    if (format == 'votable'):
-        resulttbl = 'result.xml'
-    elif (format == 'ipac'):
-        resulttbl = 'result.tbl'
-    elif (format == 'csv'):
-        resulttbl = 'result.csv'
-    elif (format == 'tsv'):
-        resulttbl = 'result.tsv'
+        self.resulttbl = ''
+        if (self.format == 'votable'):
+            self.resulttbl = 'result.xml'
+        elif (self.format == 'ipac'):
+            self.resulttbl = 'result.tbl'
+        elif (self.format == 'csv'):
+            self.resulttbl = 'result.csv'
+        elif (self.format == 'tsv'):
+            self.resulttbl = 'result.tsv'
 
-#    elif (format == 'html'):
-#        resulttbl = 'result.html'
-#    elif (format == 'json'):
-#        resulttbl = 'result.json'
 
-    resultpath = userWorkdir + '/' + resulttbl
-    resulturl = httpurl + workurl + '/TAP/' + workspace + '/' \
-        + resulttbl 
+        self.resultpath = self.userWorkdir + '/' + self.resulttbl
+        self.resulturl = self.httpurl + self.workurl + '/TAP/' + \
+            self.workspace + '/' + self.resulttbl 
 
-    if debug:
-        logging.debug ('')
-        logging.debug (f'resultpath= {resultpath:s}')
-        logging.debug (f'resulturl= {resulturl:s}')
+        if self.debug:
+            logging.debug ('')
+            logging.debug (f'resultpath= {self.resultpath:s}')
+            logging.debug (f'resulturl= {self.resulturl:s}')
 
 #
 #    if async and phase == PENDING: send 303 with statusurl and exit
 #
-    if ((tapcontext == 'async') and \
-        (getstatus == 0) and \
-        (setstatus == 0) and \
-        (len(param['phase']) == 0)):
+        if ((self.tapcontext == 'async') and \
+            (self.getstatus == 0) and \
+            (self.setstatus == 0) and \
+            (len(self.param['phase']) == 0)):
     
 #
 #{  if phase not specified: set to PENDING and exit
 #
-
-        statdict['phase'] = 'PENDING'
-        statdict['jobid'] = workspace
+            self.statdict['phase'] = 'PENDING'
+            self.statdict['jobid'] = self.workspace
     
-        if debug:
-            logging.debug ('')
-            logging.debug ('call writeStatusMessage:')
-            logging.debug (f'maxrec= {maxrec:d}')
+            if self.debug:
+                logging.debug ('')
+                logging.debug ('call writeStatusMessage:')
+                logging.debug (f'maxrec= {self.maxrec:d}')
 
-        if debug:
-            writeStatusMsg (statuspath, statdict, param, debug=1)    
-        else:
-            writeStatusMsg (statuspath, statdict, param)    
+            if self.debug:
+                self.__writeStatusMsg__ (self.statuspath, self.statdict, self.param, \
+                    debug=1)    
+            else:
+                self.__writeStatusMsg__ (self.statuspath, self.statdict, self.param)    
     
-        if debug:
-            logging.debug ('')
-            logging.debug ('returned writeStatusMessage')
+            if self.debug:
+                logging.debug ('')
+                logging.debug ('returned writeStatusMessage')
+                logging.debug (f'statusurl= {self.statusurl:s}')
 
-
-        if debug:
-            logging.debug ('')
-            logging.debug (f'statusurl= {statusurl:s}')
-
-        print ("HTTP/1.1 303 See Other\r")
-        print (f"Location: %s\r\n\r" % statusurl)
-        print (f"Redirect Location: %s" % statusurl)
-        sys.stdout.flush()
-    
-        sys.exit()
+        
+            print ("HTTP/1.1 303 See Other\r")
+            print (f"Location: %s\r\n\r" % self.statusurl)
+            print (f"Redirect Location: %s" % self.statusurl)
+            sys.stdout.flush()
+            sys.exit()
 #
 #} end of PENDING case
 #
-    if debug:
-        logging.debug ('')
-        logging.debug (f'here1')
+        if self.debug:
+            logging.debug ('')
+            logging.debug (f'here1')
 
 #
 #    getstatus case: call getStatus mothod which reads status file: 
 #    printStatus or error messages, then exit.
 #
-    if (getstatus == 1):
+    
+        if (self.getstatus == 1):
 #
 #{
 #
-        if debug:
-            logging.debug ('')
-            logging.debug (f'Case getstatus')
-
-        try:
-            getStatus (workdir, id, statuskey, param)
-
-#            getStatus (workdir, id, statuskey, param, debug=1)
-        
-        except Exception as e:
-
-            if debug:
+            if self.debug:
                 logging.debug ('')
-                logging.debug (f'getStatus error: {str(e):s}') 
+                logging.debug (f'Case getstatus')
+
+            try:
+                self.__getStatus__ (self.workdir, self.id, self.statuskey, \
+                    self.param)
+
+#                self.__getStatus__ (self.workdir, self.id, self.statuskey, \
+#                    self.param, debug=1)
+        
+            except Exception as e:
+
+                if self.debug:
+                    logging.debug ('')
+                    logging.debug (f'getStatus error: {str(e):s}') 
             
-            printError (format , str(e)) 
+                self.__printError__ (self.format , str(e)) 
 
 #
 #    getStatus will exit when done
 #
-#
 #}
 #
-    if debug:
-        logging.debug ('')
-        logging.debug (f'here2')
+        if self.debug:
+            logging.debug ('')
+            logging.debug (f'here2')
 
 #
 #    setstatus to RUN case:
 #    parse status file to get parameters
 #
-    if ((tapcontext == 'async') and \
-#        (setstatus == 1) and \
-        (param['phase'] == 'RUN')):
+        if ((self.tapcontext == 'async') and \
+            (self.param['phase'] == 'RUN')):
 #
 #{
 #
-        if debug:
-            logging.debug ('')
-            logging.debug (f'Case set phase RUN')
-
-#        workspace = id
-#        userWorkdir = workdir + '/TAP/' + workspace
-        
-#        statustbl = 'status.xml'
-#        statuspath = userWorkdir + '/' + statustbl
-#        statusurl = httpurl + '/cgi-bin/TAP/tap.py/' + \
-#            tapcontext + '/' + workspace
-
-        if debug:
-            logging.debug ('')
-            logging.debug (f'workspace= {workspace:s}')
-            logging.debug (f'userWorkdir= {userWorkdir:s}')
-            logging.debug (f'statuspath= {statuspath:s}')
-            logging.debug (f'statusurl= {statusurl:s}')
-   
-        if debug:
-            logging.debug ('')
-            logging.debug ('param: (from input)')
-            logging.debug (f'format= {param["format"]:s}')
-            logging.debug (f'lang= {param["lang"]:s}')
-            logging.debug (f'maxrec= {param["maxrec"]:d}')
-            logging.debug (f'query= {param["query"]:s}')
-            logging.debug (f'phase= {param["phase"]:s}')
+            if self.debug:
+                logging.debug ('')
+                logging.debug (f'Case set phase RUN')
+                logging.debug ('')
+                logging.debug ('param: (from input)')
+                logging.debug (f'format= {self.param["format"]:s}')
+                logging.debug (f'lang= {self.param["lang"]:s}')
+                logging.debug (f'maxrec= {self.param["maxrec"]:d}')
+                logging.debug (f'query= {self.param["query"]:s}')
+                logging.debug (f'phase= {self.param["phase"]:s}')
             
-   
 #
 #    parse statuspath to retrieve parameters
 #
-        if (setstatus == 1):
+            if (self.setstatus == 1):
         
-            if debug:
-                logging.debug ('')
-                logging.debug (f'case setstatus=1')
+                if self.debug:
+                    logging.debug ('')
+                    logging.debug (f'case setstatus=1')
+                    logging.debug (f'statuspath= {self.statuspath:s}')
 
-            doc = None
-            with open (statuspath, 'r') as fp:
-                doc = fp.read()
+                doc = None
+                with open (self.statuspath, 'r') as fp:
+                    doc = fp.read()
         
-            if debug:
-                logging.debug ('')
-                logging.debug ('doc=')
-                logging.debug (doc)
+                if self.debug:
+                    logging.debug ('')
+                    logging.debug ('doc=')
+                    logging.debug (doc)
         
-            soup = BeautifulSoup (doc, 'lxml')
+                soup = BeautifulSoup (doc, 'lxml')
 
-            parameters = soup.find ('uws:parameters')
+                parameters = soup.find ('uws:parameters')
 
-            if debug:
-                logging.debug ('')
-                logging.debug ('parameters=')
-                logging.debug (parameters)
+                if self.debug:
+                    logging.debug ('')
+                    logging.debug ('parameters=')
+                    logging.debug (parameters)
        
-            parameter = parameters.find (id='query')
-            param['query'] = parameter.string
-            if debug:
-                logging.debug ('')
-                logging.debug (f'query= {param["query"]:s}')
+                parameter = parameters.find (id='query')
+                self.param['query'] = parameter.string
+                if self.debug:
+                    logging.debug ('')
+                    logging.debug (f'query= {self.param["query"]:s}')
 
-            parameter = parameters.find (id='format')
-            param['format'] = parameter.string
-            if debug:
-                logging.debug ('')
-                logging.debug (f'format= {param["format"]:s}')
+                parameter = parameters.find (id='format')
+                self.param['format'] = parameter.string
+                if self.debug:
+                    logging.debug ('')
+                    logging.debug (f'format= {self.param["format"]:s}')
 
-            parameter = parameters.find (id='maxrec')
-            maxrecstr = parameter.string
-            if debug:
-                logging.debug ('')
-                logging.debug (f'maxrecstr= {maxrecstr:s}')
+                parameter = parameters.find (id='maxrec')
+                self.maxrecstr = parameter.string
+                if self.debug:
+                    logging.debug ('')
+                    logging.debug (f'maxrecstr= {self.maxrecstr:s}')
 
-            param['maxrec'] = int(parameter.string)
-            if debug:
-                logging.debug ('')
-                logging.debug (f'maxrecstr= {param["maxrec"]:d}')
+                self.param['maxrec'] = int(parameter.string)
+                if self.debug:
+                    logging.debug ('')
+                    logging.debug (f'maxrecstr= {self.param["maxrec"]:d}')
 
-            parameter = parameters.find (id='lang')
-            param['lang'] = parameter.string
+                parameter = parameters.find (id='lang')
+                self.param['lang'] = parameter.string
         
 #
 #    rewrite statustbl
 #   
-        statdict['process_id'] = pid 
-        statdict['jobid'] = workspace
+            self.statdict['process_id'] = self.pid 
+            self.statdict['jobid'] = self.workspace
 
-        statdict['phase'] = 'EXECUTING'
+            self.statdict['phase'] = 'EXECUTING'
 
-        stime = datetime.datetime.now()
-        destructtime = stime + datetime.timedelta (days=4)
+            stime = datetime.datetime.now()
+            destructtime = stime + datetime.timedelta (days=4)
 
-        if debug:
-            logging.debug ('')
-            logging.debug (f'got here: statusurl= {statusurl:s}')
-            logging.debug (f"process_id= {statdict['process_id']:d}")
-            logging.debug (f"jobid= {statdict['jobid']:s}")
-            logging.debug (f'stime:')
-            logging.debug (stime)
-            logging.debug ('destructtime:')
-            logging.debug (destructtime)
+            if self.debug:
+                logging.debug ('')
+                logging.debug (f'got here: statusurl= {self.statusurl:s}')
+                logging.debug (f"process_id= {self.statdict['process_id']:d}")
+                logging.debug (f"jobid= {self.statdict['jobid']:s}")
+                logging.debug (f'stime:')
+                logging.debug (stime)
+                logging.debug ('destructtime:')
+                logging.debug (destructtime)
 
-        starttime = stime.strftime ('%Y-%m-%dT%H:%M:%S.%f')[:-4]
-        destruction = destructtime.strftime ('%Y-%m-%dT%H:%M:%S.%f')[:-4]
-        if debug:
-            logging.debug ('')
-            logging.debug (f'starttime: {starttime:s}')
-            logging.debug (f'destruction= {destruction:s}')
+            starttime = stime.strftime ('%Y-%m-%dT%H:%M:%S.%f')[:-4]
+            destruction = destructtime.strftime ('%Y-%m-%dT%H:%M:%S.%f')[:-4]
+            if debug:
+                logging.debug ('')
+                logging.debug (f'starttime: {starttime:s}')
+                logging.debug (f'destruction= {destruction:s}')
    
-        statdict['stime'] = stime
-        statdict['starttime'] = starttime
-        statdict['destruction'] = destruction 
-        statdict['endtime'] = '' 
-        statdict['duration'] = '0' 
+            self.statdict['stime'] = stime
+            self.statdict['starttime'] = starttime
+            self.statdict['destruction'] = destruction 
+            self.statdict['endtime'] = '' 
+            self.statdict['duration'] = '0' 
        
-        statdict['resulturl'] = resulturl
+            self.statdict['resulturl'] = self.resulturl
 
-        if debug:
-            logging.debug ('')
-            logging.debug ('call writeStatusMessage:')
-            logging.debug (f'phase= {statdict["phase"]:s}')
+            if self.debug:
+                logging.debug ('')
+                logging.debug ('call writeStatusMessage:')
+                logging.debug (f'phase= {self.statdict["phase"]:s}')
        
-        if debug:
-            writeStatusMsg (statuspath, statdict, param, debug=1)    
-        else: 
-            writeStatusMsg (statuspath, statdict, param)    
+            if self.debug:
+                self.__writeStatusMsg__ (self.statuspath, self.statdict, \
+                    self.param, debug=1)    
+            else: 
+                self.__writeStatusMsg__ (self.statuspath, self.statdict, \
+                    self.param)    
     
-        if debug:
-            logging.debug ('')
-            logging.debug ('returned writeStatusMessage')
+            if self.debug:
+                logging.debug ('')
+                logging.debug ('returned writeStatusMessage')
 
 #
 #    generate return response and terminate parent process
 #    before proceed to run the search program 
 #
-        if debug:
-            logging.debug ('')
-            logging.debug ('call printAsyncResponse')
+            if self.debug:
+                logging.debug ('')
+                logging.debug ('call printAsyncResponse')
    
-        printAsyncResponse (statusurl)
+            self.__printAsyncResponse__ (self.statusurl)
 
-#        printAsyncResponse (statusurl, debug=1)
+#            self.__printAsyncResponse__ (self.statusurl, debug=1)
 
-        if debug:
-            logging.debug ('')
-            logging.debug ('returned printAsyncResponse')
+            if self.debug:
+                logging.debug ('')
+                logging.debug ('returned printAsyncResponse')
 #
 #}
 #
-    if debug:
-        logging.debug ('')
-        logging.debug (f'here3')
+        if self.debug:
+            logging.debug ('')
+            logging.debug (f'here3')
 
 
 #
-#    run the query for both async and sync cases:
-#    if query is blank, return error
+#{    run the query for both async and sync cases:
 #
-    if (len(param['query']) == 0):
+#   if query is blank, return error
+#
+        if (len(self.param['query']) == 0):
 
-        msg = "Input 'query' is blank."
+            self.msg = "Input 'query' is blank."
 
-        if (tapcontext == 'async'):
+            if (self.tapcontext == 'async'):
             
-            writeAsyncError (msg, statuspath, statdict, param)
-        else: 
-            printError (format, msg)
+                self.__writeAsyncError__ (self.msg, self.statuspath, \
+                    self.statdict, self.param)
+            else: 
+                self.__printError__ (self.format, self.msg)
 
 #
 #  convert ADQL query to ORACLE query (this may be moved to the up so pending
 #  case can reject bad adql query)
 #
-    if debug:
-        logging.debug ('')
-        logging.debug (f'here 4')
+        if self.debug:
+            logging.debug ('')
+            logging.debug (f'here 4')
 
-    query_adql = param['query']
+        query_adql = self.param['query']
     
-    if debug:
-        logging.debug ('')
-        logging.debug (f'query_adql= {query_adql:s}')
+        if self.debug:
+            logging.debug ('')
+            logging.debug (f'query_adql= {query_adql:s}')
    
-    try:
-        if debug:
-            logging.debug ('')
-            logging.debug (f'here 4-0')
+        try:
+            if self.debug:
+                logging.debug ('')
+                logging.debug (f'here 4-0')
 
-        mode = SpatialIndex.HTM
-        if debug:
-            logging.debug ('')
-            logging.debug (f'here 4-1')
+            mode = SpatialIndex.HTM
+            if self.debug:
+                logging.debug ('')
+                logging.debug (f'here 4-1')
 
-        if(config.adqlparam['mode'] == 'HPX'):
-            mode = SpatialIndex.HPX
+            if (self.config.adqlparam['mode'] == 'HPX'):
+                mode = SpatialIndex.HPX
 
-        if debug:
-            logging.debug ('')
-            logging.debug (f'mode= {mode:d}')
+            if self.debug:
+                logging.debug ('')
+                logging.debug (f'mode= {mode:d}')
 
-        level   = int(config.adqlparam['level'])
-        colname = config.adqlparam['colname']
+            level   = int(self.config.adqlparam['level'])
+            colname = self.config.adqlparam['colname']
 
-        if debug:
-            logging.debug ('')
-            logging.debug (f'level= {level:d}')
-            logging.debug (f'colname= {colname:s}')
+            if self.debug:
+                logging.debug ('')
+                logging.debug (f'level= {level:d}')
+                logging.debug (f'colname= {colname:s}')
 
-        encoding = SpatialIndex.BASE4
-        if(config.adqlparam['encoding'] == 'BASE10'):
-            encoding = SpatialIndex.BASE10
+            encoding = SpatialIndex.BASE4
+            if(self.config.adqlparam['encoding'] == 'BASE10'):
+                encoding = SpatialIndex.BASE10
 
-        if debug:
-            logging.debug ('')
-            logging.debug (f'encoding= {encoding:d}')
+            if self.debug:
+                logging.debug ('')
+                logging.debug (f'encoding= {encoding:d}')
 
-        xcol = config.adqlparam['xcol']
-        ycol = config.adqlparam['ycol']
-        zcol = config.adqlparam['zcol']
-
-        if debug:
-            logging.debug ('')
-            logging.debug (f'xcol= {xcol:s}')
-            logging.debug (f'ycol= {ycol:s}')
-            logging.debug (f'zcol= {zcol:s}')
-
-
-        adql = ADQL(mode=mode, level=level, indxcol=colname, \
-            encoding=encoding, xcol=xcol, ycol=ycol, zcol=zcol)
-
-        query = adql.sql (query_adql)
-    
-        if debug:
-            logging.debug ('')
-            logging.debug (f'final query= {query:s}')
-
-    except Exception as e:
-
-        if debug:
-            logging.debug ('')
-            logging.debug (f'adql exception: {str(e):s}')
-       
-        if (tapcontext == 'async'):
+            racol = self.config.racol
+            deccol = self.config.deccol
             
-            writeAsyncError (str(e), statuspath, statdict, param)
-        else: 
-            printError (format, str(e))
+            xcol = self.config.adqlparam['xcol']
+            ycol = self.config.adqlparam['ycol']
+            zcol = self.config.adqlparam['zcol']
+
+            if self.debug:
+                logging.debug ('')
+                logging.debug (f'racol= {racol:s}')
+                logging.debug (f'deccol= {deccol:s}')
+                logging.debug (f'xcol= {xcol:s}')
+                logging.debug (f'ycol= {ycol:s}')
+                logging.debug (f'zcol= {zcol:s}')
+
+
+            adql = ADQL (mode=mode, level=level, indxcol=colname, \
+                encoding=encoding, racol=racol, deccol=deccol, \
+                xcol=xcol, ycol=ycol, zcol=zcol)
+
+            self.query = adql.sql (query_adql)
+    
+            if self.debug:
+                logging.debug ('')
+                logging.debug (f'final query= {self.query:s}')
+
+        except Exception as e:
+
+            if self.debug:
+                logging.debug ('')
+                logging.debug (f'adql exception: {str(e):s}')
+       
+            if (self.tapcontext == 'async'):
+            
+                self.__writeAsyncError__ (str(e), self.statuspath, \
+                    self.statdict, self.param)
+            else: 
+                self.__printError__ (self.format, str(e))
 
 #
 #    extract DB table name from query (This will be replaced with a library
 #    parser
 #
-    """
-    dbtable = ''
-    try:
-        query_lower = query.lower()
-
-        ind = query_lower.find ('from ')
+        self.dbtable = ''
+        try:
+            tn = TableNames()
+            tables = tn.extract_tables(self.query)
+            self.dbtable = tables[0]
+        except:
         
-        if (ind != -1):
-            substr = query[ind+5:]
+            if self.debug:
+                logging.debug ('')
+                logging.debug (f'TableName exception')
 
-        if debug:
-            logging.debug ('')
-            logging.debug (f'substr= [{substr:s}]')
+            pass
 
-        ind = substr.find(' ')
-       
-        if (ind != -1):
-            dbtable = substr[0:ind]
-        else:
-            dbtable = substr
-    except:
-        pass
-    """
+        if len(self.dbtable) == 0:
 
-    dbtable = ''
-    try:
-        tn = TableNames()
+            self.msg = 'No table name found ADQL in query.'
+            self.__printError__ (self.format, self.msg);
 
-        tables = tn.extract_tables(query)
-
-        dbtable = tables[0]
-    except:
-        
-        if debug:
-            logging.debug ('')
-            logging.debug (f'TableName exception')
-
-        pass
-
-    if len(dbtable) == 0:
-
-        msg = 'No table name found ADQL in query.'
-        printError(format, msg);
-
-
-    ddtable = dbtable + '_dd'
+        self.ddtable = self.dbtable + '_dd'
     
-    if debug:
-        logging.debug ('')
-        logging.debug (f'dbtable= [{dbtable:s}]')
-        logging.debug (f'ddtable= {ddtable:s}')
+        if self.debug:
+            logging.debug ('')
+            logging.debug (f'dbtable= [{self.dbtable:s}]')
+            logging.debug (f'ddtable= {self.ddtable:s}')
 
-    """
-    instrument = getInstrument (dbtable)
+        self.datalevel = self.__getDatalevel__ (self.dbtable)
 
-    if debug:
-        logging.debug ('')
-        logging.debug (f'instrument= [{instrument:s}]')
-    """
-
-    datalevel = getDatalevel (dbtable)
-
-    if debug:
-        logging.debug ('')
-        logging.debug (f'datalevel= [{datalevel:s}]')
+        if self.debug:
+            logging.debug ('')
+            logging.debug (f'datalevel= [{self.datalevel:s}]')
 
 #
 #    determine whether to use runQuery or propFilter to execute sql
 #
-    if (propflag == -1): 
+        if (self.propflag == -1): 
 
-        if debug:
+            if self.debug:
+                logging.debug ('')
+                logging.debug (f'No input propflag:')
+
+            if ((self.config.propfilter.lower() == 'koa') or \
+                ((self.config.propfilter.lower() == 'neid') and \
+                    (self.datalevel != 'l0'))):
+                self.propflag = 1
+            else:
+                self.propflag = 0
+
+        if self.debug:
             logging.debug ('')
-            logging.debug (f'No input propflag:')
-
-        if ((config.propfilter.lower() == 'koa') or \
-            ((config.propfilter.lower() == 'neid') and (datalevel != 'l0'))):
-            propflag = 1
-        else:
-            propflag = 0
-
-    if debug:
-        logging.debug ('')
-        logging.debug (f'propflag= [{propflag:d}]')
+            logging.debug (f'propflag= [{self.propflag:d}]')
 
 
 #
 #    check if dbtable is tap_schema tables
 #
-    ind = dbtable.lower().find ('tap_schema') 
+        ind = self.dbtable.lower().find ('tap_schema') 
 
-    if (ind != -1):
-        propflag = 0
+        if (ind != -1):
+            self.propflag = 0
         
-        if debug:
+            if self.debug:
+                logging.debug ('')
+                logging.debug (f'tap_schema table queries: set propflag to 0')
+
+        if self.debug:
             logging.debug ('')
-            logging.debug (f'tap_schema table queries: set propflag to 0')
+            logging.debug (f'propflag= [{self.propflag:d}]')
 
-    if debug:
-        logging.debug ('')
-        logging.debug (f'propflag= [{propflag:d}]')
-
-    if debugtime:
-        time1 = datetime.datetime.now()
-        delt = (time1 - time0).total_seconds()
-        time0 = time1
-        logging.debug ('')
-        logging.debug (\
-            f'time (initialization including adql translation): {delt:f}s')
-
-    dbquery = None
-    propfilter = None
-   
-#
-#    force proflag = 0 for debugging
-#
-#    propflag = 0
-
-#    maxrec = int (param['maxrec'])
-    if debug:
-        logging.debug ('')
-        logging.debug (f'maxrec= {maxrec:d}')
-    
-
-    if (propflag == 0):
-#
-#    execute 'runQuery': 
-#    return the result if sync, or 
-#    update the status file if async 
-#
-        try:
-            if debug:
-                logging.debug ('')
-                logging.debug ('will call runQuery')
-                logging.debug (f'maxrec= {maxrec:d} format= {format:s}')
-
-            if (debug and debugtime):
-
-                dbquery = runQuery (dbserver=config.dbserver, \
-                    userid=config.dbuser, \
-                    password=config.dbpassword, \
-                    query=query, \
-                    workdir=userWorkdir, \
-                    format=format, \
-                    maxrec=maxrec, \
-                    racol=config.racol, \
-                    deccol=config.deccol, \
-                    debug=1, \
-                    debugtime=1)
-               
-            elif debug:
-            
-                dbquery = runQuery (dbserver=config.dbserver, \
-                    userid=config.dbuser, \
-                    password=config.dbpassword, \
-                    query=query, \
-                    workdir=userWorkdir, \
-                    format=format, \
-                    maxrec=maxrec, \
-                    racol=config.racol, \
-                    deccol=config.deccol, \
-                    debug=1)
-                    
-            elif debugtime:
-            
-                dbquery = runQuery (dbserver=config.dbserver, \
-                    userid=config.dbuser, \
-                    password=config.dbpassword, \
-                    query=query, \
-                    workdir=userWorkdir, \
-                    format=format, \
-                    maxrec=maxrec, \
-                    racol=config.racol, \
-                    deccol=config.deccol, \
-                    debugtime=1)
-               
-            else:
-                dbquery = runQuery (dbserver=config.dbserver, \
-                    userid=config.dbuser, \
-                    password=config.dbpassword, \
-                    query=query, \
-                    workdir=userWorkdir, \
-                    format=format, \
-                    maxrec=maxrec, \
-                    racol=config.racol, \
-                    deccol=config.deccol)
-
-            phase = 'COMPLETED'
-            ntot = dbquery.ntot
-
-            if debug:
-                logging.debug ('')
-                logging.debug ('returned runQuery')
-
-        except Exception as e:
-   
-            if debug:
-                logging.debug ('')
-                logging.debug (f'runQuery exception: {str(e):s}')
-
-            phase = 'ERROR'
-            errmsg = str(e)
-            
-            if (tapcontext == 'async'):
-            
-                writeAsyncError (str(e), statuspath, statdict, param)
-            else: 
-                printError (format, str(e))
-
-        if debug:
-            logging.debug ('')
-            logging.debug (f'Done runQuery: outpath= {dbquery.outpath:s}')
-
-#
-#    end runquery
-#
-        if debugtime:
+        if self.debugtime:
             time1 = datetime.datetime.now()
             delt = (time1 - time0).total_seconds()
             time0 = time1
             logging.debug ('')
-            logging.debug (f'time (runquery): {delt:f}s')
+            logging.debug (\
+                f'time (initialization including adql translation): {delt:f}s')
 
-    else:
+        dbquery = None
+        propfilter = None
+   
 #
-#    run propFilter
+#    force proflag = 0 for debugging
+#
+#        self.propflag = 0
+
+
+        if (self.propflag == 0):
+#
+#{   execute 'runQuery': 
+#    return the result if sync, or 
+#    update the status file if async 
+#
+            try:
+                if self.debug:
+                    logging.debug ('')
+                    logging.debug ('will call runQuery')
+                    logging.debug (
+                        f'maxrec= {self.maxrec:d} format= {self.format:s}')
+
+                if (self.debug and self.debugtime):
+
+                    dbquery = runQuery (dbserver=self.config.dbserver, \
+                        userid=self.config.dbuser, \
+                        password=self.config.dbpassword, \
+                        query=self.query, \
+                        workdir=self.userWorkdir, \
+                        format=self.format, \
+                        maxrec=self.maxrec, \
+                        racol=self.config.racol, \
+                        deccol=self.config.deccol, \
+                        debug=1, \
+                        debugtime=1)
+               
+                elif self.debug:
+            
+                    dbquery = runQuery (dbserver=self.config.dbserver, \
+                        userid=self.config.dbuser, \
+                        password=self.config.dbpassword, \
+                        query=self.query, \
+                        workdir=self.userWorkdir, \
+                        format=self.format, \
+                        maxrec=self.maxrec, \
+                        racol=self.config.racol, \
+                        deccol=self.config.deccol, \
+                        debug=1)
+                    
+                elif self.debugtime:
+            
+                    dbquery = runQuery (dbserver=self.config.dbserver, \
+                        userid=self.config.dbuser, \
+                        password=self.config.dbpassword, \
+                        query=self.query, \
+                        workdir=self.userWorkdir, \
+                        format=self.format, \
+                        maxrec=self.maxrec, \
+                        racol=self.config.racol, \
+                        deccol=self.config.deccol, \
+                        debugtime=1)
+               
+                else:
+                    dbquery = runQuery (dbserver=self.config.dbserver, \
+                        userid=self.config.dbuser, \
+                        password=self.config.dbpassword, \
+                        query=self.query, \
+                        workdir=self.userWorkdir, \
+                        format=self.format, \
+                        maxrec=self.maxrec, \
+                        racol=self.config.racol, \
+                        deccol=self.config.deccol)
+
+                self.phase = 'COMPLETED'
+                self.ntot = dbquery.ntot
+
+                if self.debug:
+                    logging.debug ('')
+                    logging.debug ('returned runQuery')
+
+            except Exception as e:
+   
+                if self.debug:
+                    logging.debug ('')
+                    logging.debug (f'runQuery exception: {str(e):s}')
+
+                self.phase = 'ERROR'
+#                self.errmsg = str(e)
+            
+                if (self.tapcontext == 'async'):
+            
+                    self.__writeAsyncError__ (str(e), self.statuspath, \
+                        self.statdict, self.param)
+                else: 
+                    self.__printError__ (self.format, str(e))
+
+            if self.debug:
+                logging.debug ('')
+                logging.debug (f'Done runQuery: outpath= {dbquery.outpath:s}')
+
+            if self.debugtime:
+                time1 = datetime.datetime.now()
+                delt = (time1 - time0).total_seconds()
+                time0 = time1
+                logging.debug ('')
+                logging.debug (f'time (runquery): {delt:f}s')
+
+#
+#}    end runquery
+#
+        else:
+#
+# {   run propFilter
 #
     
-        propfilter = None
-        try:
-            if debug:
-                logging.debug ('')
-                logging.debug ('will call propFilter')
+            propfilter = None
+            try:
+                if self.debug:
+                    logging.debug ('')
+                    logging.debug ('will call propFilter')
 
-            if (debug and debugtime):
+                if (self.debug and self.debugtime):
 
-                propfilter = propFilter (dbserver=config.dbserver, \
-                    userid=config.dbuser, \
-                    password=config.dbpassword, \
-                    query=query, \
-                    workdir=userWorkdir, \
-                    racol=config.racol, \
-                    deccol=config.deccol, \
-                    cookiename=config.cookiename, \
-                    cookiestr=cookiestr, \
-                    propfilter=config.propfilter.lower(), \
-                    usertbl=config.usertbl, \
-                    accesstbl=config.accesstbl, \
-                    fileid=config.fileid, \
-                    accessid=config.accessid, \
-                    format=format, \
-                    maxrec=maxrec, \
-                    debugtime=1, \
-                    debug=1)
+                    propfilter = propFilter ( \
+                        dbserver=self.config.dbserver, \
+                        userid=self.config.dbuser, \
+                        password=self.config.dbpassword, \
+                        query=self.query, \
+                        workdir=self.userWorkdir, \
+                        racol=self.config.racol, \
+                        deccol=self.config.deccol, \
+                        cookiename=self.config.cookiename, \
+                        cookiestr=self.cookiestr, \
+                        propfilter=self.config.propfilter.lower(), \
+                        usertbl=self.config.usertbl, \
+                        accesstbl=self.config.accesstbl, \
+                        fileid=self.config.fileid, \
+                        accessid=self.config.accessid, \
+                        format=self.format, \
+                        maxrec=self.maxrec, \
+                        debugtime=1, \
+                        debug=1)
 
-            elif debug:
+                elif self.debug:
 
-                propfilter = propFilter (dbserver=config.dbserver, \
-                    userid=config.dbuser, \
-                    password=config.dbpassword, \
-                    query=query, \
-                    workdir=userWorkdir, \
-                    racol=config.racol, \
-                    deccol=config.deccol, \
-                    cookiename=config.cookiename, \
-                    cookiestr=cookiestr, \
-                    propfilter=config.propfilter.lower(), \
-                    usertbl=config.usertbl, \
-                    accesstbl=config.accesstbl, \
-                    fileid=config.fileid, \
-                    accessid=config.accessid, \
-                    format=format, \
-                    maxrec=maxrec, \
-                    debug=1)
+                    propfilter = propFilter ( \
+                        dbserver=self.config.dbserver, \
+                        userid=self.config.dbuser, \
+                        password=self.config.dbpassword, \
+                        query=self.query, \
+                        workdir=self.userWorkdir, \
+                        racol=self.config.racol, \
+                        deccol=self.config.deccol, \
+                        cookiename=self.config.cookiename, \
+                        cookiestr=self.cookiestr, \
+                        propfilter=self.config.propfilter.lower(), \
+                        usertbl=self.config.usertbl, \
+                        accesstbl=self.config.accesstbl, \
+                        fileid=self.config.fileid, \
+                        accessid=self.config.accessid, \
+                        format=self.format, \
+                        maxrec=self.maxrec, \
+                        debug=1)
 
-            elif debugtime:
+                elif self.debugtime:
 
-                propfilter = propFilter (dbserver=config.dbserver, \
-                    userid=config.dbuser, \
-                    password=config.dbpassword, \
-                    query=query, \
-                    workdir=userWorkdir, \
-                    racol=config.racol, \
-                    deccol=config.deccol, \
-                    cookiename=config.cookiename, \
-                    cookiestr=cookiestr, \
-                    propfilter=config.propfilter.lower(), \
-                    usertbl=config.usertbl, \
-                    accesstbl=config.accesstbl, \
-                    fileid=config.fileid, \
-                    accessid=config.accessid, \
-                    format=format, \
-                    maxrec=maxrec, \
-                    debugtime=1)
+                    propfilter = propFilter ( \
+                        dbserver=self.config.dbserver, \
+                        userid=self.config.dbuser, \
+                        password=self.config.dbpassword, \
+                        query=self.query, \
+                        workdir=self.userWorkdir, \
+                        racol=self.config.racol, \
+                        deccol=self.config.deccol, \
+                        cookiename=self.config.cookiename, \
+                        cookiestr=self.cookiestr, \
+                        propfilter=self.config.propfilter.lower(), \
+                        usertbl=self.config.usertbl, \
+                        accesstbl=self.config.accesstbl, \
+                        fileid=self.config.fileid, \
+                        accessid=self.config.accessid, \
+                        format=self.format, \
+                        maxrec=self.maxrec, \
+                        debugtime=1)
 
-            else:
-                propfilter = propFilter (dbserver=config.dbserver, \
-                    userid=config.dbuser, \
-                    password=config.dbpassword, \
-                    query=query, \
-                    workdir=userWorkdir, \
-                    racol=config.racol, \
-                    deccol=config.deccol, \
-                    cookiename=config.cookiename, \
-                    cookiestr=cookiestr, \
-                    propfilter=config.propfilter.lower(), \
-                    usertbl=config.usertbl, \
-                    accesstbl=config.accesstbl, \
-                    fileid=config.fileid, \
-                    accessid=config.accessid, \
-                    format=format, \
-                    maxrec=maxrec)
+                else:
+                    propfilter = propFilter ( \
+                        dbserver=self.config.dbserver, \
+                        userid=self.config.dbuser, \
+                        password=self.config.dbpassword, \
+                        query=self.query, \
+                        workdir=self.userWorkdir, \
+                        racol=self.config.racol, \
+                        deccol=self.config.deccol, \
+                        cookiename=self.config.cookiename, \
+                        cookiestr=self.cookiestr, \
+                        propfilter=self.config.propfilter.lower(), \
+                        usertbl=self.config.usertbl, \
+                        accesstbl=self.config.accesstbl, \
+                        fileid=self.config.fileid, \
+                        accessid=self.config.accessid, \
+                        format=self.format, \
+                        maxrec=self.maxrec)
 
                 
-            phase = 'COMPLETED'
-            ntot = propfilter.ntot
+                self.phase = 'COMPLETED'
+                self.ntot = propfilter.ntot
 
-            if debug:
-                logging.debug ('')
-                logging.debug ('returned propFilter: phase= {phase:s}')
-                logging.debug (f'ntot= {ntot:d}')
+                if self.debug:
+                    logging.debug ('')
+                    logging.debug ('returned propFilter: phase= {self.phase:s}')
+                    logging.debug (f'ntot= {self.ntot:d}')
 
-        except Exception as e:
+            except Exception as e:
    
-            if debug:
-                logging.debug ('')
-                logging.debug (f'propFilter exception: {str(e):s}')
-
-            phase = 'ERROR'
-            errmsg = str(e)
-
-            if (tapcontext == 'async'):
-                
-                if debug:
+                if self.debug:
                     logging.debug ('')
-                    logging.debug (f'call writeAsyncError')
-                    for key in param:
-                        if (key == 'maxrec'):
-                            logging.debug (f'key= {key:s} val= {param[key]:d}')
-                        else:
-                            logging.debug (f'key= {key:s} val= {param[key]:s}')
+                    logging.debug (f'propFilter exception: {str(e):s}')
+
+                self.phase = 'ERROR'
+                self.errmsg = str(e)
+
+                if (self.tapcontext == 'async'):
                 
-                writeAsyncError (str(e), statuspath, statdict, param)
+                    if self.debug:
+                        logging.debug ('')
+                        logging.debug (f'call writeAsyncError')
+                        for key in self.param:
+                            if (key == 'maxrec'):
+                                logging.debug (
+                                    f'key= {key:s} val= {self.param[key]:d}')
+                            else:
+                                logging.debug (
+                                    f'key= {key:s} val= {self.param[key]:s}')
+                
+                    self.__writeAsyncError__ (str(e), self.statuspath, \
+                        self.statdict, self.param)
             
-                if debug:
-                    logging.debug ('')
-                    logging.debug (f'returned writeAsyncError')
+                    if self.debug:
+                        logging.debug ('')
+                        logging.debug (f'returned writeAsyncError')
 
-            else: 
-                if debug:
-                    logging.debug ('')
-                    logging.debug (f'call printError')
+                else: 
+                    if self.debug:
+                        logging.debug ('')
+                        logging.debug (f'call printError')
 
-                printError (format, str(e))
+                    self.__printError__ (self.format, str(e))
 
-#
-#    end propfilter 
-#
-        if debug:
-            logging.debug ('')
-            logging.debug (f'Done propfilter: outpath= {propfilter.outpath:s}')
+            if self.debug:
+                logging.debug ('')
+                logging.debug (
+                    f'Done propfilter: outpath= {propfilter.outpath:s}')
 
-        if debugtime:
-            time1 = datetime.datetime.now()
-            delt = (time1 - time0).total_seconds()
-            logging.debug ('')
-            logging.debug (f'time (propfilter): {delt:f}s')
+            if self.debugtime:
+                time1 = datetime.datetime.now()
+                delt = (time1 - time0).total_seconds()
+                logging.debug ('')
+                logging.debug (f'time (propfilter): {delt:f}s')
         
 #
-#    job done
+# }   end propfilter 
+#
+#
+#} finished run query  
 #
 
 #
 #    async: write complete status  message 
 #
-    if (tapcontext == 'async'):
+        if (self.tapcontext == 'async'):
                 
+            if self.debug:
+                logging.debug ('')
+                logging.debug (f'case async')
+       
+            if self.debugtime:
+                time0 = datetime.datetime.now()
+        
+            etime = datetime.datetime.now()
+            endtime = etime.strftime ('%Y-%m-%dT%H:%M:%S.%f')[:-4]
+        
+            durationtime = etime - statdict['stime']
+            duration = str(durationtime.total_seconds())[:4] 
+
+            self.statdict['endtime'] = endtime 
+            self.statdict['duration'] = duration 
+	
+            if debug:
+                logging.debug ('')
+                logging.debug (f'phase= {self.phase:s}')
+                logging.debug (f'errmsg= {self.errmsg:s}')
+      
+            self.statdict['phase'] = self.phase
+            self.statdict['errmsg'] = self.errmsg 
+        
+            if self.debug:
+                logging.debug ('')
+                logging.debug ('call writeStatusMsg')
+                logging.debug (f'phase= {self.statdict["phase"]:s}')
+       
+       
+#            time.sleep (2.0)
+            self.__writeStatusMsg__ (self.statuspath, self.statdict, self.param)    
+        
+            if self.debug:
+                logging.debug ('')
+                logging.debug (f'returned writeStatusMsg')
+       
+            if self.debugtime:
+                time1 = datetime.datetime.now()
+                delt = (time1 - time0).total_seconds()
+                logging.debug ('')
+                logging.debug (f'time (async: writeStatusMsg): {delt:f}s')
+
+                delt = (time1 - self.time00).total_seconds()
+                logging.debug ('')
+                logging.debug (
+                    f'time (total TAP service completion): {delt:f}s')
+
+        else:
+            if self.debug:
+                logging.debug ('')
+                logging.debug (f'case sync')
+       
+            if self.debug:
+                logging.debug ('')
+                logging.debug (f'call printSyncResult')
+       
+            if self.debugtime:
+                time0 = datetime.datetime.now()
+        
+            self.__printSyncResult__ (self.resultpath, self.format)
+
+            if self.debug:
+                logging.debug ('')
+                logging.debug (f'returned printSyncResult')
+      
+            if self.debugtime:
+                time1 = datetime.datetime.now()
+                delt = (time1 - time0).total_seconds()
+                logging.debug ('')
+                logging.debug (f'time (sync: print return): {delt:f}s')
+
+                delt = (time1 - self.time00).total_seconds()
+                logging.debug ('')
+                logging.debug (
+                    f'time (total TAP service completion): {delt:f}s')
+
+        if self.debug:
+            logging.debug ('')
+            logging.debug ('TAP service done')
+
+        sys.exit()
+
+#
+# } end tap.init()
+#
+
+
+
+    def __getStatusJob__ (self, data, **kwargs):
+#
+# { 
+#
+        debug = 0
+
+        if ('debug' in kwargs):
+            debug = kwargs['debug']
+
         if debug:
             logging.debug ('')
-            logging.debug (f'case async')
-       
-        if debugtime:
-            time0 = datetime.datetime.now()
+            logging.debug ('Enter getStatusJob')
+            logging.debug ('data=')
+            logging.debug (data)
+
+#
+#    parse data to extract inparam
+#
+        doc = None
+        try:
+            doc = xmltodict.parse(data)
+    
+        except Exception as e:
+
+            msg = 'Exception xmltodict.parse: ' + str(e)
+            raise Exception (msg)
+    
+        if debug:
+            logging.debug ('')
+            logging.debug ('doc:')
+            logging.debug (doc)
+
+        job = None 
+        try:
+            job = doc['uws:job']
+        except Exception as e:
         
+            msg = 'Exception retrieving job from status file: ' + str(e)
+            raise Exception (msg)
+
+        return (job)
+#
+# }  end of getStatusJob
+#
+
+
+    def __getStatusData__ (self, statuspath, **kwargs):
+#
+# { 
+#
+        debug = 0 
+
+        if ('debug' in kwargs):
+            debug = kwargs['debug']
+
+        if debug:
+            logging.debug ('')
+            logging.debug ('Enter getStatusData')
+            logging.debug (f'statuspath= {statuspath:s}]')
+
+        data = ''
+        opened = False 
+        nopen = 0
+
+
+#
+#    In case multiple processes are trying to access status file, 
+#    allow attempts to open file three times before raise exception
+#
+        while (not opened):
+    
+            try: 
+                with open (statuspath, 'r') as fp:
+      
+                    opened = True
+                    data = fp.read()
+     
+                    if debug:
+                        logging.debug ('')
+                        logging.debug ('data=')
+                        logging.debug (data)
+    
+            except Exception as e:
+                msg = 'Error reading status file: ' + str(e)
+                pass
+
+            if debug:
+                logging.debug ('')
+                logging.debug ('here1: opened:')
+                logging.debug (opened)
+
+            if (opened):
+                break
+
+            time.sleep (1.0)
+            nopen = nopen + 1
+
+            if (nopened > 2):
+                break
+
+        if debug:
+            logging.debug ('')
+            logging.debug ('here2: opened:')
+            logging.debug (opened)
+	
+        if (not opened):
+            raise Exception (msg)
+
+        return (data)
+#
+# }  end of getStatusData
+#
+
+
+
+    def __getPhase__ (self, statuspath, **kwargs):
+#
+# { 
+#
+
+        debug = 0
+
+        if ('debug' in kwargs):
+            debug = kwargs['debug']
+
+        if debug:
+            logging.debug ('')
+            logging.debug ('Enter getPhase')
+            logging.debug (f'statuspath= {statuspath:s}]')
+
+        try:
+            data = self.__getStatusData__ (statuspath)
+        
+            if debug:
+                logging.debug ('')
+                logging.debug ('data=')
+                logging.debug (data)
+
+        except Exception as e:
+        
+            msg = 'Error reading status file: ' + str(e)
+            raise Exception (msg)
+
+        job = None 
+        try:
+            job = self.__getStatusJob__ (data)
+        except Exception as e:
+            msg = 'Exception retrieving job from status file: ' + str(e)
+            raise Exception (msg)
+
+        keystr = 'uws:phase'
+        retval = job['uws:phase']
+    
+        if debug:
+            logging.debug ('')
+            logging.debug (f'retval= {retval:s}')
+
+        return (retval)
+#
+# }  end of getPhase
+#
+
+
+
+    def __printStatus__ (self, key, retval, outtype, **kwargs):
+#
+# { 
+#
+        debug = 0
+
+        if ('debug' in kwargs):
+            debug = kwargs['debug']
+
+        if debug:
+            logging.debug ('')
+            logging.debug ('Enter printStatus')
+            logging.debug (f'key= {key:s}')
+            logging.debug (f'retval= {retval:s}')
+
+#
+#    header
+#
+        print ("HTTP/1.1 200 OK\r")
+
+        if (outtype == 'xml'): 
+        
+            print("Content-type: text/xml\r")
+            print("\r")
+        
+            print ('<?xml version="1.0" encoding="UTF-8"?>')
+            print ('<uws:job xmlns:uws="http://www.ivoa.net/xml/UWS/v1.0" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.ivoa.net/xml/UWS/v1.0 http://www.ivoa.net.xml/UWS/v1.0">')
+    
+            if ((key == 'errorSummary') or \
+                (key == 'errmsg') or \
+                (key == 'error')):
+
+                if (len(retval) == 0):
+                    print ('    <uws:errorSummary></uws:errorSummary>')
+                else:
+                    print ('    <uws:errorSummary>')
+                    print (retval)
+                    print ('    </uws:errorSummary>')
+
+            elif (key == 'parameters'):
+        
+                print (retval)
+        
+            elif ((key == 'results') or \
+                (key == 'results/resulturl')):
+
+                print ('    <uws:results>')
+                print (retval)
+                print ('    </uws:results>')
+        
+            print ('</uws:job>')
+            sys.stdout.flush()
+        
+        else:
+            print("Content-type: text/plain\r")
+            print("\r")
+        
+            print (retval)
+            sys.stdout.flush()
+        
+        sys.stdout.flush()
+        return
+#
+# }  end of printStatus
+#
+
+
+    def __getStatus__ (self, workdir, workspace, key, param, **kwargs):
+#
+# { 
+#
+        debug = 1 
+
+        if ('debug' in kwargs):
+            debug = kwargs['debug']
+
+        if debug:
+            logging.debug ('')
+            logging.debug ('Enter getStatus')
+            logging.debug (f'workdir= {workdir:s}]')
+            logging.debug (f'workspace= {workspace:s}]')
+            logging.debug (f'key= {key:s}')
+
+        statuspath = workdir + '/TAP/' + workspace + '/status.xml'
+
+        if debug:
+            logging.debug ('')
+            logging.debug (f'statuspath= {statuspath:s}]')
+
+        isExist = os.path.exists (statuspath)
+    
+        if (isExist == 0):
+            msg = 'Status file: status.tbl does not exit.'
+            raise Exception (msg)
+
+        if debug:
+            logging.debug ('')
+            logging.debug (f'statuspath exists')
+
+        data = '' 
+        try:
+            data = self.__getStatusData__ (statuspath)
+
+        except Exception as e:
+        
+            msg = 'Error getStatusData: ' + str(e)
+            raise Exception (msg)
+
+        if debug:
+            logging.debug ('')
+            logging.debug ('returned getStatusData: data=')
+            logging.debug (data)
+
+#
+#    no key: return the whole status file
+#
+        if (len(key) == 0):
+        
+            print ("HTTP/1.1 200 OK\r")
+            print("Content-type: text/xml\r")
+            print("\r")
+            print (data);
+            sys.exit()
+#
+#    extract format
+#
+        soup = None
+        try:
+            soup = BeautifulSoup (data, 'lxml')
+	
+        except Exception as e:
+            self.__printError__ ('votable', str(e))
+
+        
+        format = 'votable'
+        try:
+            format = soup.parameters.findAll ( \
+                'parameter', {'id':'format'})[0].get_text()
+    
+        except Exception as e:
+        
+            self.__printError__ ('votable', str(e))
+    
+        if debug:
+            logging.debug ('')
+            logging.debug (f'format= {format:s}')
+
+        job = None 
+        try:
+            job = self.__getStatusJob__ (data)
+        
+        except Exception as e:
+            msg = 'Exception retrieving job from status file: ' + str(e)
+            raise Exception (msg)
+   
+
+        if (key == 'parameters'):
+
+            parameters = None
+            try:
+                parameters = soup.find('uws:parameters')
+            except Exception as e:
+                self.__printError__ (format, str(e))
+   
+            if debug:
+                logging.debug ('')
+                logging.debug ('parameters:')
+                logging.debug (parameters)
+        
+            self.__printStatus__ ('parameters', parameters, 'xml')
+            sys.exit()
+
+#
+#    parse data to extract inparam
+#
+        job = None 
+        try:
+            job = self.__getStatusJob__ (data)
+    
+        except Exception as e:
+            msg = 'Exception retrieving job from status file: ' + str(e)
+            raise Exception (msg)
+
+        if ((key == 'phase') or \
+            (key == 'startTime') or \
+            (key == 'endTime') or \
+            (key == 'executionDuration') or \
+            (key == 'destruction') or \
+            (key == 'jobId') or \
+            (key == 'runId') or \
+            (key == 'ownerId') or \
+            (key == 'quote')):
+#
+# {  single value return
+#
+            retval = 'None'
+            keystr = 'uws:' + key
+            outstr = ''
+
+            if ((key == 'phase') or \
+                (key == 'startTime') or \
+                (key == 'endTime') or \
+                (key == 'executionDuration') or \
+                (key == 'destruction') or \
+                (key == 'jobId') or \
+                (key == 'runId')):
+
+                retval = job[keystr]
+                outstr = retval
+    
+#                outstr = f'    <{keystr:s}>{retval:s}</{keystr:s}>'
+    
+            elif ((key == 'ownerId') or \
+                (key == 'quote')):
+
+#                outstr = f'    <{keystr:s} xsi:nil="true"/>'
+                retval = '' 
+   
+            if debug:
+                logging.debug ('')
+                logging.debug (f'retval= {retval:s}')
+                logging.debug (f'keystr= {keystr:s}')
+                logging.debug (f'outstr= {outstr:s}')
+    
+            self.__printStatus__ (key, retval, 'plain')
+            sys.exit()
+
+#
+# }  end single value return
+#
+            
+#
+# {   key: return error 
+#
+        phase = job['uws:phase']
+   
+        if ((key == 'errorSummary') or \
+            (key == 'errmsg') or \
+            (key == 'error')):
+            
+            retval = ''
+            errorSummary = ''
+            errmsg = ''
+        
+            if (phase.lower() == 'error'): 
+
+                try:
+                    errorSummary = job['uws:errorSummary']
+                    errmsg = job['uws:errorSummary']['uws:message']
+                except:
+                    pass
+    
+            if debug:
+                logging.debug ('')
+                logging.debug (f'errmsg: {errmsg:s}')
+
+            if (len (errmsg) > 0):
+                outstr = f'        <uws:message>{errmsg:s}</uws:message>'
+            else:
+                outstr = ''
+
+            self.__printStatus__ ('errorSummary', outstr, 'xml')
+            sys.exit()
+
+#
+# }  end return error 
+#
+
+#
+# {  input key: result, results, resulturl 
+#
+
+        results = 'None'
+        result = 'None'
+        resulturl = 'None'
+
+        if (key == 'resulturl'):
+            key = 'results/resulturl'
+        if (key == 'result'):
+            key = 'results/result'
+
+        if ((key == 'results') or \
+            (key == 'results/result') or \
+            (key == 'results/resulturl')):
+
+            try:
+                results = job['uws:results']
+                result = job['uws:results']['uws:result']
+
+                if (phase.lower() == 'completed'):
+                    resulturl = job['uws:results']['uws:result']['@xlink:href']
+	
+            except:
+                if debug:
+                    logging.debug ('')
+                    logging.debug ('error retrieving result')
+                pass
+        
+        if debug:
+            logging.debug ('')
+            logging.debug (f'resulturl: {resulturl:s}')
+            logging.debug (f'result:')
+            logging.debug (result)
+            logging.debug (f'results:')
+            logging.debug (results)
+      
+         
+        if ((key == 'results') or \
+            (key == 'results/resulturl')):
+
+            if debug:
+                logging.debug ('')
+                logging.debug (f'case1: results/resulturl')
+            
+            outstr = f'        <uws:result id="result" xlink:type="simple" xlink:href="{resulturl:s}"/>'
+        
+            self.__printStatus__ (key, outstr, 'xml')
+            sys.exit()
+
+        if debug:
+            logging.debug ('')
+            logging.debug (f'case2: result')
+            
+        if (len(resulturl) == 0):
+            msg = 'resulturl not found.'
+            self.__printError__ (format, msg)
+
+#
+# last case: 'results/result' -- return result table 
+#
+                
+        indx = resulturl.find(workspace)
+        substr = resulturl[indx:]
+
+        resultpath = workdir + '/TAP/' + substr
+        if debug:
+            logging.debug ('')
+            logging.debug (f'resultpath= {resultpath:s}')
+
+        fp = None
+        try:
+            fp = open (resultpath, 'r')
+        except Exception as e:
+            msg = 'Failed to open result file: ' + resultpath
+            self.__printError__ (format, msg)
+
+        print ("HTTP/1.1 200 OK\r")
+
+        if (format == 'json'):
+            print("Content-type: application/json\r")
+        elif (format == 'votable'):
+            print("Content-type: text/xml\r")
+        else:
+            print("Content-type: text/plain\r")
+        print("\r")
+
+        try:
+            while True:
+
+                line = fp.readline()
+
+                if not line:
+                    break
+        
+                sys.stdout.write (line)
+                sys.stdout.flush()
+
+        except Exception as e:
+            self.__printError__ (format, str(e))
+        
+        fp.close()
+        sys.exit()
+#
+# }  end return result 
+#
+
+#
+# }  end of getStatus
+#
+
+
+
+    def __printError__ (self, fmt, errmsg):
+#
+# { 
+#
+        debug = 0
+    
+        if debug:
+            logging.debug ('')
+            logging.debug (f'Enter printError: fmt= {fmt:s}')
+
+        print ("HTTP/1.1 200 OK\r")
+    
+        if (fmt == 'votable'):
+        
+            if debug:
+                logging.debug ('')
+                logging.debug (f'xxx1')
+
+            print("Content-type: text/xml\r")
+            print("\r")
+
+            print ('<?xml version="1.0" encoding="UTF-8"?>')
+            print ('<VOTABLE version="1.4" xmlns="http://www.ivoa.net/xml/VOTable/v1.3">')
+            print ('<RESOURCE type="results">')
+            print ('<INFO name="QUERY_STATUS" value="ERROR">')
+        
+            print (errmsg)
+        
+            print ('</INFO>')
+            print ('</RESOURCE>')
+            print ('</VOTABLE>')
+
+        else:
+            if debug:
+                logging.debug ('')
+                logging.debug ('xxx2')
+
+            print("Content-type: application/json\r")
+            print("\r")
+    
+            print ("{")
+            print ('    "status": "error",');
+            print ('    "msg": "%s"' % errmsg);
+            print ("}")
+    
+        sys.stdout.flush()
+        sys.exit()
+#
+# }  end of printError
+#
+
+
+
+    def __writeAsyncError__ (self, errmsg, statuspath, statdict, param, **kwargs):
+#
+# { 
+#
+        debug = 1 
+
+        if ('debug' in kwargs):
+            debug = kwargs['debug']
+
+            if debug:
+                logging.debug ('')
+                logging.debug (f'debug= {debug:d}')
+    
+        if debug:
+            logging.debug ('')
+            logging.debug ('Enter writeAsyncError')
+            logging.debug (f'statuspath= {statuspath:s}')
+            logging.debug (f'errmsg= {errmsg:s}')
+            logging.debug (f'format= {param["format"]:s}')
+            logging.debug (f'phase= {statdict["phase"]:s}')
+            for key in param:
+                if (key == 'maxrec'):
+                    logging.debug (f'key= {key:s} val= {param[key]:d}')
+                else:
+                    logging.debug (f'key= {key:s} val= {param[key]:s}')
+
+
+#
+#    set status parameters
+#
         etime = datetime.datetime.now()
         endtime = etime.strftime ('%Y-%m-%dT%H:%M:%S.%f')[:-4]
         
@@ -1343,783 +1999,82 @@ def main():
         statdict['endtime'] = endtime 
         statdict['duration'] = duration 
 	
-        if debug:
-            logging.debug ('')
-            logging.debug (f'phase= {phase:s}')
-            logging.debug (f'errmsg= {errmsg:s}')
-      
-        statdict['phase'] = phase
+        statdict['phase'] = 'ERROR'
         statdict['errmsg'] = errmsg 
         
         if debug:
             logging.debug ('')
             logging.debug ('call writeStatusMsg')
-            logging.debug (f'phase= {statdict["phase"]:s}')
-       
-       
-#        time.sleep (2.0)
-        writeStatusMsg (statuspath, statdict, param)    
-        
-        if debug:
-            logging.debug ('')
-            logging.debug (f'returned writeStatusMsg')
-       
-        if debugtime:
-            time1 = datetime.datetime.now()
-            delt = (time1 - time0).total_seconds()
-            logging.debug ('')
-            logging.debug (f'time (async: writeStatusMsg): {delt:f}s')
-
-            delt = (time1 - time00).total_seconds()
-            logging.debug ('')
-            logging.debug (f'time (total TAP service completion): {delt:f}s')
-
-    else:
-        if debug:
-            logging.debug ('')
-            logging.debug (f'case sync')
-       
-        if debug:
-            logging.debug ('')
-            logging.debug (f'call printSyncResult')
-       
-        if debugtime:
-            time0 = datetime.datetime.now()
-        
-        printSyncResult (resultpath, format)
+            logging.debug(f'statuspath= {statuspath:s}')
+            logging.debug(f'format= {param["format"]:s}')
+            logging.debug(f'maxrec= {param["maxrec"]:d}')
 
         if debug:
-            logging.debug ('')
-            logging.debug (f'returned printSyncResult')
-      
-        if debugtime:
-            time1 = datetime.datetime.now()
-            delt = (time1 - time0).total_seconds()
-            logging.debug ('')
-            logging.debug (f'time (sync: print return): {delt:f}s')
-
-            delt = (time1 - time00).total_seconds()
-            logging.debug ('')
-            logging.debug (
-                f'time (total TAP service completion): {delt:f}s, ntot= {ntot:d}')
-
-    if debug:
-        logging.debug ('')
-        logging.debug ('TAP service done')
-
-    sys.exit()
-
-#
-# }  end of main
-#
-
-
-
-def getStatusJob (data, **kwargs):
-#
-# { 
-#
-    pid = os.getpid()
-    debug = 0
-
-    if ('debug' in kwargs):
-        debug = kwargs['debug']
-
-    if debug:
-        logging.debug ('')
-        logging.debug ('Enter getStatusJob')
-        logging.debug ('data=')
-        logging.debug (data)
-
-#
-#    parse data to extract inparam
-#
-    doc = None
-    try:
-        doc = xmltodict.parse(data)
-    
-    except Exception as e:
-
-        msg = 'Exception xmltodict.parse: ' + str(e)
-        raise Exception (msg)
-    
-    if debug:
-        logging.debug ('')
-        logging.debug ('doc:')
-        logging.debug (doc)
-
-    job = None 
-    try:
-        job = doc['uws:job']
-    except Exception as e:
-        
-        msg = 'Exception retrieving job from status file: ' + str(e)
-        raise Exception (msg)
-
-    return (job)
-#
-# }  end of getStatusJob
-#
-
-
-def getStatusData (statuspath, **kwargs):
-#
-# { 
-#
-
-    debug = 0 
-
-    if ('debug' in kwargs):
-        debug = kwargs['debug']
-
-    if debug:
-        logging.debug ('')
-        logging.debug ('Enter getStatusData')
-        logging.debug (f'statuspath= {statuspath:s}]')
-
-    data = ''
-    opened = False 
-    nopen = 0
-
-    while (not opened):
-    
-        try: 
-            with open (statuspath, 'r') as fp:
-      
-                opened = True
-                data = fp.read()
-     
-                if debug:
-                    logging.debug ('')
-                    logging.debug ('data=')
-                    logging.debug (data)
-    
-        except Exception as e:
-            msg = 'Error reading status file: ' + str(e)
-            pass
-
-        if debug:
-            logging.debug ('')
-            logging.debug ('here1: opened:')
-            logging.debug (opened)
-
-        if (opened):
-            break
-
-        time.sleep (1.0)
-        nopen = nopen + 1
-
-        if (nopened > 2):
-            break
-
-    if debug:
-        logging.debug ('')
-        logging.debug ('here2: opened:')
-        logging.debug (opened)
-	
-    if (not opened):
-        raise Exception (msg)
-
-    return (data)
-#
-# }  end of getStatusData
-#
-
-
-
-def getPhase (statuspath, **kwargs):
-#
-# { 
-#
-
-    debug = 0
-
-    if ('debug' in kwargs):
-        debug = kwargs['debug']
-
-    if debug:
-        logging.debug ('')
-        logging.debug ('Enter getPhase')
-        logging.debug (f'statuspath= {statuspath:s}]')
-
-    try:
-        data = getStatusData (statuspath)
-        
-        if debug:
-            logging.debug ('')
-            logging.debug ('data=')
-            logging.debug (data)
-
-    except Exception as e:
-        
-        msg = 'Error reading status file: ' + str(e)
-        raise Exception (msg)
-
-    job = None 
-    try:
-        job = getStatusJob (data)
-    except Exception as e:
-        msg = 'Exception retrieving job from status file: ' + str(e)
-        raise Exception (msg)
-
-    keystr = 'uws:phase'
-    retval = job['uws:phase']
-    
-    if debug:
-        logging.debug ('')
-        logging.debug (f'retval= {retval:s}')
-
-    return (retval)
-#
-# }  end of getPhase
-#
-
-
-
-def printStatus (key, retval, outtype, **kwargs):
-#
-# { 
-#
-
-    debug = 0
-
-    if ('debug' in kwargs):
-        debug = kwargs['debug']
-
-    if debug:
-        logging.debug ('')
-        logging.debug ('Enter printStatus')
-        logging.debug (f'key= {key:s}')
-        logging.debug (f'retval= {retval:s}')
-
-#
-#    header
-#
-    print ("HTTP/1.1 200 OK\r")
-
-    if (outtype == 'xml'): 
-        
-        print("Content-type: text/xml\r")
-        print("\r")
-        
-        print ('<?xml version="1.0" encoding="UTF-8"?>')
-        print ('<uws:job xmlns:uws="http://www.ivoa.net/xml/UWS/v1.0" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.ivoa.net/xml/UWS/v1.0 http://www.ivoa.net.xml/UWS/v1.0">')
-    
-        if ((key == 'errorSummary') or \
-            (key == 'errmsg') or \
-            (key == 'error')):
-
-            if (len(retval) == 0):
-                print ('    <uws:errorSummary></uws:errorSummary>')
-            else:
-                print ('    <uws:errorSummary>')
-                print (retval)
-                print ('    </uws:errorSummary>')
-
-        elif (key == 'parameters'):
-        
-            print (retval)
-        
-        elif ((key == 'results') or \
-            (key == 'results/resulturl')):
-
-            print ('    <uws:results>')
-            print (retval)
-            print ('    </uws:results>')
-        
-        print ('</uws:job>')
-        sys.stdout.flush()
-        
-    else:
-        print("Content-type: text/plain\r")
-        print("\r")
-        
-        print (retval)
-        sys.stdout.flush()
-        
-    sys.stdout.flush()
-    return
-#
-# }  end of printStatus
-#
-
-
-def getStatus (workdir, workspace, key, param, **kwargs):
-#
-# { 
-#
-    debug = 1 
-
-    if ('debug' in kwargs):
-        debug = kwargs['debug']
-
-    if debug:
-        logging.debug ('')
-        logging.debug ('Enter getStatus')
-        logging.debug (f'workdir= {workdir:s}]')
-        logging.debug (f'workspace= {workspace:s}]')
-        logging.debug (f'key= {key:s}')
-
-
-    statuspath = workdir + '/TAP/' + workspace + '/status.xml'
-
-    if debug:
-        logging.debug ('')
-        logging.debug (f'statuspath= {statuspath:s}]')
-
-    isExist = os.path.exists (statuspath)
-    
-    if (isExist == 0):
-        msg = 'Status file: status.tbl does not exit.'
-        raise Exception (msg)
-
-    if debug:
-        logging.debug ('')
-        logging.debug (f'statuspath exists')
-
-    data = '' 
-    try:
-        data = getStatusData (statuspath)
-
-    except Exception as e:
-        
-        msg = 'Error getStatusData: ' + str(e)
-        raise Exception (msg)
-
-    if debug:
-        logging.debug ('')
-        logging.debug ('returned getStatusData: data=')
-        logging.debug (data)
-
-#
-#    no key: return the whole status file
-#
-    if (len(key) == 0):
-        
-        print ("HTTP/1.1 200 OK\r")
-        print("Content-type: text/xml\r")
-        print("\r")
-        print (data);
-        sys.exit()
-#
-#    extract format
-#
-    soup = None
-    try:
-        soup = BeautifulSoup (data, 'xml')
-	
-    except Exception as e:
-        printError (format, str(e))
-
-    format = 'votable'
-    try:
-        format = soup.parameters.findAll ('parameter', {'id':'format'})[0].get_text()
-    except Exception as e:
-        printError (format, str(e))
-    
-    if debug:
-        logging.debug ('')
-        logging.debug (f'format= {format:s}')
-
-    job = None 
-    try:
-        job = getStatusJob (data)
-    except Exception as e:
-        msg = 'Exception retrieving job from status file: ' + str(e)
-        raise Exception (msg)
-   
-
-    if (key == 'parameters'):
-
-        parameters = None
-        try:
-            parameters = soup.find('uws:parameters')
-        except Exception as e:
-            printError (format, str(e))
-   
-        if debug:
-            logging.debug ('')
-            logging.debug ('parameters:')
-            logging.debug (parameters)
-        
-        printStatus ('parameters', parameters, 'xml')
-        sys.exit()
-
-#
-#    parse data to extract inparam
-#
-    job = None 
-    try:
-        job = getStatusJob (data)
-    except Exception as e:
-        msg = 'Exception retrieving job from status file: ' + str(e)
-        raise Exception (msg)
-
-    if ((key == 'phase') or \
-        (key == 'startTime') or \
-        (key == 'endTime') or \
-        (key == 'executionDuration') or \
-        (key == 'destruction') or \
-        (key == 'jobId') or \
-        (key == 'runId') or \
-        (key == 'ownerId') or \
-        (key == 'quote')):
-#
-# {  single value return
-#
-        retval = 'None'
-        keystr = 'uws:' + key
-        outstr = ''
-
-        if ((key == 'phase') or \
-            (key == 'startTime') or \
-            (key == 'endTime') or \
-            (key == 'executionDuration') or \
-            (key == 'destruction') or \
-            (key == 'jobId') or \
-            (key == 'runId')):
-
-            retval = job[keystr]
-            outstr = retval
-    
-#            outstr = f'    <{keystr:s}>{retval:s}</{keystr:s}>'
-    
-        elif ((key == 'ownerId') or \
-            (key == 'quote')):
-
-#            outstr = f'    <{keystr:s} xsi:nil="true"/>'
-            retval = '' 
-   
-        if debug:
-            logging.debug ('')
-            logging.debug (f'retval= {retval:s}')
-            logging.debug (f'keystr= {keystr:s}')
-            logging.debug (f'outstr= {outstr:s}')
-    
-        printStatus (key, retval, 'plain')
-        sys.exit()
-
-#
-# }  end single value return
-#
-        retval = 'None'
-#
-#    key: error or result
-#
-    phase = job['uws:phase']
-   
-    if ((key == 'errorSummary') or \
-        (key == 'errmsg') or \
-        (key == 'error')):
-#
-# {  error or result
-#
-        retval = ''
-
-        errorSummary = ''
-        errmsg = ''
-        
-        if (phase.lower() == 'error'): 
-
-            try:
-                errorSummary = job['uws:errorSummary']
-                errmsg = job['uws:errorSummary']['uws:message']
-            except:
-                pass
-    
-        if debug:
-            logging.debug ('')
-            logging.debug ('here2')
-            logging.debug (f'errmsg: {errmsg:s}')
-
-        if (len (errmsg) > 0):
-            outstr = f'        <uws:message>{errmsg:s}</uws:message>'
+            self.__writeStatusMsg__ (statuspath, statdict, param, debug=1)    
         else:
-            outstr = ''
+            self.__writeStatusMsg__ (statuspath, statdict, param)    
 
-        printStatus ('errorSummary', outstr, 'xml')
+        if debug:
+            logging.debug ('')
+            logging.debug ('returned writeStatusMsg')
+
         sys.exit()
-
-#
-# }  end error or result 
-#
-
-    results = 'None'
-    result = 'None'
-    resulturl = 'None'
-
-    if (key == 'resulturl'):
-        key = 'results/resulturl'
-    if (key == 'result'):
-        key = 'results/result'
-
-    if ((key == 'results') or \
-        (key == 'results/result') or \
-        (key == 'results/resulturl')):
-
-        try:
-            results = job['uws:results']
-            result = job['uws:results']['uws:result']
-
-            if (phase.lower() == 'completed'):
-                resulturl = job['uws:results']['uws:result']['@xlink:href']
-	
-        except:
-            if debug:
-                logging.debug ('')
-                logging.debug ('error retrieving result')
-            pass
-        
-    if debug:
-        logging.debug ('')
-        logging.debug (f'resulturl: {resulturl:s}')
-        logging.debug (f'result:')
-        logging.debug (result)
-        logging.debug (f'results:')
-        logging.debug (results)
-      
-         
-    if ((key == 'results') or \
-        (key == 'results/resulturl')):
-
-        if debug:
-            logging.debug ('')
-            logging.debug (f'case1: results/resulturl')
-            
-        outstr = f'        <uws:result id="result" xlink:type="simple" xlink:href="{resulturl:s}"/>'
-        
-        printStatus (key, outstr, 'xml')
-        sys.exit()
-
-#
-# last case: return result table 
-#
-    if debug:
-        logging.debug ('')
-        logging.debug (f'case2: result')
-            
-    if (len(resulturl) == 0):
-        msg = 'resulturl not found.'
-        printError (format, msg)
-
-                
-    indx = resulturl.find(workspace)
-    substr = resulturl[indx:]
-
-    resultpath = workdir + '/TAP/' + substr
-    if debug:
-        logging.debug ('')
-        logging.debug (f'resultpath= {resultpath:s}')
-
-    fp = None
-    try:
-        fp = open (resultpath, 'r')
-    except Exception as e:
-        msg = 'Failed to open result file: ' + resultpath
-        printError (format, msg)
-
-    print ("HTTP/1.1 200 OK\r")
-
-    if (format == 'json'):
-        print("Content-type: application/json\r")
-    elif (format == 'votable'):
-        print("Content-type: text/xml\r")
-    else:
-        print("Content-type: text/plain\r")
-    print("\r")
-
-    try:
-        while True:
-
-            line = fp.readline()
-
-            if not line:
-                break
-        
-            sys.stdout.write (line)
-            sys.stdout.flush()
-
-    except Exception as e:
-        printError (format, str(e))
-        
-    fp.close()
-    sys.exit()
-#
-# }  end of getStatus
-#
-
-
-
-def printError (fmt, errmsg):
-#
-# { 
-#
-    
-    debug = 0
-    
-    if debug:
-        logging.debug ('')
-        logging.debug (f'Enter printError: fmt= {fmt:s}')
-
-    print ("HTTP/1.1 200 OK\r")
-    
-    if (fmt == 'votable'):
-        
-        if debug:
-            logging.debug ('')
-            logging.debug (f'xxx1')
-
-        print("Content-type: text/xml\r")
-        print("\r")
-
-        print ('<?xml version="1.0" encoding="UTF-8"?>')
-        print ('<VOTABLE version="1.4" xmlns="http://www.ivoa.net/xml/VOTable/v1.3">')
-        print ('<RESOURCE type="results">')
-        print ('<INFO name="QUERY_STATUS" value="ERROR">')
-        
-        print (errmsg)
-        
-        print ('</INFO>')
-        print ('</RESOURCE>')
-        print ('</VOTABLE>')
-
-    else:
-        if debug:
-            logging.debug ('')
-            logging.debug ('xxx2')
-
-        print("Content-type: application/json\r")
-        print("\r")
-    
-        print ("{")
-        print ('    "status": "error",');
-        print ('    "msg": "%s"' % errmsg);
-        print ("}")
-    
-    sys.stdout.flush()
-    sys.exit()
-#
-# }  end of printError
-#
-
-
-
-def writeAsyncError (errmsg, statuspath, statdict, param, **kwargs):
-#
-# { 
-#
-    debug = 1 
-
-    if ('debug' in kwargs):
-        debug = kwargs['debug']
-
-        if debug:
-            logging.debug ('')
-            logging.debug (f'debug= {debug:d}')
-    
-    if debug:
-        logging.debug ('')
-        logging.debug ('Enter writeAsyncError')
-        logging.debug (f'statuspath= {statuspath:s}')
-        logging.debug (f'errmsg= {errmsg:s}')
-        logging.debug (f'format= {param["format"]:s}')
-        logging.debug (f'phase= {statdict["phase"]:s}')
-        for key in param:
-            if (key == 'maxrec'):
-                logging.debug (f'key= {key:s} val= {param[key]:d}')
-            else:
-                logging.debug (f'key= {key:s} val= {param[key]:s}')
-
-
-#
-#    set status parameters
-#
-    etime = datetime.datetime.now()
-    endtime = etime.strftime ('%Y-%m-%dT%H:%M:%S.%f')[:-4]
-        
-    durationtime = etime - statdict['stime']
-    duration = str(durationtime.total_seconds())[:4] 
-
-    statdict['endtime'] = endtime 
-    statdict['duration'] = duration 
-	
-    statdict['phase'] = 'ERROR'
-    statdict['errmsg'] = errmsg 
-        
-    if debug:
-        logging.debug ('')
-        logging.debug ('call writeStatusMsg')
-        logging.debug(f'statuspath= {statuspath:s}')
-        logging.debug(f'format= {param["format"]:s}')
-        logging.debug(f'maxrec= {param["maxrec"]:d}')
-
-    if debug:
-        writeStatusMsg (statuspath, statdict, param, debug=1)    
-    else:
-        writeStatusMsg (statuspath, statdict, param)    
-
-    if debug:
-        logging.debug ('')
-        logging.debug ('returned writeStatusMsg')
-
-#    return
-    sys.exit()
 #
 # }  end of writeAsyncError
 #
 
 
 
-def printSyncResult (resultpath, format, **kwargs):
+    def __printSyncResult__ (self, resultpath, format, **kwargs):
 #
 # { 
 #
-    debug = 0 
+        debug = 0 
 
-    if ('debug' in kwargs):
-        debug = kwargs['debug']
+        if ('debug' in kwargs):
+            debug = kwargs['debug']
 
-    if debug:
-        logging.debug ('')
-        logging.debug ('Enter printSyncResult')
-        logging.debug (f'resultpath= {resultpath:s}')
-        logging.debug (f'format= [{format:s}]')
-
-    print ("HTTP/1.1 200 OK\r")
-
-    fp = None
-    try:
-        fp = open (resultpath, 'r')
-    except IOERROR:
-        msg = 'Failed to open result file.'
-        printError (msg)
-
-    if (format == 'json'):
-        print("Content-type: application/json\r")
-    elif (format == 'votable'):
-#        print("Content-type: application/xml\r")
-        print("Content-type: text/xml\r")
-    else:
-        print("Content-type: text/plain\r")
-    print("\r")
-    
-    while True:
-
-        line = fp.readline()
-        
         if debug:
             logging.debug ('')
-            logging.debug ('here3-1')
-            logging.debug (f'line= [{line:s}]')
+            logging.debug ('Enter printSyncResult')
+            logging.debug (f'resultpath= {resultpath:s}')
+            logging.debug (f'format= [{format:s}]')
 
-        if not line:
-            break
+        print ("HTTP/1.1 200 OK\r")
 
-        sys.stdout.write (line)
-        sys.stdout.flush()
+        fp = None
+        try:
+            fp = open (resultpath, 'r')
+        except IOERROR:
+            msg = 'Failed to open result file.'
+            self.__printError__ (msg)
 
-    fp.close()
-    return
+        if (format == 'json'):
+            print("Content-type: application/json\r")
+        elif (format == 'votable'):
+#            print("Content-type: application/xml\r")
+            print("Content-type: text/xml\r")
+        else:
+            print("Content-type: text/plain\r")
+        print("\r")
+    
+        while True:
+
+            line = fp.readline()
+        
+            if debug:
+                logging.debug ('')
+                logging.debug ('here3-1')
+                logging.debug (f'line= [{line:s}]')
+
+            if not line:
+                break
+
+            sys.stdout.write (line)
+            sys.stdout.flush()
+
+        fp.close()
+        return
 
 #
 # }  end of printSyncResult
@@ -2130,50 +2085,50 @@ def printSyncResult (resultpath, format, **kwargs):
 #
 #   place holder for re-direct sync response case
 #
-def printSyncResponse (status, msg, resulturl, format, **kwargs):
+    def __printSyncResponse__ (self, status, msg, resulturl, format, **kwargs):
 #
 # {
 #
-    debug = 0
+        debug = 0
 
-    if ('debug' in kwargs):
-        debug = kwargs['debug']
-
-    if debug:
-        logging.debug ('')
-        logging.debug ('Enter printSyncResponse')
-        logging.debug (f'resulturl= {resulturl:s}')
-
-    if (status == 'error'):
+        if ('debug' in kwargs):
+            debug = kwargs['debug']
 
         if debug:
             logging.debug ('')
-            logging.debug ('xxx1')
+            logging.debug ('Enter printSyncResponse')
+            logging.debug (f'resulturl= {resulturl:s}')
 
-        print ("HTTP/1.1 200 OK\r")
-        print("Content-type: application/json\r")
-        print("\r")
+        if (status == 'error'):
+
+            if debug:
+                logging.debug ('')
+                logging.debug ('xxx1')
+
+            print ("HTTP/1.1 200 OK\r")
+            print("Content-type: application/json\r")
+            print("\r")
     
-        print ("{")
-        print ('    "status": "error",');
-        print ('    "msg": "%s"' % errmsg);
-        print ("}")
+            print ("{")
+            print ('    "status": "error",');
+            print ('    "msg": "%s"' % errmsg);
+            print ("}")
 
-    else:
+        else:
+            if debug:
+                logging.debug ('')
+                logging.debug ('xxx2')
+
+            print ("HTTP/1.1 303 See Other\r")
+            print (f"Location: %s\r\n\r" % resulturl)
+            print (f"Redirect Location: %s" % resulturl)
+    
+        sys.stdout.flush()
         if debug:
             logging.debug ('')
-            logging.debug ('xxx2')
+            logging.debug ('done')
 
-        print ("HTTP/1.1 303 See Other\r")
-        print (f"Location: %s\r\n\r" % resulturl)
-        print (f"Redirect Location: %s" % resulturl)
-    
-    sys.stdout.flush()
-    if debug:
-        logging.debug ('')
-        logging.debug ('done')
-
-    return
+        return
 #
 #}
 #
@@ -2182,254 +2137,259 @@ def printSyncResponse (status, msg, resulturl, format, **kwargs):
 #
 #    async: return statusurl and kill the parent process
 #
-def printAsyncResponse (statusurl, **kwargs):
+    def __printAsyncResponse__ (self, statusurl, **kwargs):
 
-    debug = 0 
+        debug = 0 
 
-    if ('debug' in kwargs):
-        debug = kwargs['debug']
+        if ('debug' in kwargs):
+            debug = kwargs['debug']
 
-    if debug:
-        logging.debug ('')
-        logging.debug ('Enter printAsyncResponse')
-        logging.debug (f'statusurl= {statusurl:s}')
+        if debug:
+            logging.debug ('')
+            logging.debug ('Enter printAsyncResponse')
+            logging.debug (f'statusurl= {statusurl:s}')
 
-    print ("HTTP/1.1 303 See Other\r")
-    print (f"Location: %s\r\n\r" % statusurl)
-    print (f"Redirect Location: %s" % statusurl)
-    sys.stdout.flush()
+        print ("HTTP/1.1 303 See Other\r")
+        print (f"Location: %s\r\n\r" % statusurl)
+        print (f"Redirect Location: %s" % statusurl)
+        sys.stdout.flush()
     
-    time.sleep(2.0)
+        time.sleep(2.0)
 
-#    if debug:
-#        logging.debug ('')
-#        logging.debug ('sleep 2 msec before terminating parent process')
+#        if debug:
+#            logging.debug ('')
+#            logging.debug ('sleep 2 msec before terminating parent process')
 
 #
 #  shut down parent program
 #
-    os.kill (os.getppid(), signal.SIGKILL)
+        os.kill (os.getppid(), signal.SIGKILL)
 
-    if debug:
-        logging.debug ('')
-        logging.debug ('parent process killed')
+        if debug:
+            logging.debug ('')
+            logging.debug ('parent process killed')
 
-    return
+        return
 
 
 #
 #    TAP status result always written in xml format
 #
-def writeStatusMsg (statuspath, statdict, param, **kwargs):
+    def __writeStatusMsg__ (self, statuspath, statdict, param, **kwargs):
 #
 # { end writeStatusMsg
 #
-    debug = 1
+        debug = 1
 
-    if ('debug' in kwargs):
-        debug = kwargs['debug']
+        if ('debug' in kwargs):
+            debug = kwargs['debug']
 
-    if debug:
-        logging.debug ('')
-        logging.debug ('Enter writeStatusMsg')
-        logging.debug (f"statuspath= {statuspath:s}")
-        logging.debug (f"phase= {statdict['phase']:s}")
-        logging.debug (f"errmsg= {statdict['errmsg']:s}")
-        
-        for key in param:
-            if (key == 'maxrec'):
-                logging.debug (f'key= {key:s} val= {param[key]:d}')
-            else:
-                logging.debug (f'key= {key:s} val= {param[key]:s}')
-
-
-    format = param['format'].lower()
-    maxrec = param['maxrec']
-
-    if debug:
-        logging.debug ('')
-        logging.debug (f"format= {format:s}")
-        logging.debug (f"maxrec= {maxrec:d}")
-
-    fp = None
-    try:
-        fp = open (statuspath, 'w+')
-        os.chmod(statuspath, 0o664)
-    except Exception as e:
-        msg = 'Failed to open/create status file.'
-        printError (format, msg)
-
-    if debug:
-        logging.debug ('')
-        logging.debug ('status file opened')
-
-    try:
-        fcntl.lockf (fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except Exception as e:
-        
-        msg = 'Cannot lock status file.'
         if debug:
             logging.debug ('')
-            logging.debug (f'{msg:s}: {str(e):s}')
-
-        printError (format, msg)
-
-    if debug:
-        logging.debug ('')
-        logging.debug ('status file locked for write')
-
-    phase = statdict['phase']
-
-    resulturl = statdict['resulturl']
-    errmsg = statdict['errmsg']
-    
-    if debug:
-        logging.debug ('')
-        logging.debug (f'phase= [{phase:s}]')
-        logging.debug (f'resulturl= [{resulturl:s}]')
-        logging.debug (f'errmsg= [{errmsg:s}]')
-
-    fp.write ('<?xml version="1.0" encoding="UTF-8"?>\n')
+            logging.debug ('Enter writeStatusMsg')
+            logging.debug (f"statuspath= {statuspath:s}")
+            logging.debug (f"phase= {statdict['phase']:s}")
+            logging.debug (f"errmsg= {statdict['errmsg']:s}")
         
-    fp.write ('<uws:job xmlns:uws="http://www.ivoa.net/xml/UWS/v1.0" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.ivoa.net/xml/UWS/v1.0 http://www.ivoa.net.xml/UWS/v1.0">\n')
+            for key in param:
+                if (key == 'maxrec'):
+                    logging.debug (f'key= {key:s} val= {param[key]:d}')
+                else:
+                    logging.debug (f'key= {key:s} val= {param[key]:s}')
+
+
+        format = param['format'].lower()
+        maxrec = param['maxrec']
+
+        if debug:
+            logging.debug ('')
+            logging.debug (f"format= {format:s}")
+            logging.debug (f"maxrec= {maxrec:d}")
+
+        fp = None
+        try:
+            fp = open (statuspath, 'w+')
+            os.chmod(statuspath, 0o664)
         
-    fp.write (f"    <uws:jobId>{statdict['jobid']:s}</uws:jobId>\n")
-    fp.write (f"    <uws:runId>{statdict['process_id']:d}</uws:runId>\n")
-    fp.write ('    <uws:ownerId xsi:nil="true"/>\n')
-    fp.write (f"    <uws:phase>{statdict['phase'].upper():s}</uws:phase>\n")
-    fp.write ('    <uws:quote xsi:nil="true"/>\n')
+        except Exception as e:
+            msg = 'Failed to open/create status file.'
+            self.__printError__ (format, msg)
+
+        if debug:
+            logging.debug ('')
+            logging.debug ('status file opened')
+
+        try:
+            fcntl.lockf (fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except Exception as e:
+        
+            msg = 'Cannot lock status file.'
+            if debug:
+                logging.debug ('')
+                logging.debug (f'{msg:s}: {str(e):s}')
+
+            self.__printError__ (format, msg)
+
+        if debug:
+            logging.debug ('')
+            logging.debug ('status file locked for write')
+
+        phase = statdict['phase']
+
+        resulturl = statdict['resulturl']
+        errmsg = statdict['errmsg']
     
-    fp.write (f"    <uws:startTime>{statdict['starttime']:s}</uws:startTime>\n") 
+        if debug:
+            logging.debug ('')
+            logging.debug (f'phase= [{phase:s}]')
+            logging.debug (f'resulturl= [{resulturl:s}]')
+            logging.debug (f'errmsg= [{errmsg:s}]')
+
+        fp.write ('<?xml version="1.0" encoding="UTF-8"?>\n')
+        
+        fp.write ('<uws:job xmlns:uws="http://www.ivoa.net/xml/UWS/v1.0" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.ivoa.net/xml/UWS/v1.0 http://www.ivoa.net.xml/UWS/v1.0">\n')
+        
+        fp.write (f"    <uws:jobId>{statdict['jobid']:s}</uws:jobId>\n")
+        fp.write (f"    <uws:runId>{statdict['process_id']:d}</uws:runId>\n")
+        fp.write ('    <uws:ownerId xsi:nil="true"/>\n')
+        fp.write (f"    <uws:phase>{statdict['phase'].upper():s}</uws:phase>\n")
+        fp.write ('    <uws:quote xsi:nil="true"/>\n')
+    
+        fp.write (f"    <uws:startTime>{statdict['starttime']:s}</uws:startTime>\n") 
 	
-    fp.write (f"    <uws:endTime>{statdict['endtime']:s}</uws:endTime>\n") 
+        fp.write (f"    <uws:endTime>{statdict['endtime']:s}</uws:endTime>\n") 
         
-    fp.write (f"    <uws:executionDuration>{statdict['duration']:s}</uws:executionDuration>\n")
+        fp.write (f"    <uws:executionDuration>{statdict['duration']:s}</uws:executionDuration>\n")
 
-    fp.write (f"    <uws:destruction>{statdict['destruction']:s}</uws:destruction>\n")
+        fp.write (f"    <uws:destruction>{statdict['destruction']:s}</uws:destruction>\n")
     
-    fp.write ('    <uws:parameters>\n')
+        fp.write ('    <uws:parameters>\n')
        
-    format = param['format']
+        format = param['format']
 
-    fp.write (f'        <uws:parameter id="format">{format:s}</uws:parameter>\n') 
+        fp.write (f'        <uws:parameter id="format">{format:s}</uws:parameter>\n') 
         
-    lang = param['lang']
+        lang = param['lang']
 
-    fp.write (f'        <uws:parameter id="lang">{lang:s}</uws:parameter>\n') 
+        fp.write (f'        <uws:parameter id="lang">{lang:s}</uws:parameter>\n') 
 
-    fp.write (f'        <uws:parameter id="maxrec">{maxrec:d}</uws:parameter>\n') 
+        fp.write (f'        <uws:parameter id="maxrec">{maxrec:d}</uws:parameter>\n') 
 
 #
 #    encode query to escape '<' and '>'
 #
-    str1 = param['query']
+        str1 = param['query']
       
-    ind = str1.find ('<')
-    while (ind >= 0):
-
-        substr1 = str1[0:ind]
-        substr2 = str1[ind+1:]
-
-        str1 = substr1 + '&lt;' + substr2
         ind = str1.find ('<')
+        while (ind >= 0):
+
+            substr1 = str1[0:ind]
+            substr2 = str1[ind+1:]
+
+            str1 = substr1 + '&lt;' + substr2
+            ind = str1.find ('<')
        
-    if debug:
-        logging.debug ('')
-        logging.debug (f'str1= [{str1:s}]')
+        if debug:
+            logging.debug ('')
+            logging.debug (f'str1= [{str1:s}]')
 
-    ind = str1.find ('>')
-    while (ind >= 0):
-
-        substr1 = str1[0:ind]
-        substr2 = str1[ind+1:]
-
-        str1 = substr1 + '&gt;' + substr2
         ind = str1.find ('>')
+        while (ind >= 0):
 
-    if debug:
-        logging.debug ('')
-        logging.debug (f'final query str1= [{str1:s}]')
+            substr1 = str1[0:ind]
+            substr2 = str1[ind+1:]
+
+            str1 = substr1 + '&gt;' + substr2
+            ind = str1.find ('>')
+
+        if debug:
+            logging.debug ('')
+            logging.debug (f'final query str1= [{str1:s}]')
          
 
-    fp.write (f'        <uws:parameter id="query">{str1:s}')
-    fp.write ('        </uws:parameter>\n')
+        fp.write (f'        <uws:parameter id="query">{str1:s}')
+        fp.write ('        </uws:parameter>\n')
     
-    fp.write ('    </uws:parameters>\n')
+        fp.write ('    </uws:parameters>\n')
   
-    if (phase.lower() == 'completed'):
+        if (phase.lower() == 'completed'):
 
-        fp.write ('    <uws:results>\n')
-        fp.write (f'        <uws:result id="result" xlink:type="simple" xlink:href="{resulturl:s}"/>\n')
-        fp.write ('    </uws:results>\n')
+            fp.write ('    <uws:results>\n')
+            fp.write (f'        <uws:result id="result" xlink:type="simple" xlink:href="{resulturl:s}"/>\n')
+            fp.write ('    </uws:results>\n')
   
-    elif (phase.lower() == 'error'):
+        elif (phase.lower() == 'error'):
 
-        fp.write ('    <uws:errorSummary type="transient" hasDetail="true">\n')
-        fp.write (f'        <uws:message>{errmsg:s}</uws:message>\n')
-        fp.write ('    </uws:errorSummary>\n')
+            fp.write ('    <uws:errorSummary type="transient" hasDetail="true">\n')
+            fp.write (f'        <uws:message>{errmsg:s}</uws:message>\n')
+            fp.write ('    </uws:errorSummary>\n')
   
-    fp.write ('</uws:job>\n')
+        fp.write ('</uws:job>\n')
 	
-    fp.flush()
-    fp.close()
+        fp.flush()
+        fp.close()
 
 #
 #    Note: closing file automatically released the lock
 #
 
-    if debug:
-        logging.debug ('')
-        logging.debug ('done writeStatusMsg')
+        if debug:
+            logging.debug ('')
+            logging.debug ('done writeStatusMsg')
 
-    return
+        return
 #
 # } end writeStatusMsg
 #
 
 
-def getDatalevel (dbtable, **kwargs):
+    def __getDatalevel__ (self, dbtable, **kwargs):
 
-    debug = 0 
+        debug = 0 
 
-    if ('debug' in kwargs):
-        debug = kwargs['debug']
+        if ('debug' in kwargs):
+            debug = kwargs['debug']
 
-    if debug:
-        logging.debug ('')
-        logging.debug (f'dbtable= {dbtable:s}')
+        if debug:
+            logging.debug ('')
+            logging.debug (f'dbtable= {dbtable:s}')
 
-    level = ["l0", \
-             "l1", \
-             "l2", \
-             "eng"]
+        level = ["l0", \
+                 "l1", \
+                 "l2", \
+                 "eng"]
 
-    nlevel = len(level)
+        nlevel = len(level)
 
-    if debug:
-        logging.debug ('')
-        logging.debug (f'nlevel= {nlevel:d}')
+        if debug:
+            logging.debug ('')
+            logging.debug (f'nlevel= {nlevel:d}')
 
-    datalevel = ''
-    for i in range (nlevel):
+        datalevel = ''
+        for i in range (nlevel):
 
-        dbtable_lower = dbtable.lower()
+            dbtable_lower = dbtable.lower()
 	
-        ind = dbtable_lower.find (level[i])
+            ind = dbtable_lower.find (level[i])
 	
-        if (ind != -1):
-            datalevel = level[i]
-            break
+            if (ind != -1):
+                datalevel = level[i]
+                break
     
-    if debug:
-        logging.debug ('')
-        logging.debug (f'ind= {ind:d}')
-        logging.debug (f'datalevel= {datalevel:s}')
+        if debug:
+            logging.debug ('')
+            logging.debug (f'ind= {ind:d}')
+            logging.debug (f'datalevel= {datalevel:s}')
 
-    return (datalevel)
+        return (datalevel)
+
+#
+# } end tap class
+#
 
 
 if __name__=="__main__":
+    
     import sys
-
     main()
     
