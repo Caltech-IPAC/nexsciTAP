@@ -89,7 +89,7 @@ class Tap:
     debugfname = ''
 
     debugfname = '/tmp/tap_' + str(pid) + '.debug'
-    debugfname = '/home/mihseh/tap/server/src.git/nexsciTAP/tap_' + str(pid) + '.debug'
+    
     
     sql = ''
     servername = ''
@@ -101,7 +101,6 @@ class Tap:
     statdict = dict()
 
 
-    phase = ''
     errmsg = ''
 
     propflag = -1 
@@ -153,14 +152,18 @@ class Tap:
 # {  tap.init() 
 #
         
-        self.form = cgi.FieldStorage()
+#        self.form = cgi.FieldStorage()
   
         if ('debug' in self.form):
             self.debug = 1
    
         if ('debugtime' in self.form):
             self.debugtime = 1
-  
+#
+#    set debug = 1 for debugging client
+#
+#        self.debug =1
+
         if ((self.debug or self.debugtime) and (len(self.debugfname) > 0)):
       
             logging.basicConfig (filename=self.debugfname, level=logging.DEBUG)
@@ -453,6 +456,8 @@ class Tap:
             logging.debug (f'racol= {self.config.racol:s}') 
             logging.debug (f'deccol= {self.config.deccol:s}') 
             logging.debug (f'propfilter= {self.config.propfilter:s}') 
+            logging.debug (f'phase= {self.param["phase"]:s}') 
+
 
 #
 #    initialize statdict dict
@@ -462,7 +467,13 @@ class Tap:
         self.statdict['quotelabel'] = 'quote xsi:nil="true"'
         self.statdict['errmsg'] = ''
     
-        self.statdict['phase'] = ''
+        self.statdict['phase'] = self.param['phase']
+        if self.debug:
+            logging.debug ('')
+            logging.debug (f'param[phase]= {self.param["phase"]:s}') 
+            logging.debug (f'statdict[phase]= {self.statdict["phase"]:s}') 
+
+        
         self.statdict['jobid'] = '' 
     
         self.statdict['starttime'] = '' 
@@ -592,6 +603,15 @@ class Tap:
 #
 #    if async and phase == PENDING: send 303 with statusurl and exit
 #
+        if self.debug:
+            logging.debug ('')
+            logging.debug ('before setting phase to PENDING')
+            logging.debug (f'tapcontext= {self.tapcontext:s}')
+            logging.debug (f'getstatus= {self.getstatus:d}')
+            logging.debug (f'setstatus= {self.setstatus:d}')
+            logging.debug (f'param[phase]= {self.param["phase"]:s}')
+
+
         if ((self.tapcontext == 'async') and \
             (self.getstatus == 0) and \
             (self.setstatus == 0) and \
@@ -693,7 +713,10 @@ class Tap:
 #    parse statuspath to retrieve parameters
 #
             if (self.setstatus == 1):
-        
+#
+#{    setstatus = 1
+#
+
                 if self.debug:
                     logging.debug ('')
                     logging.debug (f'case setstatus=1')
@@ -744,8 +767,16 @@ class Tap:
                 self.param['lang'] = parameter.string
         
 #
+#} end  setstatus = 1
+#
+
+#
 #    rewrite statustbl
 #   
+            if self.debug:
+                logging.debug ('')
+                logging.debug (f'xxx0-0: write statustbl')
+            
             self.statdict['process_id'] = self.pid 
             self.statdict['jobid'] = self.workspace
 
@@ -766,17 +797,39 @@ class Tap:
 
             starttime = stime.strftime ('%Y-%m-%dT%H:%M:%S.%f')[:-4]
             destruction = destructtime.strftime ('%Y-%m-%dT%H:%M:%S.%f')[:-4]
-            if debug:
+            if self.debug:
                 logging.debug ('')
                 logging.debug (f'starttime: {starttime:s}')
                 logging.debug (f'destruction= {destruction:s}')
+                logging.debug (f'xxx0')
+            
    
             self.statdict['stime'] = stime
+            if self.debug:
+                logging.debug ('')
+                logging.debug (f'xxx0-0-0')
+            
             self.statdict['starttime'] = starttime
+            if self.debug:
+                logging.debug ('')
+                logging.debug (f'xxx0-1')
+            
             self.statdict['destruction'] = destruction 
+            if self.debug:
+                logging.debug ('')
+                logging.debug (f'xxx0-2')
+            
             self.statdict['endtime'] = '' 
+            if self.debug:
+                logging.debug ('')
+                logging.debug (f'xxx0-3')
+            
             self.statdict['duration'] = '0' 
        
+            if self.debug:
+                logging.debug ('')
+                logging.debug (f'xxx0-4')
+            
             self.statdict['resulturl'] = self.resulturl
 
             if self.debug:
@@ -1279,16 +1332,32 @@ class Tap:
             if self.debugtime:
                 time0 = datetime.datetime.now()
         
+            if self.debug:
+                logging.debug ('')
+                logging.debug (f'xxx0-0')
+       
             etime = datetime.datetime.now()
             endtime = etime.strftime ('%Y-%m-%dT%H:%M:%S.%f')[:-4]
         
-            durationtime = etime - statdict['stime']
+            if self.debug:
+                logging.debug ('')
+                logging.debug (f'xxx0-1')
+       
+            durationtime = etime - self.statdict['stime']
             duration = str(durationtime.total_seconds())[:4] 
 
+            if self.debug:
+                logging.debug ('')
+                logging.debug (f'xxx0-2')
+       
             self.statdict['endtime'] = endtime 
             self.statdict['duration'] = duration 
 	
-            if debug:
+            if self.debug:
+                logging.debug ('')
+                logging.debug (f'xxx0-3')
+       
+            if self.debug:
                 logging.debug ('')
                 logging.debug (f'phase= {self.phase:s}')
                 logging.debug (f'errmsg= {self.errmsg:s}')
