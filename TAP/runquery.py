@@ -9,6 +9,7 @@ import datetime
 
 #import itertools
 import cx_Oracle
+import sqlite3
 import argparse
 import configobj
 
@@ -63,19 +64,18 @@ class runQuery:
 #{
 #
         """
-        runQuery provides a basic search interface for Oracle database
-	table.
+        runQuery provides a basic search interface for database tables.
 	
 	Given an SQL statement and database table name, runQuery contacts 
-	the ORACLE server, submits the query and return the data in IPAC ASCII
+	the DBMS server, submits the query and return the data in IPAC ASCII
 	format.
 
 	Required keyword input parameters:
 
-            dbserver (char):    database server name,
-            userid (char):      userid for access the dsn,
-            password (char):    password for access the dsn,
-	    query (char):       the sql query to be executed in ORACLE,
+            connectInfo:        Dictionary containing the info needed
+                                to make a "connection".  These parameters
+                                are different depending on the DBMS.
+	    query (char):       the sql query to be executed,
 	    workdir (char):     user work directory  
 	    
 	Optional keyword input parameters:
@@ -88,9 +88,7 @@ class runQuery:
 
 	Usage:
 
-          runquery = runQuery (dbserver=dbserver,
-	                      userid=userid,
-	                      password=password,
+          runquery = runQuery (connectInfo=connectInfo,
 	                      query=query, 
 			      workdir=userworkdir,
 			      maxrec=maxrec,
@@ -127,38 +125,72 @@ class runQuery:
 #
 #    get keyword parameters
 #
-        self.dbserver = ''
-        if ('dbserver' in kwargs):
-            self.dbserver  = kwargs['dbserver']
+        if ('connectInfo' in kwargs):
 
-        if (len(self.dbserver) == 0):
-            self.msg = 'Failed to retrieve required input parameter [dbserver]'
-            self.status = 'error'
-            raise Exception (self.msg) 
+            self.connectInfo = kwargs['connectInfo']
 
-        self.dbuser = ''
-        if ('userid' in kwargs):
-            self.dbuser  = kwargs['userid']
+            self.dbms = self.connectInfo['dbms']
 
-        if (len(self.dbuser) == 0):
-            self.msg = 'Failed to retrieve required input parameter [userid]'
-            self.status = 'error'
-            raise Exception (self.msg) 
+            if(self.dbms.lower() == 'oracle'):
 
-        self.dbpassword = ''
-        if ('password' in kwargs):
-            self.dbpassword  = kwargs['password']
+                self.dbserver = ''
+                if ('dbserver' in self.connectInfo):
+                    self.dbserver  = self.connectInfo['dbserver']
 
-        if (len(self.dbpassword) == 0):
-            self.msg = 'Failed to retrieve required input parameter [password]'
-            self.status = 'error'
-            raise Exception (self.msg) 
-        
-        if self.debug:
-            logging.debug ('')
-            logging.debug (f'dbuser= {self.dbuser:s}')
-            logging.debug (f'dbpassword= {self.dbpassword:s}')
-            logging.debug (f'dbserver= {self.dbserver:s}')
+                if (len(self.dbserver) == 0):
+                    self.msg = 'Failed to retrieve required input parameter [dbserver]'
+                    self.status = 'error'
+                    raise Exception (self.msg) 
+
+                self.dbuser = ''
+                if ('userid' in self.connectInfo):
+                    self.dbuser  = self.connectInfo['userid']
+
+                if (len(self.dbuser) == 0):
+                    self.msg = 'Failed to retrieve required input parameter [userid]'
+                    self.status = 'error'
+                    raise Exception (self.msg) 
+
+                self.dbpassword = ''
+                if ('password' in self.connectInfo):
+                    self.dbpassword  = self.connectInfo['password']
+
+                if (len(self.dbpassword) == 0):
+                    self.msg = 'Failed to retrieve required input parameter [password]'
+                    self.status = 'error'
+                    raise Exception (self.msg) 
+                
+                if self.debug:
+                    logging.debug ('')
+                    logging.debug (f'dbuser= {self.dbuser:s}')
+                    logging.debug (f'dbpassword= {self.dbpassword:s}')
+                    logging.debug (f'dbserver= {self.dbserver:s}')
+
+
+            if(self.dbms.lower() == 'sqlite3'):
+
+                self.db = ''
+                if ('db' in self.connectInfo):
+                    self.db  = self.connectInfo['db']
+
+                if (len(self.db) == 0):
+                    self.msg = 'Failed to retrieve required input parameter [db]'
+                    self.status = 'error'
+                    raise Exception (self.msg) 
+
+                self.tap_schema = ''
+                if ('userid' in self.connectInfo):
+                    self.tap_schema  = self.connectInfo['userid']
+
+                if (len(self.tap_schema) == 0):
+                    self.msg = 'Failed to retrieve required input parameter [userid]'
+                    self.status = 'error'
+                    raise Exception (self.msg) 
+
+                if self.debug:
+                    logging.debug ('')
+                    logging.debug (f'tap_schema= {self.db:s}')
+                    logging.debug (f'db= {self.tap_schema:s}')
         
 
         self.sql = ''
@@ -250,31 +282,56 @@ class runQuery:
 
 
 #        
-#    Connect to Oracle
+#    Connect to DBMS
 #
         if self.debugtime:
             time0 = datetime.datetime.now()
         
-        try:
-            self.conn = cx_Oracle.connect (\
-                self.dbuser, self.dbpassword, self.dbserver)
+        if(self.dbms.lower() == 'oracle'):
+
+            try:
+                self.conn = cx_Oracle.connect (\
+                    self.dbuser, \
+                    self.dbpassword, \
+                    self.dbserver)
+
+            except Exception as e:
+                  
+                self.status = 'error'
+                self.msg = 'Failed to connect to cx_Oracle'
+            
+                raise Exception (self.msg) 
+
         
-        except Exception as e:
-              
+        elif(self.dbms.lower() == 'sqlite3'):
+
+            try:
+                self.conn = sqlite3.connect (\
+                    self.db, self.tap_schema)
+
+            except Exception as e:
+                  
+                self.status = 'error'
+                self.msg = 'Failed to connect to SQLite3'
+            
+                raise Exception (self.msg) 
+
+        else:
             self.status = 'error'
-            self.msg = 'Failed to connect to cx_Oracle'
+            self.msg = 'Invalid DBMS'
         
             raise Exception (self.msg) 
+        
 
         if self.debug:
             logging.debug ('')
-            logging.debug ('connected to Oracle')
+            logging.debug ('connected to DBMS')
 
         if self.debugtime:
             time1 = datetime.datetime.now()
             delt = (time1 - time0).total_seconds()
             logging.debug ('')
-            logging.debug (f'time (connect to Oracle): {delt:f}')
+            logging.debug (f'time (connect to DBMS): {delt:f}')
             
 #
 #    retrieve dd table

@@ -67,18 +67,84 @@ class configParam:
             logging.debug ('')
             logging.debug (f'server= {self.server:s}')
 
-        dsn = ''
-        if ('DSN' in confobj[self.server]):
-            dsn = confobj[self.server]['DSN']
-        self.dsn = dsn
+        dbms = ''
+        if ('DBMS' in confobj[self.server]):
+            dbms = confobj[self.server]['dbms']
+        self.dbms = dbms
 
         if self.debug:
-            logging.debug (f'dsn= {self.dsn:s}')
+            logging.debug (f'dbms= {self.dbms:s}')
 
-        if (len(self.dsn) == 0):
+        if (len(self.dbms) == 0):
             self.status = 'error'
             self.msg = 'Failed to find database server name in config_file'
             raise Exception (self.msg) 
+
+
+        self.connectInfo = []
+
+        self.connectInfo['dbms'] = DBMS
+
+        if(DBMS == 'oracle'):
+
+            self.connectInfo.dbuser = ''
+            if ('UserID' in confobj[dbms]):
+                self.connectInfo.dbuser = confobj[dbms]['UserID']
+
+            if (len(self.connectInfo.dbuser) == 0):
+                self.status = 'error'
+                self.msg = 'Failed to find db user in config_file'
+                raise Exception (self.msg) 
+            
+            self.connectInfo.dbpassword = ''
+            if ('Password' in confobj[dbms]):
+                self.connectInfo.dbpassword = confobj[dbms]['Password']
+
+            if (len(self.connectInfo.dbpassword) == 0):
+                self.status = 'error'
+                self.msg = 'Failed to find db password in config_file'
+                raise Exception (self.msg) 
+        
+            self.connectInfo.dbserver = ''
+            if ('ServerName' in confobj[dbms]):
+                self.connectInfo.dbserver = confobj[dbms]['ServerName']
+
+            if (len(self.connectInfo.dbserver) == 0):
+                self.status = 'error'
+                self.msg = 'Failed to find db server name in config_file'
+                raise Exception (self.msg) 
+
+            if self.debug:
+                logging.debug ('')
+                logging.debug (f'dbserver= {self.connectInfo.dbserver:s}')
+                logging.debug (f'dbuser= {self.connectInfo.dbuser:s}')
+                logging.debug (f'dbpassword= {self.connectInfo.dbpassword:s}')
+
+
+        if(DBMS == 'sqlite3'):
+
+            self.connectInfo.db = ''
+            if ('DB' in confobj[dbms]):
+                self.connectInfo.db = confobj[dbms]['DB']
+
+            if (len(self.connectInfo.db) == 0):
+                self.status = 'error'
+                self.msg = 'Failed to find DB in config_file'
+                raise Exception (self.msg) 
+            
+            self.connectInfo.tap_schema = ''
+            if ('TAP_SCHEMA' in confobj[dbms]):
+                self.connectInfo.tap_schema = confobj[dbms]['TAP_SCHEMA']
+
+            if (len(self.connectInfo.tap_schema) == 0):
+                self.status = 'error'
+                self.msg = 'Failed to find TAP_SCHEMA password in config_file'
+                raise Exception (self.msg) 
+        
+            if self.debug:
+                logging.debug ('')
+                logging.debug (f'db= {self.connectInfo.db:s}')
+                logging.debug (f'tap_schema= {self.connectInfo.tap_schema:s}')
 
 
         self.adqlparam = {}
@@ -113,39 +179,6 @@ class configParam:
         if ('ADQL_ENCODING' in confobj[self.server]):
             self.adqlparam['encoding'] = confobj[self.server]['ADQL_ENCODING']
 
-
-        self.dbuser = ''
-        if ('UserID' in confobj[dsn]):
-            self.dbuser = confobj[dsn]['UserID']
-
-        if (len(self.dbuser) == 0):
-            self.status = 'error'
-            self.msg = 'Failed to find db user in config_file'
-            raise Exception (self.msg) 
-        
-        self.dbpassword = ''
-        if ('Password' in confobj[dsn]):
-            self.dbpassword = confobj[dsn]['Password']
-
-        if (len(self.dbpassword) == 0):
-            self.status = 'error'
-            self.msg = 'Failed to find db password in config_file'
-            raise Exception (self.msg) 
-	
-        self.dbserver = ''
-        if ('ServerName' in confobj[dsn]):
-            self.dbserver = confobj[dsn]['ServerName']
-
-        if (len(self.dbserver) == 0):
-            self.status = 'error'
-            self.msg = 'Failed to find db server name in config_file'
-            raise Exception (self.msg) 
-
-        if self.debug:
-            logging.debug ('')
-            logging.debug (f'dbuser= {self.dbuser:s}')
-            logging.debug (f'dbpassword= {self.dbpassword:s}')
-            logging.debug (f'dbserver= {self.dbserver:s}')
 
         self.workdir = ''
         if ('TAP_WORKDIR' in confobj[self.server]):
