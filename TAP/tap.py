@@ -1024,9 +1024,8 @@ class Tap:
 
                 if (self.debug and self.debugtime):
 
-                    dbquery = runQuery (dbserver=self.config.dbserver, \
-                        userid=self.config.dbuser, \
-                        password=self.config.dbpassword, \
+                    dbquery = runQuery ( \
+                        connectInfo=self.config.connectInfo, \
                         query=self.query, \
                         workdir=self.userWorkdir, \
                         format=self.format, \
@@ -1038,9 +1037,8 @@ class Tap:
                
                 elif self.debug:
             
-                    dbquery = runQuery (dbserver=self.config.dbserver, \
-                        userid=self.config.dbuser, \
-                        password=self.config.dbpassword, \
+                    dbquery = runQuery ( \
+                        connectInfo=self.config.connectInfo, \
                         query=self.query, \
                         workdir=self.userWorkdir, \
                         format=self.format, \
@@ -1051,9 +1049,8 @@ class Tap:
                     
                 elif self.debugtime:
             
-                    dbquery = runQuery (dbserver=self.config.dbserver, \
-                        userid=self.config.dbuser, \
-                        password=self.config.dbpassword, \
+                    dbquery = runQuery ( \
+                        connectInfo=self.config.connectInfo, \
                         query=self.query, \
                         workdir=self.userWorkdir, \
                         format=self.format, \
@@ -1063,9 +1060,8 @@ class Tap:
                         debugtime=1)
                
                 else:
-                    dbquery = runQuery (dbserver=self.config.dbserver, \
-                        userid=self.config.dbuser, \
-                        password=self.config.dbpassword, \
+                    dbquery = runQuery ( \
+                        connectInfo=self.config.connectInfo, \
                         query=self.query, \
                         workdir=self.userWorkdir, \
                         format=self.format, \
@@ -1124,9 +1120,9 @@ class Tap:
                 if (self.debug and self.debugtime):
 
                     propfilter = propFilter ( \
-                        dbserver=self.config.dbserver, \
-                        userid=self.config.dbuser, \
-                        password=self.config.dbpassword, \
+                        dbserver=self.config.connectInfo.dbserver, \
+                        userid=self.config.connectInfo.userid, \
+                        password=self.config.connectInfo.password, \
                         query=self.query, \
                         workdir=self.userWorkdir, \
                         racol=self.config.racol, \
@@ -1146,9 +1142,9 @@ class Tap:
                 elif self.debug:
 
                     propfilter = propFilter ( \
-                        dbserver=self.config.dbserver, \
-                        userid=self.config.dbuser, \
-                        password=self.config.dbpassword, \
+                        dbserver=self.config.connectInfo.dbserver, \
+                        userid=self.config.connectInfo.userid, \
+                        password=self.config.connectInfo.password, \
                         query=self.query, \
                         workdir=self.userWorkdir, \
                         racol=self.config.racol, \
@@ -1167,9 +1163,9 @@ class Tap:
                 elif self.debugtime:
 
                     propfilter = propFilter ( \
-                        dbserver=self.config.dbserver, \
-                        userid=self.config.dbuser, \
-                        password=self.config.dbpassword, \
+                        dbserver=self.config.connectInfo.dbserver, \
+                        userid=self.config.connectInfo.userid, \
+                        password=self.config.connectInfo.password, \
                         query=self.query, \
                         workdir=self.userWorkdir, \
                         racol=self.config.racol, \
@@ -1187,9 +1183,9 @@ class Tap:
 
                 else:
                     propfilter = propFilter ( \
-                        dbserver=self.config.dbserver, \
-                        userid=self.config.dbuser, \
-                        password=self.config.dbpassword, \
+                        dbserver=self.config.connectInfo.dbserver, \
+                        userid=self.config.connectInfo.userid, \
+                        password=self.config.connectInfo.password, \
                         query=self.query, \
                         workdir=self.userWorkdir, \
                         racol=self.config.racol, \
