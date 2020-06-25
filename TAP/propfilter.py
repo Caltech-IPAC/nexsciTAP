@@ -91,7 +91,7 @@ class propFilter:
 
             dbserver:   database server,
             
-            dbuser:     database server's userid,
+            userid:     database server's userid,
             
             password:   database server's password,
           
@@ -127,13 +127,13 @@ class propFilter:
 
 	Usage:
 
-            pfilter = propFilter (dbserver=config.dbserver, \
-                                  userid=config.dbuser, \
-                                  password=config.dbpassword, \
+            pfilter = propFilter (dbserver=dbserver, \
+                                  userid=userid, \
+                                  password=password, \
 		                  query=query,
 		                  workdir= userworkdir, 
-                                  racol=config.racol, \
-                                  deccol=config.deccol, \
+                                  racol=racol, \
+                                  deccol=deccol, \
 				  cookiename=cookiename, 
 		                  cookiestr= cookiestr, 
 	                          usertbl=usertbl, 
@@ -171,28 +171,28 @@ class propFilter:
             self.status = 'error'
             raise Exception (self.msg) 
 
-        self.dbuser = ''
+        self.userid = ''
         if ('userid' in kwargs):
-            self.dbuser  = kwargs['userid']
+            self.userid  = kwargs['userid']
 
-        if (len(self.dbuser) == 0):
+        if (len(self.userid) == 0):
             self.msg = 'Failed to retrieve required input parameter [userid]'
             self.status = 'error'
             raise Exception (self.msg) 
 
-        self.dbpassword = ''
+        self.password = ''
         if ('password' in kwargs):
-            self.dbpassword  = kwargs['password']
+            self.password  = kwargs['password']
 
-        if (len(self.dbpassword) == 0):
+        if (len(self.password) == 0):
             self.msg = 'Failed to retrieve required input parameter [password]'
             self.status = 'error'
             raise Exception (self.msg) 
         
         if self.debug:
             logging.debug ('')
-            logging.debug (f'dbuser= {self.dbuser:s}')
-            logging.debug (f'dbpassword= {self.dbpassword:s}')
+            logging.debug (f'userid= {self.userid:s}')
+            logging.debug (f'password= {self.password:s}')
             logging.debug (f'dbserver= {self.dbserver:s}')
 
 #        self.dbtable = ''
@@ -344,7 +344,7 @@ class propFilter:
         
         try:
             self.conn = cx_Oracle.connect (\
-                self.dbuser, self.dbpassword, self.dbserver)
+                self.userid, self.password, self.dbserver)
         
         except Exception as e:
               
@@ -503,7 +503,7 @@ class propFilter:
         if self.debug:
             logging.debug ('')
             logging.debug (f'self.ddtable= {self.ddtable:s}')
-            logging.debug ('call dataDictionry')
+            logging.debug ('call dataDictionary')
 
         if self.debugtime:
             self.time0 = datetime.datetime.now()

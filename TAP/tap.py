@@ -950,7 +950,9 @@ class Tap:
                 logging.debug (f'zcol= {zcol:s}')
 
 
-            adql = ADQL (mode=mode, level=level, indxcol=colname, \
+            dbms = xelf.config.connectInfo['dbms']
+
+            adql = ADQL (dbms=dbms, mode=mode, level=level, indxcol=colname, \
                 encoding=encoding, racol=racol, deccol=deccol, \
                 xcol=xcol, ycol=ycol, zcol=zcol)
 
@@ -1173,9 +1175,9 @@ class Tap:
                 if (self.debug and self.debugtime):
 
                     propfilter = propFilter ( \
-                        dbserver=self.config.connectInfo.dbserver, \
-                        userid=self.config.connectInfo.userid, \
-                        password=self.config.connectInfo.password, \
+                        dbserver=self.config.connectInfo['dbserver'], \
+                        userid=self.config.connectInfo['userid'], \
+                        password=self.config.connectInfo['password'], \
                         query=self.query, \
                         workdir=self.userWorkdir, \
                         racol=self.config.racol, \
@@ -1195,9 +1197,9 @@ class Tap:
                 elif self.debug:
 
                     propfilter = propFilter ( \
-                        dbserver=self.config.connectInfo.dbserver, \
-                        userid=self.config.connectInfo.userid, \
-                        password=self.config.connectInfo.password, \
+                        dbserver=self.config.connectInfo['dbserver'], \
+                        userid=self.config.connectInfo['userid'], \
+                        password=self.config.connectInfo['password'], \
                         query=self.query, \
                         workdir=self.userWorkdir, \
                         racol=self.config.racol, \
@@ -1216,9 +1218,9 @@ class Tap:
                 elif self.debugtime:
 
                     propfilter = propFilter ( \
-                        dbserver=self.config.connectInfo.dbserver, \
-                        userid=self.config.connectInfo.userid, \
-                        password=self.config.connectInfo.password, \
+                        dbserver=self.config.connectInfo['dbserver'], \
+                        userid=self.config.connectInfo['userid'], \
+                        password=self.config.connectInfo['password'], \
                         query=self.query, \
                         workdir=self.userWorkdir, \
                         racol=self.config.racol, \
@@ -1236,9 +1238,9 @@ class Tap:
 
                 else:
                     propfilter = propFilter ( \
-                        dbserver=self.config.connectInfo.dbserver, \
-                        userid=self.config.connectInfo.userid, \
-                        password=self.config.connectInfo.password, \
+                        dbserver=self.config.connectInfo['dbserver'], \
+                        userid=self.config.connectInfo['userid'], \
+                        password=self.config.connectInfo['password'], \
                         query=self.query, \
                         workdir=self.userWorkdir, \
                         racol=self.config.racol, \

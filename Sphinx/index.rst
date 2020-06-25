@@ -20,6 +20,7 @@ The NExScI TAP Service
    loading
    ADQL_translation
    extending
+   coordinates
 
 .. toctree::
    :maxdepth: 2

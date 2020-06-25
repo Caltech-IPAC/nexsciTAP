@@ -157,7 +157,7 @@ class dataDictionary:
 #
 #{ for loop: each row in the file represent a column in data dictionary
 #
-                col_str = str(row[1]).strip().upper()
+                col_str = str(row[1]).strip()
 
 #                if (col_str.lower() == 'ra2000'):
 #                    col_str = 'RA'

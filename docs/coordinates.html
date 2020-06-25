@@ -1,0 +1,246 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>A Note on Coordinates &mdash; nexsciTAP 1.1.3 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="spatial_index Docstrings" href="spatial_index_docs.html" />
+    <link rel="prev" title="Extending the Service" href="extending.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> nexsciTAP
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Getting &quot;Up and Running&quot;</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation Instructions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configure.html">Configuration Instructions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="operations.html">Operations Issues</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Appendices</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="tap_architecture.html">Behind the Scenes: How the TAP Service Works</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tap_schema.html">Setting up Your TAP_SCHEMA Tables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="spatial_index.html">DBMS-Agnostic Spatial Indexing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="loading.html">Adding Spatial Indexing to Your Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ADQL_translation.html">Converting ADQL to Local SQL</a></li>
+<li class="toctree-l1"><a class="reference internal" href="extending.html">Extending the Service</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">A Note on Coordinates</a></li>
+</ul>
+<p class="caption"><span class="caption-text">The Code</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="spatial_index_docs.html">spatial_index Docstrings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="adql_docs.html">ADQL Docstrings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tap_docs.html">TAP Docstrings</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">nexsciTAP</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>A Note on Coordinates</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/coordinates.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="a-note-on-coordinates">
+<h1>A Note on Coordinates<a class="headerlink" href="#a-note-on-coordinates" title="Permalink to this headline">¶</a></h1>
+<p>The ADQL specification (or more accurately the Space-Time Coordinate
+Metadata (STC) specification) enumerates over forty coordinate systems,
+including variant frames of reference.  We limit ourselves here to
+a more basic set (ICRS, FK4, FK5, Galactic and Ecliptic), essentially
+the values supported by packages like Astropy.</p>
+<p>If the coordinate system is left as a blank string in functions like
+POINT() ane POLYGON(), we default to ‘ICRS’.</p>
+<p>Moreover, since our main purpose is spatial searching, we will consider
+ICRS, FK5 and ‘J2000’ to be identical (ICRS and FK5 differ in practice
+by less than a tenth of an arcsecond).</p>
+<p>Finally, our spatial index tesselation could be done in any coordinate
+system but there is no practical purpose in allowing this, so we
+constrain the indexing to be in ICRS/FK5 (<em>e.g.,</em> POINT(‘icrs’, ra, dec)).</p>
+<p>However, reference locations are allowed to be in any of the above
+systems (<em>e.g.,</em> CIRCLE(‘galactic’, 180. 0., 2.5)).</p>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="spatial_index_docs.html" class="btn btn-neutral float-right" title="spatial_index Docstrings" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="extending.html" class="btn btn-neutral float-left" title="Extending the Service" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, NExScI / IPAC / Caltech
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
