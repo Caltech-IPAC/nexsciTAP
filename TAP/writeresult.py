@@ -233,11 +233,11 @@ class writeResult:
 #
 #    extract colname, dbdatatype, size, precision, scale from col array
 #
-            colname = str(col[0])
+            colname = str(col[0]).lower()
 
             if self.debug:
                 logging.debug ('')
-                logging.debug (f'colname= {colname:s}')
+                logging.debug (f'colname(lower)= {colname:s}')
 
             if (i == self.ind_exclcol): 
                 

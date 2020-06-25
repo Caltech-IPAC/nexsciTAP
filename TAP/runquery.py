@@ -8,8 +8,6 @@ import time
 import datetime
 
 #import itertools
-import cx_Oracle
-import sqlite3
 import argparse
 import configobj
 
@@ -133,6 +131,8 @@ class runQuery:
 
             if(self.dbms.lower() == 'oracle'):
 
+                import cx_Oracle
+
                 self.dbserver = ''
                 if ('dbserver' in self.connectInfo):
                     self.dbserver  = self.connectInfo['dbserver']
@@ -142,32 +142,34 @@ class runQuery:
                     self.status = 'error'
                     raise Exception (self.msg) 
 
-                self.dbuser = ''
+                self.userid = ''
                 if ('userid' in self.connectInfo):
-                    self.dbuser  = self.connectInfo['userid']
+                    self.userid  = self.connectInfo['userid']
 
-                if (len(self.dbuser) == 0):
+                if (len(self.userid) == 0):
                     self.msg = 'Failed to retrieve required input parameter [userid]'
                     self.status = 'error'
                     raise Exception (self.msg) 
 
-                self.dbpassword = ''
+                self.password = ''
                 if ('password' in self.connectInfo):
-                    self.dbpassword  = self.connectInfo['password']
+                    self.password  = self.connectInfo['password']
 
-                if (len(self.dbpassword) == 0):
+                if (len(self.password) == 0):
                     self.msg = 'Failed to retrieve required input parameter [password]'
                     self.status = 'error'
                     raise Exception (self.msg) 
                 
                 if self.debug:
                     logging.debug ('')
-                    logging.debug (f'dbuser= {self.dbuser:s}')
-                    logging.debug (f'dbpassword= {self.dbpassword:s}')
+                    logging.debug (f'userid= {self.userid:s}')
+                    logging.debug (f'password= {self.password:s}')
                     logging.debug (f'dbserver= {self.dbserver:s}')
 
 
             if(self.dbms.lower() == 'sqlite3'):
+
+                import sqlite3
 
                 self.db = ''
                 if ('db' in self.connectInfo):
@@ -178,19 +180,21 @@ class runQuery:
                     self.status = 'error'
                     raise Exception (self.msg) 
 
+
                 self.tap_schema = ''
-                if ('userid' in self.connectInfo):
-                    self.tap_schema  = self.connectInfo['userid']
+                if ('tap_schema' in self.connectInfo):
+                    self.tap_schema  = self.connectInfo['tap_schema']
 
                 if (len(self.tap_schema) == 0):
-                    self.msg = 'Failed to retrieve required input parameter [userid]'
+                    self.msg = 'Failed to retrieve required input parameter [tap_schema]'
                     self.status = 'error'
                     raise Exception (self.msg) 
 
+
                 if self.debug:
                     logging.debug ('')
-                    logging.debug (f'tap_schema= {self.db:s}')
-                    logging.debug (f'db= {self.tap_schema:s}')
+                    logging.debug (f'db= {self.db:s}')
+                    logging.debug (f'tap_schema= {self.tap_schema:s}')
         
 
         self.sql = ''
@@ -291,9 +295,13 @@ class runQuery:
 
             try:
                 self.conn = cx_Oracle.connect (\
-                    self.dbuser, \
-                    self.dbpassword, \
+                    self.userid, \
+                    self.password, \
                     self.dbserver)
+
+                if self.debug:
+                    logging.debug ('')
+                    logging.debug ('connected to Oracle, database ' + self.dbserver)
 
             except Exception as e:
                   
@@ -306,13 +314,32 @@ class runQuery:
         elif(self.dbms.lower() == 'sqlite3'):
 
             try:
-                self.conn = sqlite3.connect (\
-                    self.db, self.tap_schema)
+                self.conn = sqlite3.connect (self.db)
+
+                if self.debug:
+                    logging.debug ('')
+                    logging.debug ('connected to SQLite3, database ' + self.db)
+
+                cmd = 'ATTACH DATABASE ? AS TAP_SCHEMA'
+
+                dbspec = (self.tap_schema,)
+
+                if self.debug:
+                    logging.debug ('')
+                    logging.debug ('cmd: ' + cmd + '(' + self.tap_schema + ')')
+
+                cursor = self.conn.cursor()
+
+                cursor.execute(cmd, dbspec)
+
+                if self.debug:
+                    logging.debug ('')
+                    logging.debug ('TAP_SCHEMA attached')
 
             except Exception as e:
                   
                 self.status = 'error'
-                self.msg = 'Failed to connect to SQLite3'
+                self.msg = 'Failed to connect to SQLite3 databases'
             
                 raise Exception (self.msg) 
 
@@ -322,10 +349,6 @@ class runQuery:
         
             raise Exception (self.msg) 
         
-
-        if self.debug:
-            logging.debug ('')
-            logging.debug ('connected to DBMS')
 
         if self.debugtime:
             time1 = datetime.datetime.now()
@@ -339,7 +362,7 @@ class runQuery:
         if self.debug:
             logging.debug ('')
             logging.debug (f'self.ddtable= {self.ddtable:s}')
-            logging.debug ('call dataDictionry')
+            logging.debug ('call dataDictionary')
 
         if self.debugtime:
             time0 = datetime.datetime.now()
@@ -347,9 +370,9 @@ class runQuery:
         self.dd = None 
         try:
             if self.debug:
-                self.dd = dataDictionary (self.conn, self.ddtable, debug=1)   
+                self.dd = dataDictionary (self.conn, self.dbtable, debug=1)   
             else:
-                self.dd = dataDictionary (self.conn, self.ddtable)   
+                self.dd = dataDictionary (self.conn, self.dbtable)   
 
 
             if self.debug:

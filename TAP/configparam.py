@@ -69,7 +69,7 @@ class configParam:
 
         dbms = ''
         if ('DBMS' in confobj[self.server]):
-            dbms = confobj[self.server]['dbms']
+            dbms = confobj[self.server]['DBMS']
         self.dbms = dbms
 
         if self.debug:
@@ -81,70 +81,70 @@ class configParam:
             raise Exception (self.msg) 
 
 
-        self.connectInfo = []
+        self.connectInfo = {}
 
-        self.connectInfo['dbms'] = DBMS
+        self.connectInfo['dbms'] = dbms
 
-        if(DBMS == 'oracle'):
+        if(dbms == 'oracle'):
 
-            self.connectInfo.dbuser = ''
-            if ('UserID' in confobj[dbms]):
-                self.connectInfo.dbuser = confobj[dbms]['UserID']
-
-            if (len(self.connectInfo.dbuser) == 0):
-                self.status = 'error'
-                self.msg = 'Failed to find db user in config_file'
-                raise Exception (self.msg) 
-            
-            self.connectInfo.dbpassword = ''
-            if ('Password' in confobj[dbms]):
-                self.connectInfo.dbpassword = confobj[dbms]['Password']
-
-            if (len(self.connectInfo.dbpassword) == 0):
-                self.status = 'error'
-                self.msg = 'Failed to find db password in config_file'
-                raise Exception (self.msg) 
-        
-            self.connectInfo.dbserver = ''
+            self.connectInfo['dbserver'] = ''
             if ('ServerName' in confobj[dbms]):
-                self.connectInfo.dbserver = confobj[dbms]['ServerName']
+                self.connectInfo['dbserver'] = confobj[dbms]['ServerName']
 
-            if (len(self.connectInfo.dbserver) == 0):
+            if (len(self.connectInfo['dbserver']) == 0):
                 self.status = 'error'
                 self.msg = 'Failed to find db server name in config_file'
                 raise Exception (self.msg) 
 
+            self.connectInfo['userid'] = ''
+            if ('UserID' in confobj[dbms]):
+                self.connectInfo['userid'] = confobj[dbms]['UserID']
+
+            if (len(self.connectInfo['userid']) == 0):
+                self.status = 'error'
+                self.msg = 'Failed to find DBMS user ID in config_file'
+                raise Exception (self.msg) 
+            
+            self.connectInfo['password'] = ''
+            if ('Password' in confobj[dbms]):
+                self.connectInfo['password'] = confobj[dbms]['Password']
+
+            if (len(self.connectInfo['password']) == 0):
+                self.status = 'error'
+                self.msg = 'Failed to find db password in config_file'
+                raise Exception (self.msg) 
+        
             if self.debug:
                 logging.debug ('')
-                logging.debug (f'dbserver= {self.connectInfo.dbserver:s}')
-                logging.debug (f'dbuser= {self.connectInfo.dbuser:s}')
-                logging.debug (f'dbpassword= {self.connectInfo.dbpassword:s}')
+                logging.debug (f"dbserver= {self.connectInfo['dbserver']:s}")
+                logging.debug (f"dbuser= {self.connectInfo['userid']:s}")
+                logging.debug (f"password= {self.connectInfo['password']:s}")
 
 
-        if(DBMS == 'sqlite3'):
+        if(dbms == 'sqlite3'):
 
-            self.connectInfo.db = ''
+            self.connectInfo['db'] = ''
             if ('DB' in confobj[dbms]):
-                self.connectInfo.db = confobj[dbms]['DB']
+                self.connectInfo['db'] = confobj[dbms]['DB']
 
-            if (len(self.connectInfo.db) == 0):
+            if (len(self.connectInfo['db']) == 0):
                 self.status = 'error'
                 self.msg = 'Failed to find DB in config_file'
                 raise Exception (self.msg) 
             
-            self.connectInfo.tap_schema = ''
+            self.connectInfo['tap_schema'] = ''
             if ('TAP_SCHEMA' in confobj[dbms]):
-                self.connectInfo.tap_schema = confobj[dbms]['TAP_SCHEMA']
+                self.connectInfo['tap_schema'] = confobj[dbms]['TAP_SCHEMA']
 
-            if (len(self.connectInfo.tap_schema) == 0):
+            if (len(self.connectInfo['tap_schema']) == 0):
                 self.status = 'error'
                 self.msg = 'Failed to find TAP_SCHEMA password in config_file'
                 raise Exception (self.msg) 
         
             if self.debug:
                 logging.debug ('')
-                logging.debug (f'db= {self.connectInfo.db:s}')
-                logging.debug (f'tap_schema= {self.connectInfo.tap_schema:s}')
+                logging.debug (f"db= {self.connectInfo['db']:s}")
+                logging.debug (f"tap_schema= {self.connectInfo['tap_schema']:s}")
 
 
         self.adqlparam = {}
