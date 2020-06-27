@@ -90,7 +90,6 @@ class Tap:
 
     debugfname = '/tmp/tap_' + str(pid) + '.debug'
     
-    
     sql = ''
     servername = ''
     dbtable = ''
@@ -152,8 +151,6 @@ class Tap:
 # {  tap.init() 
 #
         
-#        self.form = cgi.FieldStorage()
-  
         if ('debug' in self.form):
             self.debug = 1
    
@@ -423,8 +420,8 @@ class Tap:
 #
         self.config = None
         try:
-#            self.config = configParam (self.configpath, debug=1)
-            self.config = configParam (self.configpath)
+            self.config = configParam (self.configpath, debug=1)
+#            self.config = configParam (self.configpath)
     
             if self.debug:
                 logging.debug ('')
@@ -950,7 +947,12 @@ class Tap:
                 logging.debug (f'zcol= {zcol:s}')
 
 
-            dbms = xelf.config.connectInfo['dbms']
+            dbms = self.config.connectInfo['dbms']
+            
+            if self.debug:
+                logging.debug ('')
+                logging.debug (f'dbms= {dbms:s}')
+
 
             adql = ADQL (dbms=dbms, mode=mode, level=level, indxcol=colname, \
                 encoding=encoding, racol=racol, deccol=deccol, \
@@ -966,7 +968,7 @@ class Tap:
 
             if self.debug:
                 logging.debug ('')
-                logging.debug (f'adql exception: {str(e):s}')
+                logging.debug (f'exception: {str(e):s}')
        
             if (self.tapcontext == 'async'):
             
@@ -1175,9 +1177,7 @@ class Tap:
                 if (self.debug and self.debugtime):
 
                     propfilter = propFilter ( \
-                        dbserver=self.config.connectInfo['dbserver'], \
-                        userid=self.config.connectInfo['userid'], \
-                        password=self.config.connectInfo['password'], \
+                        connectInfo=self.config.connectInfo, \
                         query=self.query, \
                         workdir=self.userWorkdir, \
                         racol=self.config.racol, \
@@ -1197,9 +1197,7 @@ class Tap:
                 elif self.debug:
 
                     propfilter = propFilter ( \
-                        dbserver=self.config.connectInfo['dbserver'], \
-                        userid=self.config.connectInfo['userid'], \
-                        password=self.config.connectInfo['password'], \
+                        connectInfo=self.config.connectInfo, \
                         query=self.query, \
                         workdir=self.userWorkdir, \
                         racol=self.config.racol, \
@@ -1218,9 +1216,7 @@ class Tap:
                 elif self.debugtime:
 
                     propfilter = propFilter ( \
-                        dbserver=self.config.connectInfo['dbserver'], \
-                        userid=self.config.connectInfo['userid'], \
-                        password=self.config.connectInfo['password'], \
+                        connectInfo=self.config.connectInfo, \
                         query=self.query, \
                         workdir=self.userWorkdir, \
                         racol=self.config.racol, \
@@ -1238,9 +1234,7 @@ class Tap:
 
                 else:
                     propfilter = propFilter ( \
-                        dbserver=self.config.connectInfo['dbserver'], \
-                        userid=self.config.connectInfo['userid'], \
-                        password=self.config.connectInfo['password'], \
+                        connectInfo=self.config.connectInfo, \
                         query=self.query, \
                         workdir=self.userWorkdir, \
                         racol=self.config.racol, \

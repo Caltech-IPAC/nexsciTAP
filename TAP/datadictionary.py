@@ -87,8 +87,6 @@ class dataDictionary:
             logging.debug (cursor)
         
 
-#        sql = 'select * from ' + self.ddtable + ' order by cntr'
-
         sql = "select * from TAP_SCHEMA.columns where table_name = " + \
             "'" + self.dbtable + "'"
         
@@ -114,17 +112,75 @@ class dataDictionary:
         if self.debug:
             logging.debug ('')
             logging.debug ('select dd statement executed')
+
+
+#
+# { extract column index
+#
+        if self.debug:
+            logging.debug ('')
+            logging.debug ('dd cursor description:')
+            logging.debug (cursor.description)
+
+        ncols = len (cursor.description)
+
+        if self.debug:
+            logging.debug ('')
+            logging.debug (f'ncols= {ncols:d}')
+
+        ind_colname = -1 
+        ind_datatype = -1 
+        ind_desc = -1 
+        ind_unit = -1 
+        ind_format = -1 
+
+        i = 0 
+        for col in cursor.description:
+
+            name = str(col[0]).lower()
         
+            if self.debug:
+                logging.debug ('')
+                logging.debug (f'name= {name:s}')
+
+
+            if (name == 'column_name'):
+                ind_colname = i
+
+            if (name == 'datatype'):
+                ind_datatype = i
+
+            if (name == 'description'):
+                ind_desc = i
+
+            if (name == 'unit'):
+                ind_unit = i
+
+            if (name == 'format'):
+                ind_format = i
+
+            i = i + 1
+        
+        if self.debug:
+            logging.debug ('')
+            logging.debug (f'ind_colname= {ind_colname:d}')
+            logging.debug (f'ind_datatype= {ind_datatype:d}')
+            logging.debug (f'ind_desc= {ind_desc:d}')
+            logging.debug (f'ind_unit= {ind_unit:d}')
+            logging.debug (f'ind_format= {ind_format:d}')
+#
+# } end extract column index
+
+
 #        
 #    Retrieve column name, dtype, format, units from 
 #    TAP_SCHEMA.columns table.
 #
-#    col0: table_name (not used),
-#    col1: colname (column_name),
-#    col2: datatype (datatype),
-#    col6: description (all nulls),
-#    col8: unit (all nulls),
-#    col14: format (format: in the form of 11d, 12.6f, 25.25s etc..,
+#    ind_colname: colname (column_name),
+#    ind_datatype: datatype (datatype),
+#    ind_desc: description (all nulls),
+#    ind_unit: unit (all nulls),
+#    ind_format: format (format: in the form of 11d, 12.6f, 25.25s etc..,
 #        
         cursor.arraysize = self.nfetch
         
@@ -157,13 +213,7 @@ class dataDictionary:
 #
 #{ for loop: each row in the file represent a column in data dictionary
 #
-                col_str = str(row[1]).strip()
-
-#                if (col_str.lower() == 'ra2000'):
-#                    col_str = 'RA'
-		
-#                if (col_str.lower() == 'dec2000'):
-#                    col_str = 'DEC'
+                col_str = str(row[ind_colname]).strip().lower()
 
                 self.colname[i] = col_str
 
@@ -176,10 +226,11 @@ class dataDictionary:
 #
 #    datatype 
 #
-                if (row[2] is None):
+                if (row[ind_datatype] is None):
                     self.coltype[col_str] = ''
                 else:
-                    self.coltype[col_str] = str(row[2]).strip()
+                    self.coltype[col_str] = \
+                        str(row[ind_datatype]).strip().lower()
 
                 if self.debug:
                     logging.debug ('')
@@ -191,10 +242,12 @@ class dataDictionary:
 #
 #    format 
 #
-                if (row[14] is None):
+                if (row[ind_format] is None):
                     self.colfmt[col_str] = ''
                 else:
-                    self.colfmt[col_str] = str(row[14]).strip().replace('i', 'd')
+                    self.colfmt[col_str] = \
+                        str(row[ind_format]).strip().replace('i', 'd')
+                    self.colfmt[col_str] = self.colfmt[col_str].lower()
                  
                 if self.debug:
                     logging.debug ('')
@@ -203,10 +256,10 @@ class dataDictionary:
 #
 #    unit 
 #
-                if (row[8] is None):
+                if (row[ind_unit] is None):
                     self.colunits[col_str] = ''
                 else:
-                    self.colunits[col_str] = str(row[8]).strip()
+                    self.colunits[col_str] = str(row[ind_unit]).strip()
                  
                 if self.debug:
                     logging.debug ('')
@@ -215,10 +268,10 @@ class dataDictionary:
 #
 #    desc 
 #
-                if (row[6] is None):
+                if (row[ind_desc] is None):
                     self.coldesc[col_str] = ''
                 else:
-                    self.coldesc[col_str] = str(row[6]).strip()
+                    self.coldesc[col_str] = str(row[ind_desc]).strip()
                  
                 if self.debug:
                     logging.debug ('')

@@ -45,9 +45,6 @@ class runQuery:
 
     nfetch = 1000
 
-    querytbl = 'query.tbl'
-    querypath = ''
-
     outpath = ''
     userworkdir = ''
     ntot = 0
@@ -399,10 +396,6 @@ class runQuery:
             logging.debug ('')
             logging.debug (f'time (retrieve DD: {delt:f}')
 
-#
-#    setup querypath
-#
-        self.querypath = self.userworkdir + '/' + self.querytbl
 
 #        
 # Submit database query of user input sql
@@ -440,12 +433,8 @@ class runQuery:
             
 
 #        
-# open querypath for output
+# call writeResult
 #       
-        if self.debug:
-            logging.debug ('')
-            logging.debug (f'querypath= {self.querypath:s}')
-
         if self.debugtime:
             time0 = datetime.datetime.now()
         
