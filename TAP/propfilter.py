@@ -7,7 +7,6 @@ import time
 import datetime
 
 import itertools
-import cx_Oracle
 import argparse
 import configobj
 
@@ -40,7 +39,6 @@ class propFilter:
     dd = None
 
     dbtable = ''
-    ddtable = ''
     instrument = ''
     datalevel = ''
 
@@ -89,12 +87,10 @@ class propFilter:
 	
 	Required keyword parameters:
 
-            dbserver:   database server,
-            
-            userid:     database server's userid,
-            
-            password:   database server's password,
-          
+            connectInfo:        Dictionary containing the info needed
+                                to make a "connection".  These parameters
+                                are different depending on the DBMS.
+
             query (char): user query 
             
             workdir (char): user work directory  
@@ -127,9 +123,7 @@ class propFilter:
 
 	Usage:
 
-            pfilter = propFilter (dbserver=dbserver, \
-                                  userid=userid, \
-                                  password=password, \
+            pfilter = propFilter (connectInfo=connectInfo, \
 		                  query=query,
 		                  workdir= userworkdir, 
                                   racol=racol, \
@@ -160,57 +154,92 @@ class propFilter:
             logging.debug (f'Enter propFilter.init')
 
 #
-#    get input parameters
+#{    get input parameters
 #
-        self.dbserver = ''
-        if ('dbserver' in kwargs):
-            self.dbserver  = kwargs['dbserver']
+        if ('connectInfo' in kwargs):
+#
+#  { dbms info
+#
+            self.connectInfo = kwargs['connectInfo']
 
-        if (len(self.dbserver) == 0):
-            self.msg = 'Failed to retrieve required input parameter [dbserver]'
-            self.status = 'error'
-            raise Exception (self.msg) 
+            self.dbms = self.connectInfo['dbms']
 
-        self.userid = ''
-        if ('userid' in kwargs):
-            self.userid  = kwargs['userid']
+            if(self.dbms.lower() == 'oracle'):
 
-        if (len(self.userid) == 0):
-            self.msg = 'Failed to retrieve required input parameter [userid]'
-            self.status = 'error'
-            raise Exception (self.msg) 
+                import cx_Oracle
 
-        self.password = ''
-        if ('password' in kwargs):
-            self.password  = kwargs['password']
+                self.dbserver = ''
+                if ('dbserver' in self.connectInfo):
+                    self.dbserver  = self.connectInfo['dbserver']
 
-        if (len(self.password) == 0):
-            self.msg = 'Failed to retrieve required input parameter [password]'
-            self.status = 'error'
-            raise Exception (self.msg) 
+                if (len(self.dbserver) == 0):
+                    self.msg = \
+                        'Failed to retrieve required input parameter [dbserver]'
+                    self.status = 'error'
+                    raise Exception (self.msg) 
+
+                self.userid = ''
+                if ('userid' in self.connectInfo):
+                    self.userid  = self.connectInfo['userid']
+
+                if (len(self.userid) == 0):
+                    self.msg = \
+                        'Failed to retrieve required input parameter [userid]'
+                    self.status = 'error'
+                    raise Exception (self.msg) 
+
+                self.password = ''
+                if ('password' in self.connectInfo):
+                    self.password  = self.connectInfo['password']
+
+                if (len(self.password) == 0):
+                    self.msg = \
+                        'Failed to retrieve required input parameter [password]'
+                    self.status = 'error'
+                    raise Exception (self.msg) 
+                
+                if self.debug:
+                    logging.debug ('')
+                    logging.debug (f'userid= {self.userid:s}')
+                    logging.debug (f'password= {self.password:s}')
+                    logging.debug (f'dbserver= {self.dbserver:s}')
+
+
+            if(self.dbms.lower() == 'sqlite3'):
+
+                import sqlite3
+
+                self.db = ''
+                if ('db' in self.connectInfo):
+                    self.db  = self.connectInfo['db']
+
+                if (len(self.db) == 0):
+                    self.msg = \
+                        'Failed to retrieve required input parameter [db]'
+                    self.status = 'error'
+                    raise Exception (self.msg) 
+
+
+                self.tap_schema = ''
+                if ('tap_schema' in self.connectInfo):
+                    self.tap_schema  = self.connectInfo['tap_schema']
+
+                if (len(self.tap_schema) == 0):
+                    self.msg = \
+                        'Failed to retrieve required input parameter [tap_schema]'
+                    self.status = 'error'
+                    raise Exception (self.msg) 
+
+
+                if self.debug:
+                    logging.debug ('')
+                    logging.debug (f'db= {self.db:s}')
+                    logging.debug (f'tap_schema= {self.tap_schema:s}')
         
-        if self.debug:
-            logging.debug ('')
-            logging.debug (f'userid= {self.userid:s}')
-            logging.debug (f'password= {self.password:s}')
-            logging.debug (f'dbserver= {self.dbserver:s}')
-
-#        self.dbtable = ''
-#        if ('dbtable' in kwargs):
-#            self.dbtable  = kwargs['dbtable']
-
-#        if (len(self.dbtable) == 0):
-#            self.msg = 'Failed to retrieve required input parameter [dbtable]'
-#            self.status = 'error'
-#            raise Exception (self.msg) 
-
-#        self.ddtable = ''
-#        if ('ddtable' in kwargs):
-#            self.ddtable  = kwargs['ddtable']
-
-#        if (len(self.ddtable) == 0):
-#            self.ddtable = self.dbtable + '_dd'
-
+#
+#  } dbms info
+#
+        
         self.userWorkdir = ''
         if ('workdir' in kwargs):
             self.userworkdir  = kwargs['workdir']
@@ -222,21 +251,8 @@ class propFilter:
 
         if self.debug:
             logging.debug ('')
-#            logging.debug (f'dbtable= {self.dbtable:s}')
-#            logging.debug (f'ddtable= {self.ddtable:s}')
             logging.debug (f'userworkdir= {self.userworkdir:s}')
         
-#        self.outpath = ''
-#        if ('outpath' in kwargs):
-#            self.outpath  = kwargs['outpath']
-
-#        if (len(self.outpath) == 0):
-#            self.outpath = self.userworkdir + '/query.tbl'
-
-#        if self.debug:
-#            logging.debug ('')
-#            logging.debug (f'outpath= {self.outpath:s}')
-
 
         self.cookiename = ''
         if ('cookiename' in kwargs):
@@ -298,7 +314,6 @@ class propFilter:
             logging.debug (f'cookiestr= {self.cookiestr:s}')
             logging.debug (f'usertbl= {self.usertbl:s}')
             logging.debug (f'accesstbl= {self.accesstbl:s}')
-#            logging.debug (f'dbtable= {self.dbtable:s}')
             logging.debug (f'fileid= {self.fileid:s}')
             logging.debug (f'fileid_allowed= {self.fileid_allowed:s}')
             logging.debug (f'accessid= {self.accessid:s}')
@@ -325,7 +340,6 @@ class propFilter:
             logging.debug (f'maxrec= {self.maxrec:d}')
 
        
-#        self.query = self.query_in.lower()
         self.query = self.query_in
 
 
@@ -336,67 +350,120 @@ class propFilter:
             logging.debug ('')
             logging.debug (f'time (retrieve input params): {self.delt:f}')
 
+#
+#  } done get input param
+#
+
 #        
-#    Connect to Oracle
+#{    Connect to DBMS
 #
         if self.debugtime:
-            self.time0 = datetime.datetime.now()
+            time0 = datetime.datetime.now()
         
-        try:
-            self.conn = cx_Oracle.connect (\
-                self.userid, self.password, self.dbserver)
+        if(self.dbms.lower() == 'oracle'):
+
+            try:
+                self.conn = cx_Oracle.connect (\
+                    self.userid, \
+                    self.password, \
+                    self.dbserver)
+
+                if self.debug:
+                    logging.debug ('')
+                    logging.debug ('connected to Oracle, database ' + \
+                        self.dbserver)
+
+            except Exception as e:
+                  
+                self.status = 'error'
+                self.msg = 'Failed to connect to cx_Oracle'
+            
+                raise Exception (self.msg) 
+
         
-        except Exception as e:
-              
+        elif(self.dbms.lower() == 'sqlite3'):
+
+            try:
+                self.conn = sqlite3.connect (self.db)
+
+                if self.debug:
+                    logging.debug ('')
+                    logging.debug ('connected to SQLite3, database ' + self.db)
+
+                cmd = 'ATTACH DATABASE ? AS TAP_SCHEMA'
+
+                dbspec = (self.tap_schema,)
+
+                if self.debug:
+                    logging.debug ('')
+                    logging.debug ('cmd: ' + cmd + '(' + self.tap_schema + ')')
+
+                cursor = self.conn.cursor()
+
+                cursor.execute(cmd, dbspec)
+
+                if self.debug:
+                    logging.debug ('')
+                    logging.debug ('TAP_SCHEMA attached')
+
+            except Exception as e:
+                  
+                self.status = 'error'
+                self.msg = 'Failed to connect to SQLite3 databases'
+            
+                raise Exception (self.msg) 
+
+        else:
             self.status = 'error'
-            self.msg = 'Failed to connect to cx_Oracle'
+            self.msg = 'Invalid DBMS'
         
             raise Exception (self.msg) 
-
-        if self.debug:
-            logging.debug ('')
-            logging.debug ('connected to Oracle')
+        
 
         if self.debugtime:
-            self.time1 = datetime.datetime.now()
-            self.delt = (self.time1 - self.time0).total_seconds()
+            time1 = datetime.datetime.now()
+            delt = (time1 - time0).total_seconds()
             logging.debug ('')
-            logging.debug (f'time (connect to oracle server): {self.delt:f}')
+            logging.debug (f'time (connect to DBMS): {delt:f}')
+#
+#} end connect to dbms
+#
 
 #
 #    Use Oracle function to check query syntax 
 #
-        if self.debugtime:
-            self.time0 = datetime.datetime.now()
-        
-        try:
-            if self.debug:
-                logging.debug ('')
-                logging.debug (f'call parseSql:')
+        if(self.dbms.lower() == 'oracle'):
+
+            try:
+                if self.debug:
+                    logging.debug ('')
+                    logging.debug (f'call parseSql:')
            
             
-            cursor = self.conn.cursor()
+                cursor = self.conn.cursor()
 
-            self.__parseSql__ (cursor, self.query)
+                self.__parseSql__ (cursor, self.query)
 
-            if self.debug:
-                logging.debug ('')
-                logging.debug (f'returned parseSql:')
+                if self.debug:
+                    logging.debug ('')
+                    logging.debug (f'returned parseSql:')
             
-        except Exception as e:
+            except Exception as e:
                 
-            errmsg = f'Input query [{self.query:s}] syntax error: {str(e):s}'
+                errmsg = \
+                    f'Input query [{self.query:s}] syntax error: {str(e):s}'
             
-            if self.debug:
-                logging.debug ('')
-                logging.debug (f'Exception __parseSql: {str(e):s}')
+                if self.debug:
+                    logging.debug ('')
+                    logging.debug (f'Exception __parseSql: {str(e):s}')
           
-            self.__encodeSqlerrmsg__ (errmsg)
+                self.__encodeSqlerrmsg__ (errmsg)
 
-            raise Exception (self.msg) 
+                raise Exception (self.msg) 
+
 
 #
-#    get dbtable name
+#    extract dbtable name from input query
 #
         if self.debug:
             logging.debug ('')
@@ -502,7 +569,6 @@ class propFilter:
 #
         if self.debug:
             logging.debug ('')
-            logging.debug (f'self.ddtable= {self.ddtable:s}')
             logging.debug ('call dataDictionary')
 
         if self.debugtime:
@@ -662,23 +728,6 @@ class propFilter:
 #    construct the final select statement for table joint
 #
 
-#        selectstr = 'select '
-#        len_selectcols = len (self.selectcols)
-
-#        for i in range (0, len_selectcols):
-#            selectstr = selectstr + 'a.' + self.selectcols[i] + ', '
-
-#        selectstr = selectstr + 'b.' + self.fileid_allowed
-
-#        if self.debug:
-#            logging.debug ('')
-#            logging.debug (f'selectstr= {selectstr:s}')
-       
-#        sql = selectstr + " from " + self.dbtable + " a, " + \
-#            tmp_fileidAlloweddbtbl + " b where a." + self.fileid + \
-#            "=b." + self.fileid_allowed  
-
-
         sql = self.selectstr + " from " + self.dbtable + \
              " where " + self.fileid + " in (select " + self.fileid_allowed + \
              " from " + tmp_fileidAlloweddbtbl + ")"
@@ -701,15 +750,8 @@ class propFilter:
             for i in range (0, len_groupbycols):
                 
                 if (i == len_groupbycols-1):
-
-#                    groupbystr = groupbystr + 'a.' + \
-#                        self.groupbycols[i]
-                    
                     groupbystr = groupbystr + self.groupbycols[i]
                 else:
-#                    groupbystr = groupbystr + 'a.' + \
-#                        self.groupbycols[i] + ', '
-                    
                     groupbystr = groupbystr + self.groupbycols[i] + ', '
 
             sql = sql + " " + groupbystr
@@ -783,7 +825,7 @@ class propFilter:
             logging.debug (f'ncol= {ncol:d} exclcol= {exclcol:d}')
    
 #
-#    write result to filteredpath 
+#    call writeResult 
 #
         if self.debug:
             logging.debug ('')

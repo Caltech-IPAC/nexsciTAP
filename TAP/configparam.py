@@ -144,11 +144,14 @@ class configParam:
             if self.debug:
                 logging.debug ('')
                 logging.debug (f"db= {self.connectInfo['db']:s}")
-                logging.debug (f"tap_schema= {self.connectInfo['tap_schema']:s}")
+                logging.debug (
+                    f"tap_schema= {self.connectInfo['tap_schema']:s}")
 
 
         self.adqlparam = {}
-
+#
+#   default values
+#
         self.adqlparam['mode']     = 'HTM'
         self.adqlparam['level']    =  7
         self.adqlparam['xcol']     = 'x'
