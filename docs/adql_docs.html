@@ -172,10 +172,10 @@
 <span id="adql-docstrings"></span><h1>ADQL Docstrings<a class="headerlink" href="#module-ADQL.adql" title="Permalink to this headline">¶</a></h1>
 <dl class="class">
 <dt id="ADQL.adql.ADQL">
-<em class="property">class </em><code class="sig-prename descclassname">ADQL.adql.</code><code class="sig-name descname">ADQL</code><span class="sig-paren">(</span><em class="sig-param">mode=0</em>, <em class="sig-param">level=7</em>, <em class="sig-param">encoding=None</em>, <em class="sig-param">debugfile=None</em>, <em class="sig-param">racol='ra'</em>, <em class="sig-param">deccol='dec'</em>, <em class="sig-param">xcol='x'</em>, <em class="sig-param">ycol='y'</em>, <em class="sig-param">zcol='z'</em>, <em class="sig-param">indxcol=None</em><span class="sig-paren">)</span><a class="headerlink" href="#ADQL.adql.ADQL" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">ADQL.adql.</code><code class="sig-name descname">ADQL</code><span class="sig-paren">(</span><em class="sig-param">dbms='oracle'</em>, <em class="sig-param">mode=0</em>, <em class="sig-param">level=7</em>, <em class="sig-param">encoding=None</em>, <em class="sig-param">debugfile=None</em>, <em class="sig-param">racol='ra'</em>, <em class="sig-param">deccol='dec'</em>, <em class="sig-param">xcol='x'</em>, <em class="sig-param">ycol='y'</em>, <em class="sig-param">zcol='z'</em>, <em class="sig-param">indxcol=None</em><span class="sig-paren">)</span><a class="headerlink" href="#ADQL.adql.ADQL" title="Permalink to this definition">¶</a></dt>
 <dd><p>ADQL class</p>
 <p>ADQL is a variant of SQL that is understood by no DBMSs, the main
-difference being support for sky spatial constraints.</p>
+difference from generic SQL being support for sky spatial constraints.</p>
 <p>One approach to supporting ADQL is to extend the DBMS with these
 ADQL-specific constructs.  The alternate approach taken here is
 to translate the ADQL into local SQL before sending it to the
