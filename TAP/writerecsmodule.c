@@ -1,3 +1,11 @@
+/*
+  Copyright (c) 2020, Caltech IPAC.  
+
+  License information at
+    https://github.com/Caltech-IPAC/nexsciTAP/blob/master/LICENSE
+*/
+
+
 #include <Python.h>
 #include <sys/types.h>
 #include <unistd.h>

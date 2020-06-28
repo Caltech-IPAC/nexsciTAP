@@ -1,3 +1,9 @@
+# Copyright (c) 2020, Caltech IPAC.  
+
+# License information at
+#   https://github.com/Caltech-IPAC/nexsciTAP/blob/master/LICENSE
+
+
 import itertools
 import sqlparse
 
@@ -9,9 +15,9 @@ class TableNames:
 
     """
     The simple TableNames class extracts a list of the database
-    tables being used in a query by parsing out the FROM clause.
-    The purpose of this is to get something we can use to get output
-    column metadata, so we ignore subqueries and strip of AS renaming.
+    tables being used in a query by parsing them out of the FROM clause.
+    The purpose of this is to have something we can use to get output
+    column metadata, so we ignore subqueries and strip off AS renaming.
     """
 
 
@@ -39,7 +45,8 @@ class TableNames:
                 if self.is_subselect(item):
                     for x in self.extract_from_part(item):
                         yield x
-                elif item.ttype is Keyword and item.value.upper() in ['ORDER', 'GROUP', 'BY', 'HAVING', 'GROUP BY']:
+                elif item.ttype is Keyword and item.value.upper() in \
+                        ['ORDER', 'GROUP', 'BY', 'HAVING', 'GROUP BY']:
                     from_seen = False
                     StopIteration
                 else:
@@ -52,7 +59,7 @@ class TableNames:
         for item in token_stream:
             if isinstance(item, IdentifierList):
                 for identifier in item.get_identifiers():
-                    value = identifier.value.replace('"', '').lower()                
+                    value = identifier.value.replace('"', '').lower()
                     yield value
             elif isinstance(item, Identifier):
                 value = item.value.replace('"', '').lower()
