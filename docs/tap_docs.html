@@ -1,7 +1,8 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
   
@@ -11,18 +12,12 @@
   
 
   
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-
-  
   
   
   
 
   
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -34,6 +29,10 @@
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
     
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="prev" title="ADQL Docstrings" href="adql_docs.html" /> 
@@ -50,7 +49,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home" alt="Documentation Home"> nexsciTAP
+            <a href="index.html" class="icon icon-home"> nexsciTAP
           
 
           
@@ -73,7 +72,6 @@
           
         </div>
 
-        
         <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
             
@@ -107,7 +105,6 @@
             
           
         </div>
-        
       </div>
     </nav>
 
@@ -146,7 +143,7 @@
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li><a href="index.html">Docs</a> &raquo;</li>
         
       <li>TAP Docstrings</li>
     
@@ -167,39 +164,8 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="module-TAP.tap">
-<span id="tap-docstrings"></span><h1>TAP Docstrings<a class="headerlink" href="#module-TAP.tap" title="Permalink to this headline">¶</a></h1>
-<dl class="class">
-<dt id="TAP.tap.Tap">
-<em class="property">class </em><code class="sig-prename descclassname">TAP.tap.</code><code class="sig-name descname">Tap</code><span class="sig-paren">(</span><em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#TAP.tap.Tap" title="Permalink to this definition">¶</a></dt>
-<dd><p>This class is the main program to process the TAP query submitted by a
-web client, it performs the following functionality:</p>
-<ol class="arabic">
-<li><p>extract input parameters,</p></li>
-<li><p>read parameters from TAP configuration file(TAP.ini), the path of the
-config file is specified by the environment variable ‘TAP_CONF’,</p>
-<p>‘TAP.ini’ contains web server info, database server info, spatial
-index setting, and special column names for filtering the proprietary
-data.</p>
-</li>
-<li><p>convert ADQL query to ORACLE query,</p></li>
-<li><p>retrieve metadata from database, applies proprietary filter if
-it is specified by the project.</p></li>
-</ol>
-<blockquote>
-<div><p>query(char):  an ADQL query(required)</p>
-<dl class="simple">
-<dt>phase(char): the phase it input is either PENDING or RUN,</dt><dd><p>if not specified, set to PENDING.</p>
-</dd>
-<dt>format(char): output metadata table format:</dt><dd><p>votable, ipac, cvs, or tvs; default is votable.</p>
-</dd>
-<dt>maxrec(int): integer number of records to be returned;</dt><dd><p>if not specified, all records are returned.</p>
-</dd>
-</dl>
-</div></blockquote>
-<p>Date: February 05, 2019(Mihseh Kong)</p>
-</dd></dl>
-
+  <div class="section" id="tap-docstrings">
+<h1>TAP Docstrings<a class="headerlink" href="#tap-docstrings" title="Permalink to this headline">¶</a></h1>
 </div>
 
 
@@ -220,19 +186,11 @@ it is specified by the project.</p></li>
 
   <div role="contentinfo">
     <p>
-        
         &copy; Copyright 2020, NExScI / IPAC / Caltech
 
     </p>
   </div>
-    
-    
-    
-    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
-    
-    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
-    
-    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -243,6 +201,7 @@ it is specified by the project.</p></li>
 
   </div>
   
+
 
   <script type="text/javascript">
       jQuery(function () {
