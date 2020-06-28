@@ -23,38 +23,48 @@ number of these parameters can be defaulted, though it is generally a good idea
 to be explicit for clarity::
 
    [webserver]
-   DSN=exo_tap
+   DBMS=oracle
+   # DBMS=sqlite3
    TAP_WORKDIR=/work
    TAP_WORKURL=/workspace
-   ISIS_TMPDIR=/tmp
-   HTTP_URL=http://exoplanetarchive.ipac.caltech.edu
+   HTTP_URL=http://tapdb.ipac.caltech.edu
    HTTP_PORT=80
    CGI_PGM=/TAP
 
+
+   # Parameters for cx_Oracle interface
+   #
+   [oracle]
+   ServerName=tapdb
+   UserID=tap_user
+   Password=XXXXXXXXXXXX
+
+
+   # Parameters for sqlite3 interface
+   #
+   [sqlite3]
+   DB=/work/jcg/ps.db
+   TAP_SCHEMA=/work/jcg/tap_schema.db
+
+
    # Spatial indexing settings
+   #
    ADQL_MODE=HTM
    ADQL_LEVEL=20
-   ADQL_COLNAME=htm20
-   ADQL_ENCODING=BASE10
    ADQL_XCOL=x
    ADQL_YCOL=y
    ADQL_ZCOL=z
-
-   [exo_tap]
-   Driver=/usr/lib/oracle/12.2/client64/lib/libsqora.so.12.1
-   Description=Oracle 12g ODBC driver
-   ServerName=exodev
-   UserID=exo_tap
-   Password=XXXXXXXX
+   ADQL_COLNAME=htm20
+   ADQL_ENCODING=BASE10
 
 
 In order, here is what each parameter means, starting with the ones describing
 the machine and service configuration:
 
-- **DSN** We are leveraging the Oracle formalism in our initial release and will
-  probaby generalize this as we add DBMSs.  Here DSN stands for "Data Source Name"
-  and the entry ("exo_tap") refers to the block of five parameters at the bottom
-  of this file. All very Oracle-specific and likely to be different for other databases.
+- **DBMS** This TAP server can support a range of DBMSs.  This parameter specifies the
+  DBMS currently in use and also selects which of the parameter blocks (below) will be
+  used to implement the connection.  Here we have selected "oracle" but also show an
+  example (inactive) of an SQLite3 connection.  
 
 - **TAP_WORKDIR** This is a the absolute path to the disk space NExScI TAP is supposed
   to use as working space.  It will create a "TAP" subdirectory here and then a collection
@@ -62,10 +72,6 @@ the machine and service configuration:
 
 - **TAP_WORKURL** The above disk space needs to be URL-accessible (and you have to 
   arrange with your web server to make it so).  This is the base URL to the same space.
-
-- **ISIS_TMPDIR** There are a few truly transient files that get create (and deleted)
-  here and there in the processing.  We just put these in /tmp but you have the option
-  to use some other space instead.
 
 - **HTTP_URL** A TAP session can involve multiple HTTP connections for various bits
   of information.  So the machine address needs to be folded in in several places.
@@ -76,6 +82,28 @@ the machine and service configuration:
   executable.  By default, this would be something like "/cgi-bin/nph-tap.py" but
   you may want to use an alias to streamline the address (we do in this example).
   Setting that up is again a matter on web server configuration.
+
+
+For Oracle there are three parameters needed to make a connection.  These are 
+well-known quantities you can get from your DBA:
+
+- **ServerName** The core information for making a connection is the "server name"
+  as configured in Oracle.
+
+- **UserID** Once you initiate a connection, you will need a valid user iD.
+
+- **Password** And password.  These three parameters are the arguments to the 
+  cx_Oracle Python package initiation.  cx_Oracle is conformant to the Python DB
+  API 2.0 spec.  Other databases will have different detailed connection parameters.
+
+For SQLite3 you need to point as the database files (SQLite3 works using files rather
+than a daemon process.  Since the TAP standard insists on having the TAP_SCHEMA tables
+in a different schema (in SQLite3 a different file), we have a second parameter
+for that:
+
+- **DB** SQLite3 database file containing the tables to be served.
+
+- **TAP_SCHEMA** SQLite3 database file containing the five "TAP_SCHEMA" tables.
 
 
 Spatial Indexing Settings.  Refer to the indexing documentation for a better 
@@ -109,22 +137,4 @@ understanding.  Here we will be terse:
 
 - **ADQL_ZCOL** And the z-column name.
 
-
-Database DSN (Data Source Name) Parameters.  Setting up the DBMS is up to you.  In
-the case of Oracle, the following are well-known quantities you can get from your
-DBA:
-
-- **Driver** The path to the Oracle connection library.
-
-- **Description** We probably don't need this ourselves but it is part of the set
-  of standard connection parameters.
-
-- **ServerName** The core information for making a connection is the "server name"
-  as configured in Oracle.
-
-- **UserID** Once you initiate a connection, you will need a valid user iD.
-
-- **Password** And password.  These three parameters are the arguments to the 
-  cx_Oracle Python package initiation.  cx_Oracle is conformant to the Python DB
-  API 2.0 spec.  Other databases will have different detailed connection parameters.
 
