@@ -1,6 +1,19 @@
 Installation Instructions
 =========================
 
+Beforehand
+----------
+Python packages can specify that they depend on and the installer
+will recursively install all of these as well.  For our nexsciTAP
+package you will want whatever DB API 2.0 goes along with your DBMS
+(*e.g.* cx_Oracle for Oracle, sqlite for SQLite3, *etc.*).  We can't 
+know which DBMS you have or which adapter you want to use.  So we leave
+it up to you to "pip install" the correct one separately.
+
+If you forget, your Python will inform you what is missing when you 
+try to run the code.
+
+
 Quickstart
 ----------
 To just run instances of the NExScI TAP service, it is not necessary to
@@ -50,8 +63,8 @@ Once you have these downloaded, you can run the standard::
 
    python setup.py bdist_wheel
 
-command and then "pip install" the wheel file this builds in the ./dist subdirectory
-for each package.  This gets us to the same place as the "pip install" in the
+command for each package and then "pip install" the wheel file this builds in 
+the ./dist subdirectory.  This gets us to the same place as the "pip install" in the
 Quickstart.  We still have to add the same CGI program and configuration file.
 
 

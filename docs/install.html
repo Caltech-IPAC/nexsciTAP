@@ -83,6 +83,7 @@
               <p class="caption"><span class="caption-text">Getting &quot;Up and Running&quot;</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Installation Instructions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#beforehand">Beforehand</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#quickstart">Quickstart</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#not-so-quick-start">Not-so-Quick Start</a></li>
 </ul>
@@ -98,6 +99,7 @@
 <li class="toctree-l1"><a class="reference internal" href="loading.html">Adding Spatial Indexing to Your Data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ADQL_translation.html">Converting ADQL to Local SQL</a></li>
 <li class="toctree-l1"><a class="reference internal" href="extending.html">Extending the Service</a></li>
+<li class="toctree-l1"><a class="reference internal" href="coordinates.html">A Note on Coordinates</a></li>
 </ul>
 <p class="caption"><span class="caption-text">The Code</span></p>
 <ul>
@@ -170,6 +172,17 @@
             
   <div class="section" id="installation-instructions">
 <h1>Installation Instructions<a class="headerlink" href="#installation-instructions" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="beforehand">
+<h2>Beforehand<a class="headerlink" href="#beforehand" title="Permalink to this headline">¶</a></h2>
+<p>Python packages can specify that they depend on and the installer
+will recursively install all of these as well.  For our nexsciTAP
+package you will want whatever DB API 2.0 goes along with your DBMS
+(<em>e.g.</em> cx_Oracle for Oracle, sqlite for SQLite3, <em>etc.</em>).  We can’t
+know which DBMS you have or which adapter you want to use.  So we leave
+it up to you to “pip install” the correct one separately.</p>
+<p>If you forget, your Python will inform you what is missing when you
+try to run the code.</p>
+</div>
 <div class="section" id="quickstart">
 <h2>Quickstart<a class="headerlink" href="#quickstart" title="Permalink to this headline">¶</a></h2>
 <p>To just run instances of the NExScI TAP service, it is not necessary to
@@ -212,8 +225,8 @@ packages), you can build them yourself from source in GitHub.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">setup</span><span class="o">.</span><span class="n">py</span> <span class="n">bdist_wheel</span>
 </pre></div>
 </div>
-<p>command and then “pip install” the wheel file this builds in the ./dist subdirectory
-for each package.  This gets us to the same place as the “pip install” in the
+<p>command for each package and then “pip install” the wheel file this builds in
+the ./dist subdirectory.  This gets us to the same place as the “pip install” in the
 Quickstart.  We still have to add the same CGI program and configuration file.</p>
 </div>
 </div>
