@@ -13,6 +13,6 @@ setup(name='nexsciTAP',
     description='NExScI VO Table Access Protocol (TAP) web service', 
     long_description=open('README.md').read(),
     ext_modules=[Extension('TAP/writerecs', ['TAP/writerecsmodule.c'])],
-    install_requires=['ADQL', 'spatial_index', 'configobj', 'cx_Oracle'],
+    install_requires=['ADQL', 'spatial_index', 'configobj'],
     packages=['TAP']
 )
