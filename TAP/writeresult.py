@@ -300,6 +300,14 @@ class writeResult:
             if(ind != -1):
                 dbdatatype = 'NUMBER'
 
+            ind = dbdatatypestr.find("LONG")
+            if(ind != -1):
+                dbdatatype = 'LONG'
+
+            ind = dbdatatypestr.find("FLOAT")
+            if(ind != -1):
+                dbdatatype = 'FLOAT'
+
             if self.debug1:
                 logging.debug('')
                 logging.debug(f'colname= {colname:s}')
@@ -533,7 +541,7 @@ class writeResult:
                     # } end dbdatatype == DATE, TIMESTAMP
                     #
 
-                elif(dbdatatype == 'LONG_BINARY'):
+                elif(dbdatatype == 'LONG'):
 
                     #
                     # { dbdatatype == LONG_BINARY
@@ -543,8 +551,8 @@ class writeResult:
                         logging.debug('')
                         logging.debug('here1-1-1-1: long int')
 
-                    coltype = 'long'
-                    dbtype = 'long_binary'
+                    coltype = 'int'
+                    dbtype = 'long'
 
                     width = 22
                     if(len(colname) > width):
@@ -553,7 +561,7 @@ class writeResult:
 
                     if self.debug1:
                         logging.debug('')
-                        logging.debug('here1-1: NATIVE_FLOAT column')
+                        logging.debug('here1-1: LONG_BINARY column')
                         logging.debug(f'width= {width:d}')
                         logging.debug(f'dbtype= {dbtype:s}')
                         logging.debug(f'coltype= {coltype:s}')
@@ -563,7 +571,7 @@ class writeResult:
                     # } end dbdatatype == LONG_BINARY
                     #
 
-                elif(dbdatatype == 'NATIVE_FLOAT'):
+                elif(dbdatatype == 'FLOAT'):
 
                     #
                     # { dbdatatype == NATIVE_FLOAT
@@ -651,7 +659,7 @@ class writeResult:
                 else:
 
                     #
-                    # { unknown type ?
+                    # { unknown type: default to char
                     #
 
                     coltype = 'char'
