@@ -958,14 +958,9 @@ class Tap:
                 logging.debug(f'dbms= {dbms:s}')
 
 
-#            adql = ADQL(dbms=dbms, mode=mode, level=level, indxcol=colname,
-#                        encoding=encoding, racol=racol, deccol=deccol,
-#                        xcol=xcol, ycol=ycol, zcol=zcol)
-
             adql = ADQL(dbms=dbms, mode=mode, level=level, indxcol=colname,
                         encoding=encoding, racol=racol, deccol=deccol,
-                        xcol=xcol, ycol=ycol, zcol=zcol,
-                        debugfile='/home/mihseh/git_clone/nexsciTAP/adql.debug')
+                        xcol=xcol, ycol=ycol, zcol=zcol)
 
             if self.debug:
                 logging.debug('')
