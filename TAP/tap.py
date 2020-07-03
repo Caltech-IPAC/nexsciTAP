@@ -84,6 +84,7 @@ class Tap:
 
     debugfname = '/tmp/tap_' + str(pid) + '.debug'
 
+
     sql = ''
     servername = ''
     dbtable = ''
@@ -407,7 +408,7 @@ class Tap:
 
         self.config = None
         try:
-            self.config = configParam(self.configpath, debug=1)
+            self.config = configParam(self.configpath)
 
             if self.debug:
                 logging.debug('')
@@ -1676,7 +1677,7 @@ class Tap:
         # {
         #
 
-        debug = 1
+        debug = 0
 
         if('debug' in kwargs):
             debug = kwargs['debug']
@@ -1741,11 +1742,16 @@ class Tap:
         except Exception as e:
             self.__printError__('votable', str(e))
 
-
         format = 'votable'
+        
         try:
-            format = soup.parameters.findAll('parameter',
-                                             {'id': 'format'})[0].get_text()
+            parameters = soup.find('uws:parameters')
+            parameter = parameters.find(id='format')
+        
+            format = parameter.string
+        
+#            format = parameters.findAll('parameter',
+#                                             {'id': 'format'})[0].get_text()
 
         except Exception as e:
 
@@ -2047,7 +2053,7 @@ class Tap:
         # {
         #
 
-        debug = 1
+        debug = 0
 
         if('debug' in kwargs):
             debug = kwargs['debug']
@@ -2259,7 +2265,7 @@ class Tap:
         # { TAP statis result always written in XML format
         #
 
-        debug = 1
+        debug = 0
 
         if('debug' in kwargs):
             debug = kwargs['debug']
