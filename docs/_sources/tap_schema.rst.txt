@@ -3,20 +3,17 @@ Setting up Your TAP_SCHEMA Tables
 =================================
 
 The TAP specification requires that you maintain in your database a set of tables
-describing your holdings.  Pretty much everything about these tables is fixed:
+describing your holdings, as described on section 4 of the TAP specification (http://ivoa.net/documents/TAP/20190927/REC-TAP-1.1.html#tth_sEc4).  TAP specifies the structure of these tables:
 
-- They have fixed names (like TABLES and COLUMNS)
+- They have fixed names (like TABLES and COLUMNS);
 
-- They contain a minimum set of columns with fixed names (like COLUMN_NAME)
+- They contain a minimum set of columns with fixed names (like COLUMN_NAME);
 
-- They must reside in a separate DBMS "schema" named TAP_SCHEMA
+- They must reside in a separate DBMS "schema" named TAP_SCHEMA.
 
-See the TAP specification (http://www.ivoa.net/documents/TAP/), section 4 for
-details.
-
-All of this is in aid of data mining; a user can issue a set of canned queries
+Such fixed scheme aids data mining; a user can issue a set of canned queries
 against your database to determine your holdings and they can find columns 
-by their function (*e.g.,* coordinates).
+by their function, such as coordinates.
 
 The NExScI TAP service makes use of the TAP_SCHEMA tables to inform the 
 presentation of data.  In particular, if you want fine control over the 

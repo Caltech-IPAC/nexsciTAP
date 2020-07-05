@@ -4,23 +4,13 @@ Adding Spatial Indexing to Your Data
 
 Do I Need a Spatial Index
 -------------------------
-If you have tables without sky coordinates, there is not much point in worrying about
-spatial indexing.  Even if you have coordinates but no need to search spatially, you
-might as well not bother.  
 
-For a small table, a spatial search could be done with just the (x,y,z) columns or even
-with just (RA,Dec) (or other coordinates).  We haven't implemented this variant since 
-once you start augmenting your table with additional columns, you might as well go all
-the way.
-
-If you want to start with a table that doesn't have the spatial index column set, you
-are free to do so; just don't try to include CONTAINS() constraints in any queries.  
-You can add the spatial capabilities later (though it will require reloading the tables).
+The TAP service will operate without spatialindexing, but your queries cannot include CONTAINS() constraints. We recommend adding the spatial constraints for all but the smallest tables. You can in fact add the spatial indexing after deploying there service, but you must reload the tables.
 
 
-Augmenting Your Tables with the Necessary Columns
--------------------------------------------------
-There are four columns you will need to add if you are going to support our built-in 
+Augmenting Your Tables to Support Spatial Indexing
+--------------------------------------------------
+There are four columns you will need to add ito support our built-in 
 spatial indexing: x, y, z and spt_ind.  The first three are the unit sphere geometry
 three-vector of the point and are calculated simply as::
 
@@ -28,16 +18,15 @@ three-vector of the point and are calculated simply as::
    y = cos(RA) * cos(Dec)
    z = sin(Dec)
 
-It is best to maintain theses as full double precision numbers.
+We recommend calculating them as full double precision numbers.
 
-The fourth is the spatial index value (an integer).  If you need to generate this, use
-our SpatialIndex package.  If you are working in Python, you already have this as it
-is a dependency of nexsciTAP.  If you are working in C, download the source
-(https://github.com/Caltech-IPAC/SpatialIndex.git) from GitHub and build it (run "make").
+The fourth is the spatial index value itself, an integer.  
 
-
-Computing Values for the New Columns
-------------------------------------
-There is code for computing all this in the SpatialIndex package.  The underlying
-libraries there are written in C and there is an example program (SpatialIndex/src/sptIndx.c)
+Computing Values for the Spatial Indexing Columns 
+-------------------------------------------------
+The SpatialIndex package will compute all of these values.  The underlying
+libraries are written in C and there is an example program (SpatialIndex/src/sptIndx.c)
 that adds (x,y,z) and both HTM and HPX spatial index ID columns to a CSV file.
+
+If you are working in Python, you already have the SpatialIndex code as a dependency of nexsciTAP.  If you prefer to work in C, download the source from
+(ttps://github.com/Caltech-IPAC/SpatialIndex.git from GitHub and build it (run "make").

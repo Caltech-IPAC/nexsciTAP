@@ -3,13 +3,9 @@ Converting ADQL to Local SQL
 
 SQL Variations Between DBMSs
 ----------------------------
-Like most standards, SQL left enough ambiguity and there were enough things missing
-that existing implementations vary enough to be noticeable.  In defining the
-Astronomical Data Query Language (ADQL) the VO community picked specific solutions
-for some of this.
+The SQL standards left enough ambiguity that there are approachable differences in implementation from DBMS to DBMS. The IVOA responded to these differences by selecting specific constructs. 
 
-An example of this is the mechanism for cutting off the number of returned records.
-Different systems use the following to achieve this effect::
+A good example is the mechanism for specifying the maximum number of records returned by a query. Different DBMSs do this in various various ways::
 
     select * from mytbl LIMIT 100
 
@@ -19,44 +15,30 @@ Different systems use the following to achieve this effect::
 
     select * from mytbl WHERE ROWNUM <= 100
 
-ADQL chose to go with the TOP construct.
+ADQL chose to use the TOP construct.
 
-But the main difference between ADQL and SQL was the addition of a suite of
-geometric functions to support spatial queries (and the assumption that there
-would be spatial indexing underneath them to provide speed).  This is not 
-supported intrinsically in any variant of SQL, though there are extensions
-to several DBMSs that provide the underpinnings this functionality would need.
+The main difference between ADQL and SQL is, however, the addition of geometric functions,
+with spatial indexing to proved speed.  These functions are nor supported intrinsically in any variant of SQL, though there are extensions to several DBMSs that provide the underpinnings this functionality would need.
 
-In the absence of any standard, the VO community defined a set of functions
-to be implemented as necessary.  For example, a cone search would be 
-accomplished with the "CONTAINS()" function (as in "circle contains database
-point")::
+In the absence of any standard, the VO community defined a set of geometric functions
+to be implemented as necessary. A cone search would be accomplished with the "CONTAINS()" function (as in "circle contains database point")::
 
     where CONTAINS(POINT('icrs', ra, dec), CIRCLE('icrs', 34., 45. 0.1)) = 1
 
-Here we have defined a circle (in the ICRS coordinate system) centered at
-(34.,45.) and having a radius of 0.1 degrees and are comparing it to the
+Here we have defined a circle in the ICRS coordinate system centered at
+(34.,45.) and having a radius of 0.1 degrees, and we are comparing it to the
 set of points on the sky defined by the RA and Dec columns from a database
-table (also in the ICRS coordinate system).  Since CONTAINS() is a function
-it has to have a value and CONTAINS() value returns 1 or 0 for True/False.
-
-In a simple system with a single CONTAINS() constraint, this could be
-implemented as a post-filter but this approach rapidly falls apart, both
-as the table gets large and if the function is used repeatedly in an 
-AND/OR query.
+table, also in the ICRS coordinate system.  Since CONTAINS() is a function, 
+it must have a value and CONTAINS() value returns 1 or 0 for True/False.
 
 
-Our Approach
-------------
-Rather than dive into the guts of all the DBMSs, we have chosen a simpler
-approach.  Since the bulk of any ADQL query is going to match the local
-DBMS SQL just fine, we decided to pre-process the ADQL into local SQL
-before giving it to the engine.
+Our Implementation Approach
+---------------------------
+We have chosen the simple  approach of pre-processing the ADQL into local SQL before submitting the query to the DBMS. The rationale behind this is that the bulk of an AQL query will closely match the local DBMS, and so only incremental modifications are needed from DBMS to DBMS. 
 
-We use Oracle internally (because of a Caltech site license), so that is
-our first implementation.  
+We support Oracle in the first release because the NExScI archives use it internally. 
 
-We will start with the following ADQL::
+We start with the following example ADQL::
 
    select TOP 100 ra, dec 
    from iraspsc 
@@ -67,10 +49,10 @@ We will start with the following ADQL::
 In order to modify the construction of the statement, we need to first
 take the ADQL apart.  However, we don't need to fully characterize it in
 the way a database engine would and in particular we don't need to 
-"validate" the structure (or column names or anything else;  the DBMS
-is going to do that later).  We just need to have the pieces of the query
+"validate" the structure (or column names;  the DBMS
+is going to do that later).  We simply need to have the pieces of the query
 in a form that can be put back together and where the principal components
-are identified (*e.g.,* the beginning and end of the WHERE clause, where
+are identified. For example, the beginning and end of the WHERE clause, where
 each CONTAINS() function appears (and other functions like POINT(),
 CIRCLE(), POLYGON() and DISTANCE()).
 
@@ -237,9 +219,9 @@ described in :doc:`spatial_index` xxxxx::
    order by dec desc
 
 
-Note that the spatial part of this translation is DBMS-agnostic; it would work just as
+The spatial part of this translation is DBMS-agnostic; it would work just as
 well with PostgreSQL or SQLite.  The conversion of the TOP directive is actually hardest
-for Oracle; other DBMSs would be even easier.
+for Oracle; for other DBMSs, this would in fact be would be even easier.
 
 Extending the Paradigm
 ----------------------
@@ -263,7 +245,7 @@ There are a few ADQL geometry functions we have not implemented.  Here is a comp
 - **INTERSECTS** Test whether two geometric objects intersect.  Specifically, whether a
   geometric object stored in the database intersects with a region defined by the user.
   This is a very useful capability be requires R-Tree indexing to implement correctly.
-  We will address this in future with DBMSs that have R-Trees built in but can't with 
+  We will address this in future with DBMSs that have R-Trees built in but cannot with 
   the generic tesselation spatial index we have here.
 
 - **AREA, CENTROID**  Calculate the area/centroid of a geometric object. Most useful if
@@ -283,17 +265,16 @@ There are a few ADQL geometry functions we have not implemented.  Here is a comp
 There are also constructs that are technically possible (like CONTAINS(CIRCLE(), CIRCLE())
 but again this makes the most sense where we are talking about CIRCLE objects stored in 
 the database.  Most other use can be achieve by using CONTAINS(POINT(), CIRCLE()) and padding
-the size of the second circle with the radius of the first.  Again, if someone can define
-a real need, we will revisit this.
-
+the size of the second circle with the radius of the first.  Again, if someone has a use case, 
+please contact us. 
 
 Convex Polygons
 ---------------
 In the ADQL specification there is no specification that polygons should be convex
 (actually, it doesn't even specify that the line can't cross).  This distinction is
 important in practice since the usual way of checking whether a point is in a polygon
-(*i.e.,* go around the outside of the polygon and see if the point is alway on the same side 
-of the edge lines by doing cross- and dot-products) fails for a concave polygon.
+-- go around the outside of the polygon and see if the point is alway on the same side 
+of the edge lines by doing cross- and dot-products -- fails for a concave polygon.
 
 There are various ways to compensate for this, including decomposing the concave 
 polygon into a set of convex ones or finding the bounding convex polygon for the 

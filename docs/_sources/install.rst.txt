@@ -3,29 +3,22 @@ Installation Instructions
 
 Beforehand
 ----------
-Python packages can specify that they depend on and the installer
-will recursively install all of these as well.  For our nexsciTAP
-package you will want whatever DB API 2.0 goes along with your DBMS
-(*e.g.* cx_Oracle for Oracle, sqlite for SQLite3, *etc.*).  We can't 
-know which DBMS you have or which adapter you want to use.  So we leave
-it up to you to "pip install" the correct one separately.
+You will need Python 3.6 or later. We recommend using the Anaconda distribution.
 
-If you forget, your Python will inform you what is missing when you 
-try to run the code.
+nexsciTAP takes advantage of Python Database API Specification v2.0 (DB API v2.0) (https://www.python.org/dev/peps/pep-0249/#introduction), which offers a consistent API across Python modules that access databases. You will need to "pip install" the DB API 2.0 adapter associated your DBMS
+(*e.g.* cx_Oracle for Oracle, sqlite for SQLite3, *etc.*).  If you forget Python will inform you what is missing when you  try to run the code.
 
 
 Quickstart
 ----------
-To just run instances of the NExScI TAP service, it is not necessary to
-download the source or build anything.
 
-In fact, if you are using a web server (like Apache or NGINX) that supports 
-CGI programs, you can just do the following::
+If you are using a web server that supports 
+CGI programs, such as Apache or NGINX, you can do a "pip install"::
 
     pip install nexsciTAP
 
-then create a Python executable in your "/cgi-bin" directory tree (wherever
-you have that set up (we use .../cgi-bin/TAP/nph-tap.py under Apache)::
+then create a Python executable in your "/cgi-bin" directory tree, wherever
+you have that set up (e.g. .../cgi-bin/TAP/nph-tap.py under Apache)::
 
     /bin/env python
 
@@ -33,19 +26,7 @@ you have that set up (we use .../cgi-bin/TAP/nph-tap.py under Apache)::
 
     tap.main()
 
-You now have an operational TAP service (that can't do anything).  
-
-Before it can do its job, you need to give it a bunch of configuration
-information, including:
-
-- Where to put working files,
-
-- How to connect to your DBMS, and
-
-- how you have set up your spatial indexing (if you have).
-
-This is covered in the next section.  
-
+Before nexsciTAP can operate as a server, you will have to configure it. The next section covers this. 
 
 Not-so-Quick Start
 ------------------
