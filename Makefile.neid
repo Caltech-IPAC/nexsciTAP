@@ -1,0 +1,22 @@
+.SUFFIXES:
+
+INSTALL = install
+INSTALL_EXE = $(INSTALL) -m 755 -p
+INSTALL_DATA = $(INSTALL) -m 644 -p
+INSTALL_DIR = $(INSTALL) -m 755 -d
+
+
+# Standard directory variables
+prefix=$(CM_NEID_DIR)
+
+webdir=$(prefix)/web
+cgidir=$(webdir)/cgi-bin/TAP
+
+installdirs:
+	$(INSTALL_DIR) $(cgidir)
+
+progs = nph-tap.py
+
+install:
+	cp $(progs) $(cgidir) 
+
