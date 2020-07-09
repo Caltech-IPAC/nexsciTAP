@@ -1,3 +1,41 @@
+What is nexsciTAP?
+======================
+Tabular data in astronomy are commonly housed in relational databases.  These may be final reduced data like astronomical catalogs, or searchable
+metadata for image or spectra.  Research projects very often start with database 
+searches of these tables, often followed by the download of associated data files.
+
+The International Virtual Astronomy Alliance (IVOA) Table Access Protocol (TAP) Version 1.1, August 2019  (http://http://www.ivoa.net/documents/TAP/20190927/REC-TAP-1.1.pdf)
+provides a standard interface specification for such queries.  Because queries against spatial regions on the sky are so common in astronomy, ADQL extends SQL with geometrical spatial constraint functions.
+
+TAP defines 
+* how
+to compose the request using ADQL (http://www.ivoa.net/documents/ADQL/20180112/PR-ADQL-2.1-20180112.pdf), 
+a dialect of the standard Structured Query
+Language (SQL);
+* how to submit the request to a remote DBMS server, either in the foreground
+or, for slow queries, in the background; and 
+* how to retrieve results when they are 
+ready.
+
+nexsciTAP is an Open Source (BSD 3-clause license) Python implementation of the protocol, developed at the NASA Exoplanet Science Institute (NExScI) at Caltech/IPAC. Version 1.0 supports Oracle and SQlite3, and we show how to extend the service to other DataBase Management Systems (DBMS). It includes a formalism for supporting  fast spatially-indexed searches which requires no modification of the underlying DBMS.
+
+
+Structure of this Documentation
+-------------------------------
+NExScI TAP supports operations of all scales, from a single table to the largest mission archives.
+
+This documentation describes how to get started quickly. It covers:
+* Installation and configuration;
+* TAP operations and the structure
+of the service; 
+* Technical specifications of the spatial indexing and the 
+translation of ADQL into the SQL understood by the local DBMS. 
+
+All sections are written as stand-alone documents.
+
+
+
+
 
 The NExScI TAP Service
 ======================
@@ -29,46 +67,5 @@ The NExScI TAP Service
    spatial_index_docs
    adql_docs
    tap_docs
-
-
-What is nexsciTAP?
--------------------
-Tabular data in astronomy (and other sciences) are commonly housed in relational
-databases.  These may be final reduced data like astronomical catalogs, or searchable
-metadata for image or spectra.  Research projects very often start with database 
-searches of these tables, often followed by the download of associated data files.
-
-The International Virtual Astronomy Alliance (IVOA) Table Access Protocol (TAP) Version 1.1, August 2019 
-(http://http://www.ivoa.net/documents/TAP/20190927/REC-TAP-1.1.pdf)
-provides a standard interface specification for such queries.  TAP defines 
-* how
-to compose the request using ADQL (http://www.ivoa.net/documents/ADQL/20180112/PR-ADQL-2.1-20180112.pdf), 
-a dialect of the standard Structured Query
-Language (SQL);
-* how to submit the request to a remote server (either in foreground
-or, for slow queries, in background); and 
-* how to retrieve results when they are 
-ready.
-
-The NExScI TAP service is an Open Source (BSD 3-clause license) Python implementation of the protocol. Version 1.0 supports Oracle and SQlite3, ad we show how to extend to other DataBase Management Systems (DBMS).
-
-Because queries against spatial regions on the sky are so common in astronomy, 
-ADQL extends SQL with standard spatial constraint functions.  NExScI TAP includes a formalism for supporting 
-fast spatially-indexed searches which requires no modification of the underlying DBMS.
-
-
-Structure of this Documentation
--------------------------------
-NExScI TAP supports operations of all scales, from a single table to the largest mission archives.
-
-This documentation describes how to get started quickly. It covers:
-* Installation and configuration;
-* TAP operations and the structure
-of the service; 
-* Technical specifications of the spatial indexing and the 
-translation of ADQL into the SQL understood by the local DBMS. 
-
-All sections are written as stand-alone documents.
-
 
 
