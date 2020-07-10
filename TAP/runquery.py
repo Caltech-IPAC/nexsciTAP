@@ -1,4 +1,4 @@
-# Copyright (c) 2020, Caltech IPAC.  
+# Copyright (c) 2020, Caltech IPAC.
 
 # License information at
 #   https://github.com/Caltech-IPAC/nexsciTAP/blob/master/LICENSE
@@ -133,7 +133,7 @@ class runQuery:
 
                 self.dbserver = ''
                 if('dbserver' in self.connectInfo):
-                    self.dbserver  = self.connectInfo['dbserver']
+                    self.dbserver = self.connectInfo['dbserver']
 
                 if(len(self.dbserver) == 0):
                     self.msg = 'Failed to retrieve required input parameter'\
@@ -143,7 +143,7 @@ class runQuery:
 
                 self.userid = ''
                 if('userid' in self.connectInfo):
-                    self.userid  = self.connectInfo['userid']
+                    self.userid = self.connectInfo['userid']
 
                 if(len(self.userid) == 0):
                     self.msg = 'Failed to retrieve required input parameter'\
@@ -153,7 +153,7 @@ class runQuery:
 
                 self.password = ''
                 if('password' in self.connectInfo):
-                    self.password  = self.connectInfo['password']
+                    self.password = self.connectInfo['password']
 
                 if(len(self.password) == 0):
                     self.msg = 'Failed to retrieve required input parameter'\
@@ -174,7 +174,7 @@ class runQuery:
 
                 self.db = ''
                 if('db' in self.connectInfo):
-                    self.db  = self.connectInfo['db']
+                    self.db = self.connectInfo['db']
 
                 if(len(self.db) == 0):
                     self.msg = 'Failed to retrieve required input parameter'\
@@ -182,17 +182,15 @@ class runQuery:
                     self.status = 'error'
                     raise Exception(self.msg)
 
-
                 self.tap_schema = ''
                 if('tap_schema' in self.connectInfo):
-                    self.tap_schema  = self.connectInfo['tap_schema']
+                    self.tap_schema = self.connectInfo['tap_schema']
 
                 if(len(self.tap_schema) == 0):
                     self.msg = 'Failed to retrieve required input parameter'\
                                ' [tap_schema]'
                     self.status = 'error'
                     raise Exception(self.msg)
-
 
                 if self.debug:
                     logging.debug('')
@@ -202,7 +200,7 @@ class runQuery:
 
         self.sql = ''
         if('query' in kwargs):
-            self.sql  = kwargs['query']
+            self.sql = kwargs['query']
 
         if(len(self.sql) == 0):
             self.msg = 'Failed to retrieve required input parameter [query]'
@@ -211,7 +209,7 @@ class runQuery:
 
         self.userworkdir = ''
         if('workdir' in kwargs):
-            self.userworkdir  = kwargs['workdir']
+            self.userworkdir = kwargs['workdir']
 
         if(len(self.userworkdir) == 0):
             self.msg = \
@@ -227,11 +225,11 @@ class runQuery:
 
         self.racol = ''
         if('racol' in kwargs):
-            self.racol  = kwargs['racol']
+            self.racol = kwargs['racol']
 
         self.deccol = ''
         if('deccol' in kwargs):
-            self.deccol  = kwargs['deccol']
+            self.deccol = kwargs['deccol']
 
         if self.debug:
             logging.debug('')
@@ -314,7 +312,6 @@ class runQuery:
 
                 raise Exception(self.msg)
 
-
         elif(self.dbms.lower() == 'sqlite3'):
 
             try:
@@ -378,7 +375,6 @@ class runQuery:
                 self.dd = dataDictionary(self.conn, self.dbtable, debug=1)
             else:
                 self.dd = dataDictionary(self.conn, self.dbtable)
-
 
             if self.debug:
                 logging.debug('')
@@ -590,14 +586,14 @@ def main():
 
     dsn_in = ''
     table = ''
-    sql   = ''
+    sql = ''
     configpath = ''
     workdir = ''
     debug = 0
 
     dsn_in = args.dsn
     table = args.table
-    sql   = args.sql
+    sql = args.sql
     configpath = args.configpath
     workdir = args.workdir
     debug = args.debug
