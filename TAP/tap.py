@@ -33,17 +33,18 @@ from TAP.tablenames import TableNames
 class Tap:
 
     """
-    This class is the main program to process the TAP query submitted by a
-    web client, it performs the following functionality:
+    This class is the main program to process the TAP query submitted by
+    a web client, it performs the following functionality:
 
     1.  extract input parameters,
 
-    2.  read parameters from TAP configuration file(TAP.ini), the path of the
-        config file is specified by the environment variable 'TAP_CONF',
+    2.  read parameters from TAP configuration file(TAP.ini), the path
+        of the config file is specified by the environment variable
+        'TAP_CONF',
 
-        'TAP.ini' contains web server info, database server info, spatial
-        index setting, and special column names for filtering the proprietary
-        data.
+        'TAP.ini' contains web server info, database server info,
+        spatial index setting, and special column names for filtering
+        the proprietary data.
 
     3.  convert ADQL query to ORACLE query,
 
@@ -354,7 +355,6 @@ class Tap:
             if(len(self.id) == 0):
                 self.msg = 'Failed to find jobid for retrieving job status.'
                 self.__printError__(self.format, self.msg)
-
 
             len_id = len(self.id)
             ind = self.pathinfo.find(self.id)
@@ -1185,14 +1185,16 @@ class Tap:
 
                 if(self.debug and self.debugtime):
 
-                    propfilter = propFilter(connectInfo=self.config.connectInfo,
+                    propfilter = propFilter(connectInfo=self.config \
+                                                            .connectInfo,
                                             query=self.query,
                                             workdir=self.userWorkdir,
                                             racol=self.config.racol,
                                             deccol=self.config.deccol,
                                             cookiename=self.config.cookiename,
                                             cookiestr=self.cookiestr,
-                                            propfilter=self.config.propfilter.lower(),
+                                            propfilter=self.config.propfilter \
+                                                                  .lower(),
                                             usertbl=self.config.usertbl,
                                             accesstbl=self.config.accesstbl,
                                             fileid=self.config.fileid,
@@ -1204,14 +1206,16 @@ class Tap:
 
                 elif self.debug:
 
-                    propfilter = propFilter(connectInfo=self.config.connectInfo,
+                    propfilter = propFilter(connectInfo=self.config \
+                                                            .connectInfo,
                                             query=self.query,
                                             workdir=self.userWorkdir,
                                             racol=self.config.racol,
                                             deccol=self.config.deccol,
                                             cookiename=self.config.cookiename,
                                             cookiestr=self.cookiestr,
-                                            propfilter=self.config.propfilter.lower(),
+                                            propfilter=self.config.propfilter \
+                                                                  .lower(),
                                             usertbl=self.config.usertbl,
                                             accesstbl=self.config.accesstbl,
                                             fileid=self.config.fileid,
@@ -1222,14 +1226,16 @@ class Tap:
 
                 elif self.debugtime:
 
-                    propfilter = propFilter(connectInfo=self.config.connectInfo,
+                    propfilter = propFilter(connectInfo=self.config \
+                                                            .connectInfo,
                                             query=self.query,
                                             workdir=self.userWorkdir,
                                             racol=self.config.racol,
                                             deccol=self.config.deccol,
                                             cookiename=self.config.cookiename,
                                             cookiestr=self.cookiestr,
-                                            propfilter=self.config.propfilter.lower(),
+                                            propfilter=self.config.propfilter \
+                                                                  .lower(),
                                             usertbl=self.config.usertbl,
                                             accesstbl=self.config.accesstbl,
                                             fileid=self.config.fileid,
@@ -1239,14 +1245,16 @@ class Tap:
                                             debugtime=1)
 
                 else:
-                    propfilter = propFilter(connectInfo=self.config.connectInfo,
+                    propfilter = propFilter(connectInfo=self.config \
+                                                            .connectInfo,
                                             query=self.query,
                                             workdir=self.userWorkdir,
                                             racol=self.config.racol,
                                             deccol=self.config.deccol,
                                             cookiename=self.config.cookiename,
                                             cookiestr=self.cookiestr,
-                                            propfilter=self.config.propfilter.lower(),
+                                            propfilter=self.config.propfilter \
+                                                                  .lower(),
                                             usertbl=self.config.usertbl,
                                             accesstbl=self.config.accesstbl,
                                             fileid=self.config.fileid,
@@ -1743,13 +1751,13 @@ class Tap:
             self.__printError__('votable', str(e))
 
         format = 'votable'
-        
+
         try:
             parameters = soup.find('uws:parameters')
             parameter = parameters.find(id='format')
-        
+
             format = parameter.string
-        
+
 #            format = parameters.findAll('parameter',
 #                                             {'id': 'format'})[0].get_text()
 
