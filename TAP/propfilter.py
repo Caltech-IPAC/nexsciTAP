@@ -1,4 +1,4 @@
-# Copyright (c) 2020, Caltech IPAC.  
+# Copyright (c) 2020, Caltech IPAC.
 
 # License information at
 #   https://github.com/Caltech-IPAC/nexsciTAP/blob/master/LICENSE
@@ -175,7 +175,7 @@ class propFilter:
 
                 self.dbserver = ''
                 if('dbserver' in self.connectInfo):
-                    self.dbserver  = self.connectInfo['dbserver']
+                    self.dbserver = self.connectInfo['dbserver']
 
                 if(len(self.dbserver) == 0):
                     self.msg = \
@@ -185,7 +185,7 @@ class propFilter:
 
                 self.userid = ''
                 if('userid' in self.connectInfo):
-                    self.userid  = self.connectInfo['userid']
+                    self.userid = self.connectInfo['userid']
 
                 if(len(self.userid) == 0):
                     self.msg = \
@@ -195,7 +195,7 @@ class propFilter:
 
                 self.password = ''
                 if('password' in self.connectInfo):
-                    self.password  = self.connectInfo['password']
+                    self.password = self.connectInfo['password']
 
                 if(len(self.password) == 0):
                     self.msg = \
@@ -247,7 +247,7 @@ class propFilter:
 
         self.userWorkdir = ''
         if('workdir' in kwargs):
-            self.userworkdir  = kwargs['workdir']
+            self.userworkdir = kwargs['workdir']
 
         if(len(self.userworkdir) == 0):
             self.msg = \
@@ -261,35 +261,35 @@ class propFilter:
 
         self.cookiename = ''
         if('cookiename' in kwargs):
-            self.cookiename  = kwargs['cookiename']
+            self.cookiename = kwargs['cookiename']
 
         self.cookiestr = ''
         if('cookiestr' in kwargs):
-            self.cookiestr  = kwargs['cookiestr']
+            self.cookiestr = kwargs['cookiestr']
 
         self.propfilter = ''
         if('propfilter' in kwargs):
-            self.propfilter  = kwargs['propfilter']
+            self.propfilter = kwargs['propfilter']
 
         self.usertbl = ''
         if('usertbl' in kwargs):
-            self.usertbl  = kwargs['usertbl']
+            self.usertbl = kwargs['usertbl']
 
         self.accesstbl = ''
         if('accesstbl' in kwargs):
-            self.accesstbl  = kwargs['accesstbl']
+            self.accesstbl = kwargs['accesstbl']
 
         self.usertbl = ''
         if('usertbl' in kwargs):
-            self.usertbl  = kwargs['usertbl']
+            self.usertbl = kwargs['usertbl']
 
         self.accessid = ''
         if('accessid' in kwargs):
-            self.accessid  = kwargs['accessid']
+            self.accessid = kwargs['accessid']
 
         self.fileid = ''
         if('fileid' in kwargs):
-            self.fileid  = kwargs['fileid']
+            self.fileid = kwargs['fileid']
 
         self.fileid_allowed = self.fileid + '_allowed'
 
@@ -344,9 +344,7 @@ class propFilter:
             logging.debug(f'format= {self.format:s}')
             logging.debug(f'maxrec= {self.maxrec:d}')
 
-
         self.query = self.query_in
-
 
         if self.debugtime:
             self.time1 = datetime.datetime.now()
@@ -385,7 +383,6 @@ class propFilter:
                 self.msg = 'Failed to connect to cx_Oracle'
 
                 raise Exception(self.msg)
-
 
         elif(self.dbms.lower() == 'sqlite3'):
 
@@ -446,7 +443,6 @@ class propFilter:
                 if self.debug:
                     logging.debug('')
                     logging.debug('call parseSql:')
-
 
                 cursor = self.conn.cursor()
 
@@ -545,7 +541,6 @@ class propFilter:
                 else:
                     self.__validateUser__(self.cookiename, self.cookiestr,
                                           self.propfilter, self.usertbl)
-
 
                 if self.debug:
                     logging.debug('')
@@ -655,7 +650,6 @@ class propFilter:
                     logging.debug('')
                     logging.debug('returned createTmpAccessiddb')
                     logging.debug('here0: returned createTmpAccessiddb')
-
 
             except Exception as e:
 
@@ -1509,7 +1503,6 @@ class propFilter:
                 else:
                     password = self.__singleValueResult__(cursor, 'password')
 
-
                 if debug:
                     logging.debug('')
                     logging.debug('returned singleValueResult')
@@ -2112,7 +2105,7 @@ class propFilter:
 
         except Exception as e:
 
-            self.msg = f'Failed to execute select statement [{selectstr:s}]: ' \
+            self.msg = f'Failed to execute select statement [{selectstr:s}]: '\
                 + str(e)
             if debug:
                 logging.debug('')
@@ -2307,7 +2300,8 @@ class propFilter:
 
         #
         #
-        # Oracle error might contain characters that needs fixing for xml structure
+        # Oracle error might contain characters that needs fixing for
+        # xml structure
         #
         # replace " with '
         #

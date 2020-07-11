@@ -1,4 +1,4 @@
-# Copyright (c) 2020, Caltech IPAC.  
+# Copyright (c) 2020, Caltech IPAC.
 
 # License information at
 #   https://github.com/Caltech-IPAC/nexsciTAP/blob/master/LICENSE
@@ -172,7 +172,6 @@ class dataDictionary:
             logging.debug(f'ind_format= {ind_format:d}')
         #
         # } end extract column index
-
 
         #
         # Retrieve column name, dtype, format, units from

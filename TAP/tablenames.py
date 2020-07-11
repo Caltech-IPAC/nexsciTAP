@@ -1,4 +1,4 @@
-# Copyright (c) 2020, Caltech IPAC.  
+# Copyright (c) 2020, Caltech IPAC.
 
 # License information at
 #   https://github.com/Caltech-IPAC/nexsciTAP/blob/master/LICENSE
@@ -72,10 +72,11 @@ class TableNames:
         for statement in statements:
             if statement.get_type() != 'UNKNOWN':
                 stream = self.extract_from_part(statement)
-                extracted_tables.append(list(self.extract_table_identifiers(stream)))
+                extracted_tables.append(list(
+                    self.extract_table_identifiers(stream)))
         tables = list(itertools.chain(*extracted_tables))
 
-        for idx, table in enumerate(tables):
+        for idx, _ in enumerate(tables):
             tables[idx] = tables[idx].split()[0]
 
         return tables

@@ -231,9 +231,10 @@ class writeResult:
 
             #
             # { For loop for cursor description:
-            #   cursor description is a list with ncols tuples: each tuple
-            #   contains each output colname's name, datatype, dbdatatype,
-            #   size, etc...
+            #   cursor description is a list with ncols tuples:
+            #   each tuple
+            #   contains each output colname's name, datatype,
+            #   dbdatatype, size, etc...
             #
 
             if self.debug:
@@ -243,7 +244,8 @@ class writeResult:
                 logging.debug(col)
 
             #
-            # Extract colname, dbdatatype, size, precision, scale from col array
+            # Extract colname, dbdatatype, size, precision, scale from
+            # col array
             #
 
             colname = str(col[0]).lower()
@@ -261,7 +263,8 @@ class writeResult:
                 continue
 
             #
-            # { Extract dbdatatype, display_size, precision, scale from col_array:
+            # { Extract dbdatatype, display_size, precision, scale from
+            # col_array:
             #   col[1], col[2], col[4], and col[5]
             #
 
@@ -342,7 +345,8 @@ class writeResult:
                     logging.debug(f'scale= {scale:d}')
 
             #
-            # } end  extract dbdatatype, display_size, precision, scale from
+            # } end  extract dbdatatype, display_size, precision,
+            #   scale from
             #   col_array: col[1], col[2], col[4], and col[5]
 
             #
@@ -351,8 +355,8 @@ class writeResult:
             # colname in dd: if datatype == char/date/timestamp: analyze
             #                description
             #
-            # colname NOT in dd: get dbtype, width, fmt from col[1], col[2],
-            #                    col[4] and col[5]
+            # colname NOT in dd: get dbtype, width, fmt from col[1],
+            #                    col[2], col[4] and col[5]
             #
 
             if self.debug1:
@@ -517,8 +521,8 @@ class writeResult:
                     #
                     # { dbdatatype == DATE, TIMESTAMP
                     #
-                    #    timestamp etc. are not included in the above but most
-                    #    of them should come out as STRING
+                    #    timestamp etc. are not included in the above
+                    #    but most of them should come out as STRING
                     #
 
                     coltype = 'char'
@@ -776,9 +780,10 @@ class writeResult:
             #
 
         #
-        # At this point the namearr, typearr, dbtypearr, widtharr of output
-        # columns are assigned: add them to the ddlist for sending to C routine
-        # (We don't send the whold dd to C routine to avoid excess data transfer)
+        # At this point the namearr, typearr, dbtypearr, widtharr of
+        # output columns are assigned: add them to the ddlist for
+        # sending to C routine (We don't send the whold dd to C routine
+        # to avoid excess data transfer)
         #
 
         len_arr = len(namearr)
