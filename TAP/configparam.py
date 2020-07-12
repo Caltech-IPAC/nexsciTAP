@@ -26,24 +26,18 @@ class configParam:
     """
 
     debug = 0
-    debugfname = ''
 
-    def __init__(self, path, **kwargs):
+    def __init__(self, path, debug, **kwargs):
 
         self.configpath = path
 
-        if('debug' in kwargs):
-            self.debug = kwargs['debug']
+        self.debug = debug
 
         if self.debug:
             logging.debug('')
             logging.debug('Enter configParam: path= %s' % path)
 
         isExist = os.path.exists(path)
-
-        if self.debug:
-            logging.debug('')
-            logging.debug('isExist= %d' % isExist)
 
         if(isExist == 0):
             self.msg = 'Cannot find config file: ' + path
@@ -57,7 +51,7 @@ class configParam:
 
         if self.debug:
             logging.debug('')
-            logging.debug('config instantiated')
+            logging.debug('ConfigObj instantiated successfully')
 
         #
         # Extract config parameters of input server
@@ -66,7 +60,7 @@ class configParam:
         self.server = 'webserver'
         if self.debug:
             logging.debug('')
-            logging.debug(f'server= {self.server:s}')
+            logging.debug(f'      server = {self.server:s}')
 
         dbms = ''
         if('DBMS' in confobj[self.server]):
@@ -74,7 +68,7 @@ class configParam:
         self.dbms = dbms
 
         if self.debug:
-            logging.debug(f'dbms= {self.dbms:s}')
+            logging.debug(f'      dbms = {self.dbms:s}')
 
         if(len(self.dbms) == 0):
             self.status = 'error'
@@ -117,9 +111,9 @@ class configParam:
 
             if self.debug:
                 logging.debug('')
-                logging.debug(f"dbserver= {self.connectInfo['dbserver']:s}")
-                logging.debug(f"dbuser= {self.connectInfo['userid']:s}")
-                logging.debug(f"password= {self.connectInfo['password']:s}")
+                logging.debug(f"      dbserver = {self.connectInfo['dbserver']:s}")
+                logging.debug(f"      dbuser = {self.connectInfo['userid']:s}")
+                logging.debug(f"      password = {self.connectInfo['password']:s}")
 
 
         if(dbms == 'sqlite3'):
@@ -144,7 +138,7 @@ class configParam:
 
             if self.debug:
                 logging.debug('')
-                logging.debug(f"db= {self.connectInfo['db']:s}")
+                logging.debug(f"      db = {self.connectInfo['db']:s}")
                 logging.debug(
                     f"tap_schema= {self.connectInfo['tap_schema']:s}")
 
@@ -233,24 +227,9 @@ class configParam:
             self.msg = 'Failed to find CGI_PGM in config_file'
             raise Exception(self.msg)
 
-        if self.debug:
-            logging.debug('')
-            logging.debug(f'workdir= {self.workdir:s}')
-            logging.debug(f'workurl= {self.workurl:s}')
-            logging.debug(f'httpurl= {self.httpurl:s}')
-            logging.debug(f'cgipgm= {self.cgipgm:s}')
-            logging.debug(f'port= {self.port:s}')
-
         self.cookiename = ''
         if('COOKIENAME' in confobj[self.server]):
-            if self.debug:
-                logging.debug('')
-                logging.debug('xxx1')
             self.cookiename = confobj[self.server]['COOKIENAME']
-
-        if self.debug:
-            logging.debug('')
-            logging.debug(f'cookiename= {self.cookiename:s}')
 
         self.accesstbl = ''
         if('ACCESS_TBL' in confobj[self.server]):
@@ -260,18 +239,9 @@ class configParam:
         if('USERS_TBL' in confobj[self.server]):
             self.usertbl = confobj[self.server]['USERS_TBL']
 
-        if self.debug:
-            logging.debug('')
-            logging.debug(f'usertbl= {self.usertbl:s}')
-            logging.debug(f'accesstbl= {self.accesstbl:s}')
-
         self.propfilter = ''
         if('PROPFILTER' in confobj[self.server]):
             self.propfilter = confobj[self.server]['PROPFILTER']
-
-        if self.debug:
-            logging.debug('')
-            logging.debug(f'propfilter= {self.propfilter:s}')
 
         self.fileid = ''
         if('FILEID' in confobj[self.server]):
@@ -288,5 +258,21 @@ class configParam:
         self.deccol = ''
         if('DECCOL' in confobj[self.server]):
             self.deccol = confobj[self.server]['DECCOL']
+
+        if self.debug:
+            logging.debug('')
+            logging.debug(f'      workdir = {self.workdir:s}')
+            logging.debug(f'      workurl = {self.workurl:s}')
+            logging.debug(f'      httpurl = {self.httpurl:s}')
+            logging.debug(f'      cgipgm = {self.cgipgm:s}')
+            logging.debug(f'      port = {self.port:s}')
+            logging.debug(f'      cookiename = {self.cookiename:s}')
+            logging.debug(f'      usertbl = {self.usertbl:s}')
+            logging.debug(f'      accesstbl = {self.accesstbl:s}')
+            logging.debug(f'      propfilter = {self.propfilter:s}')
+            logging.debug(f'      fileid = {self.fileid:s}')
+            logging.debug(f'      accessid = {self.accessid:s}')
+            logging.debug(f'      racol = {self.racol:s}')
+            logging.debug(f'      deccol = {self.deccol:s}')
 
         return

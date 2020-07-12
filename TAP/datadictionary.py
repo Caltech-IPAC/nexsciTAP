@@ -37,7 +37,7 @@ class dataDictionary:
     nfetch = 1000
 
 
-    def __init__(self, conn, table, **kwargs):
+    def __init__(self, conn, table, debug, **kwargs):
 
         """
         A dataDictionary specifies the following properites of each column in
@@ -64,8 +64,7 @@ class dataDictionary:
 
         """
 
-        if('debug' in kwargs):
-            self.debug = kwargs['debug']
+        self.debug = debug
 
         if self.debug:
             logging.debug('')
@@ -76,7 +75,7 @@ class dataDictionary:
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'dbtable= {self.dbtable:s}')
+            logging.debug(f'dbtable = {self.dbtable:s}')
 
         #
         # Construct and submit data dictionary query
@@ -85,8 +84,10 @@ class dataDictionary:
         cursor = self.conn.cursor()
         if self.debug:
             logging.debug('')
-            logging.debug('cursor:')
+            logging.debug('DBMS cursor:')
+            logging.debug('-------------------------------------------------')
             logging.debug(cursor)
+            logging.debug('-------------------------------------------------')
 
 
         sql = "select * from TAP_SCHEMA.columns where table_name = " + \
@@ -94,7 +95,7 @@ class dataDictionary:
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'sql= {sql:s}')
+            logging.debug(f'TAP_SCHEMA sql = {sql:s}')
 
         try:
             cursor.execute(sql)
@@ -106,14 +107,14 @@ class dataDictionary:
 
             if self.debug:
                 logging.debug('')
-                logging.debug(f'errmsg= {self.msg:s}')
-                logging.debug(f'str(e)= {str(e):s}')
+                logging.debug(f'errmsg = {self.msg:s}')
+                logging.debug(f'str(e) = {str(e):s}')
 
             raise Exception(self.msg)
 
         if self.debug:
             logging.debug('')
-            logging.debug('select dd statement executed')
+            logging.debug('select TAP_SCHEMA statement executed')
 
         #
         # { Extract column index
@@ -121,14 +122,15 @@ class dataDictionary:
 
         if self.debug:
             logging.debug('')
-            logging.debug('dd cursor description:')
+            logging.debug('TAP_SCHEMA cursor description:')
+            logging.debug('------------------------------------------------')
             logging.debug(cursor.description)
+            logging.debug('------------------------------------------------')
 
         ncols = len(cursor.description)
 
         if self.debug:
-            logging.debug('')
-            logging.debug(f'ncols= {ncols:d}')
+            logging.debug(f'ncols = {ncols:d}\n')
 
         ind_colname = -1
         ind_datatype = -1
@@ -142,8 +144,7 @@ class dataDictionary:
             name = str(col[0]).lower()
 
             if self.debug:
-                logging.debug('')
-                logging.debug(f'name= {name:s}')
+                logging.debug(f'processing name = {name:s}')
 
 
             if(name == 'column_name'):
@@ -165,11 +166,11 @@ class dataDictionary:
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'ind_colname= {ind_colname:d}')
-            logging.debug(f'ind_datatype= {ind_datatype:d}')
-            logging.debug(f'ind_desc= {ind_desc:d}')
-            logging.debug(f'ind_unit= {ind_unit:d}')
-            logging.debug(f'ind_format= {ind_format:d}')
+            logging.debug(f'ind_colname = {ind_colname:d}')
+            logging.debug(f'ind_datatype = {ind_datatype:d}')
+            logging.debug(f'ind_desc = {ind_desc:d}')
+            logging.debug(f'ind_unit = {ind_unit:d}')
+            logging.debug(f'ind_format = {ind_format:d}')
         #
         # } end extract column index
 
@@ -199,16 +200,11 @@ class dataDictionary:
             #
             rows = cursor.fetchmany()
 
-            if self.debug:
-                logging.debug('')
-                logging.debug('rows:')
-                logging.debug(rows)
-
             self.ncols = self.ncols + len(rows)
 
             if self.debug:
                 logging.debug('')
-                logging.debug(f'ncols= {self.ncols:d}')
+                logging.debug(f'ncols = {self.ncols:d}')
 
             i = 0
             for row in rows:
@@ -220,12 +216,6 @@ class dataDictionary:
 
                 self.colname[i] = col_str
 
-                if self.debug:
-                    logging.debug('')
-                    logging.debug(f'col_str= {col_str:s}')
-                    logging.debug(
-                        f'i=[{i:d}] colname= {self.colname[i]:s}')
-
                 #
                 # Datatype
                 #
@@ -235,10 +225,6 @@ class dataDictionary:
                 else:
                     self.coltype[col_str] = \
                         str(row[ind_datatype]).strip().lower()
-
-                if self.debug:
-                    logging.debug('')
-                    logging.debug(f'coltype= {self.coltype[col_str]:s}')
 
                 if(self.coltype[col_str] == 'integer'):
                     self.coltype[col_str] = 'int'
@@ -254,10 +240,6 @@ class dataDictionary:
                         str(row[ind_format]).strip().replace('i', 'd')
                     self.colfmt[col_str] = self.colfmt[col_str].lower()
 
-                if self.debug:
-                    logging.debug('')
-                    logging.debug(f'colfmt= {self.colfmt[col_str]:s}')
-
                 #
                 # Unit
                 #
@@ -266,10 +248,6 @@ class dataDictionary:
                     self.colunits[col_str] = ''
                 else:
                     self.colunits[col_str] = str(row[ind_unit]).strip()
-
-                if self.debug:
-                    logging.debug('')
-                    logging.debug(f'colunits= {self.colunits[col_str]:s}')
 
                 #
                 # Desc
@@ -282,15 +260,11 @@ class dataDictionary:
 
                 if self.debug:
                     logging.debug('')
-                    logging.debug(f'coldesc= {self.coldesc[col_str]:s}')
-
-                if self.debug:
-                    logging.debug('')
-                    logging.debug(f'col_str= {col_str:s}')
-                    logging.debug(f'coldesc= {self.coldesc[col_str]:s}')
-                    logging.debug(f'coltype= {self.coltype[col_str]:s}')
-                    logging.debug(f'colunits= {self.colunits[col_str]:s}')
-                    logging.debug(f'colfmt= {self.colfmt[col_str]:s}')
+                    logging.debug(f'      col_str = {col_str:s}')
+                    logging.debug(f'      coldesc = {self.coldesc[col_str]:s}')
+                    logging.debug(f'      coltype = {self.coltype[col_str]:s}')
+                    logging.debug(f'      colunits = {self.colunits[col_str]:s}')
+                    logging.debug(f'      colfmt = {self.colfmt[col_str]:s}')
 
                 #
                 # Determine width and fmt from colfmt arrary:
@@ -313,11 +287,6 @@ class dataDictionary:
 
                         fmtstr = self.colfmt[col_str]
 
-                        if self.debug:
-                            logging.debug('')
-                            logging.debug('extract width from fmtstr')
-                            logging.debug(f'fmtstr= {fmtstr:s}')
-
                         if((self.coltype[col_str] == 'date') or
                            (self.coltype[col_str] == 'char')):
 
@@ -325,19 +294,12 @@ class dataDictionary:
 
                             if(ind != -1):
                                 widthstr = fmtstr[0:ind]
-                                if self.debug:
-                                    logging.debug('')
-                                    logging.debug(f'widthstr= [{widthstr:s}]')
 
                                 width = int(widthstr)
 
                         #
                         # } end extract width from colfmt
                         #
-
-                    if self.debug:
-                        logging.debug('')
-                        logging.debug(f'width= [{width:d}]')
 
                     #
                     # Failed to extract width from colfmt
@@ -356,9 +318,7 @@ class dataDictionary:
                     fmtstr = str(width) + 's'
 
                     if self.debug:
-                        logging.debug('')
-                        logging.debug(f'width= [{width:d}]')
-                        logging.debug(f'fmtstr= [{fmtstr:s}]')
+                        logging.debug(f'      width = [{width:d}] [date]')
 
                     #
                     # } end coltype == 'char'/'date'
@@ -381,11 +341,6 @@ class dataDictionary:
 
                         fmtstr = self.colfmt[col_str]
 
-                        if self.debug:
-                            logging.debug('')
-                            logging.debug('extract width from fmtstr')
-                            logging.debug(f'fmtstr= {fmtstr:s}')
-
                         ind = fmtstr.find('d')
 
                         if(ind != -1):
@@ -396,10 +351,6 @@ class dataDictionary:
                         # } end extract width from colfmt
                         #
 
-                    if self.debug:
-                        logging.debug('')
-                        logging.debug(f'width= {width:d}')
-
                     if(len(col_str) > width):
                         width = len(col_str)
                     if(len(self.coltype[col_str]) > width):
@@ -409,9 +360,7 @@ class dataDictionary:
                     fmtstr = str(width) + 'd'
 
                     if self.debug:
-                        logging.debug('')
-                        logging.debug(f'width= {width:d}')
-                        logging.debug(f'fmtstr= {fmtstr:s}')
+                        logging.debug(f'fmtstr= {fmtstr:s} [int]')
 
                     #
                     # } end coltype == 'int/short'
@@ -428,11 +377,6 @@ class dataDictionary:
 
                         fmtstr = self.colfmt[col_str]
 
-                        if self.debug:
-                            logging.debug('')
-                            logging.debug('extract width from fmtstr')
-                            logging.debug(f'fmtstr= {fmtstr:s}')
-
                         ind = fmtstr.find('d')
 
                         if(ind != -1):
@@ -448,9 +392,7 @@ class dataDictionary:
                     fmtstr = str(width) + 'd'
 
                     if self.debug:
-                        logging.debug('')
-                        logging.debug(f'width= {width:d}')
-                        logging.debug(f'fmtstr= {fmtstr:s}')
+                        logging.debug(f'      width = {width:d} [long]')
 
                     #
                     #  } end coltype == 'long'
@@ -468,27 +410,14 @@ class dataDictionary:
 
                         fmtstr = self.colfmt[col_str]
 
-                        if self.debug:
-                            logging.debug('')
-                            logging.debug('extract width from fmtstr')
-                            logging.debug(f'fmtstr= {fmtstr:s}')
-
                         ind = fmtstr.find('.')
 
                         if(ind != -1):
                             widthstr = fmtstr[0:ind]
                             width = int(widthstr)
 
-                            if self.debug:
-                                logging.debug('')
-                                logging.debug(f'widthstr= {widthstr:s}')
-                                logging.debug(f'width= {width:d}')
-
                             remstr = fmtstr[ind+1:]
 
-                            if self.debug:
-                                logging.debug('')
-                                logging.debug(f'remstr= {remstr:s}')
                         else:
                             width = 20
                             remstr = '11e'
@@ -507,9 +436,7 @@ class dataDictionary:
                     fmtstr = str(width) + '.' + remstr
 
                     if self.debug:
-                        logging.debug('')
-                        logging.debug(f'width= {width:d}')
-                        logging.debug(f'fmtstr= {fmtstr:s}')
+                        logging.debug(f'      width = {width:d} [double]')
 
                     #
                     # } end coltype == 'double/float'
@@ -519,10 +446,7 @@ class dataDictionary:
                 self.colfmt[col_str] = fmtstr
 
                 if self.debug:
-                    logging.debug('')
-                    logging.debug(f'col_str= {col_str:s}')
-                    logging.debug(f'colwidth= {self.colwidth[col_str]:d}')
-                    logging.debug(f'colfmt= {self.colfmt[col_str]:s}')
+                    logging.debug(f'      colfmt = {self.colfmt[col_str]:s}')
 
                 i = i + 1
 
@@ -536,9 +460,5 @@ class dataDictionary:
             #
             # } end while loop
             #
-
-        if self.debug:
-            logging.debug('')
-            logging.debug('done with dd retrieval')
 
         return

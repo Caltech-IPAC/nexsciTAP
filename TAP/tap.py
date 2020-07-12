@@ -77,11 +77,8 @@ class Tap:
     pid = os.getpid()
     form = cgi.FieldStorage()
 
-    debugtime = 0
-    time00 = None
 
     debug = 0
-    debugfname = ''
 
     debugfname = '/tmp/tap_' + str(pid) + '.debug'
 
@@ -89,7 +86,6 @@ class Tap:
     sql = ''
     servername = ''
     dbtable = ''
-    ddtable = ''
     dd = None
 
     param = dict()
@@ -151,15 +147,15 @@ class Tap:
         if('debug' in self.form):
             self.debug = 1
 
-        if('debugtime' in self.form):
-            self.debugtime = 1
+        if(self.debug):
 
-        if((self.debug or self.debugtime) and (len(self.debugfname) > 0)):
-
-            logging.basicConfig(filename=self.debugfname, level=logging.DEBUG)
+            logging.basicConfig(filename=self.debugfname,
+                                format='%(levelname)-8s %(relativeCreated)d>  '
+                                '%(filename)s %(lineno)d  '
+                                '(%(funcName)s):   %(message)s',
+                                level=logging.DEBUG)
 
         if self.debug:
-            logging.debug('')
             logging.debug(f'Enter Tap.init(): pid= {self.pid:d}')
 
         #
@@ -173,18 +169,8 @@ class Tap:
             logging.debug('')
 
             for key in os.environ.keys():
-                logging.debug(f'{key:s}: {os.environ[key]:20s}')
+                logging.debug(f'      {key:s}: {os.environ[key]:20s}')
 
-        if self.debug:
-            logging.debug('')
-            logging.debug('got here 0')
-            logging.debug('')
-
-        if self.debugtime:
-            self.time00 = datetime.datetime.now()
-            time0 = datetime.datetime.now()
-            logging.debug('')
-            logging.debug('TAP service start:')
 
         #
         #  Default values; initialize phase to PENDING
@@ -197,30 +183,19 @@ class Tap:
         self.param['format'] = 'votable'
         self.param['maxrec'] = -1
 
+        self.querykey = 0
 
         if self.debug:
             logging.debug('')
-            logging.debug('here0')
+            logging.debug('HTTP request keywords:\n')
 
-
-        self.querykey = 0
         for key in self.form:
 
             if self.debug:
-                logging.debug('')
-                logging.debug(f'key= {key:s} val= {self.form[key].value:s}')
+                logging.debug(f'      key: {key:s}   val: {self.form[key].value:s}')
 
             if(key.lower() == 'propflag'):
-
                 self.propflag = int(self.form[key].value)
-
-                if self.debug:
-                    logging.debug('')
-                    logging.debug(f'input propflag= [{self.propflag:d}]')
-
-            if self.debug:
-                logging.debug('')
-                logging.debug(f'propflag= {self.propflag:d}')
 
             if(key.lower() == 'lang'):
                 self.param['lang'] = self.form[key].value
@@ -230,10 +205,6 @@ class Tap:
 
             if(key.lower() == 'phase'):
                 self.param['phase'] = self.form[key].value.strip()
-
-                if self.debug:
-                    logging.debug('')
-                    logging.debug(f'phase= {self.param["phase"]:s}')
 
             if(key.lower() == 'query'):
                 self.param['query'] = self.form[key].value.strip()
@@ -249,15 +220,7 @@ class Tap:
 
                 self.maxrecstr = self.form[key].value
 
-                if self.debug:
-                    logging.debug('')
-                    logging.debug(f'maxrecstr= {self.maxrecstr:s}')
-
         self.nparam = len(self.param)
-
-        if self.debug:
-            logging.debug('')
-            logging.debug(f"param['format']= {self.param['format']:s}")
 
         self.format = self.param['format'].lower()
 
@@ -281,14 +244,8 @@ class Tap:
 
             try:
                 maxrec_dbl = float(self.maxrecstr)
-                if self.debug:
-                    logging.debug('')
-                    logging.debug(f'maxrec_dbl= [{maxrec_dbl:f}]')
 
                 self.maxrec = int(maxrec_dbl)
-                if self.debug:
-                    logging.debug('')
-                    logging.debug(f'maxrec= [{self.maxrec:d}]')
 
             except Exception as e:
 
@@ -322,25 +279,15 @@ class Tap:
             self.msg = 'Failed to find PATH_INFO(e.g. sync, async) in URL.'
             self.__printError__(self.format, self.msg)
 
-        if self.debug:
-            logging.debug('')
-            logging.debug(f'pathinfo= {self.pathinfo:s}')
-
         if(self.pathinfo[0] == '/'):
             self.pathinfo = self.pathinfo[1:]
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'pathinfo= {self.pathinfo:s}')
+            logging.debug(f'pathinfo = {self.pathinfo:s}')
 
         arr = self.pathinfo.split('/')
         narr = len(arr)
-
-        if self.debug:
-            logging.debug('')
-            logging.debug(f'narr= {narr:d}')
-            for i in range(narr):
-                logging.debug(f'i= {i:d} arr= {arr[i]:s}')
 
         if(arr[0] == "async"):
             self.tapcontext = 'async'
@@ -367,11 +314,11 @@ class Tap:
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'statuskey= {self.statuskey:s}')
-            logging.debug(f'tapcontext= {self.tapcontext:s}')
-            logging.debug(f'getstatus= {self.getstatus:d}')
-            logging.debug(f'setstatus= {self.setstatus:d}')
-            logging.debug(f'id= {self.id:s}')
+            logging.debug(f'statuskey = {self.statuskey:s}')
+            logging.debug(f'tapcontext = {self.tapcontext:s}')
+            logging.debug(f'getstatus = {self.getstatus:d}')
+            logging.debug(f'setstatus = {self.setstatus:d}')
+            logging.debug(f'id = {self.id:s}')
 
         #
         # Retrieve cookiestr
@@ -400,7 +347,7 @@ class Tap:
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'configpath= {self.configpath:s}')
+            logging.debug(f'configpath = {self.configpath:s}')
 
         #
         # Retrieve config variables
@@ -408,11 +355,7 @@ class Tap:
 
         self.config = None
         try:
-            self.config = configParam(self.configpath)
-
-            if self.debug:
-                logging.debug('')
-                logging.debug('returned config')
+            self.config = configParam(self.configpath, self.debug)
 
         except Exception as e:
 
@@ -430,17 +373,17 @@ class Tap:
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'workdir= {self.workdir:s}')
-            logging.debug(f'workurl= {self.workurl:s}')
-            logging.debug(f'httpurl= {self.httpurl:s}')
-            logging.debug(f'cgipgm= {self.cgipgm:s}')
-            logging.debug(f'cookiename= {self.cookiename:s}')
-            logging.debug(f'fileid= {self.config.fileid:s}')
-            logging.debug(f'accessid= {self.config.accessid:s}')
-            logging.debug(f'racol= {self.config.racol:s}')
-            logging.debug(f'deccol= {self.config.deccol:s}')
-            logging.debug(f'propfilter= {self.config.propfilter:s}')
-            logging.debug(f'phase= {self.param["phase"]:s}')
+            logging.debug(f'workdir    = {self.workdir:s}')
+            logging.debug(f'workurl    = {self.workurl:s}')
+            logging.debug(f'httpurl    = {self.httpurl:s}')
+            logging.debug(f'cgipgm     = {self.cgipgm:s}')
+            logging.debug(f'cookiename = {self.cookiename:s}')
+            logging.debug(f'fileid     = {self.config.fileid:s}')
+            logging.debug(f'accessid   = {self.config.accessid:s}')
+            logging.debug(f'racol      = {self.config.racol:s}')
+            logging.debug(f'deccol     = {self.config.deccol:s}')
+            logging.debug(f'propfilter = {self.config.propfilter:s}')
+            logging.debug(f'phase      = {self.param["phase"]:s}')
 
         #
         # Initialize statdict dict
@@ -499,7 +442,7 @@ class Tap:
 
             if self.debug:
                 logging.debug('')
-                logging.debug('tapdir: {tapdir:s} created')
+                logging.debug(f'tapdir: {tapdir:s} created')
 
 
             try:
@@ -509,19 +452,9 @@ class Tap:
                 self.msg = 'tempfile.mkdtemp exception: ' + str(e)
                 self.__printError__(self.format, self.msg)
 
-            if self.debug:
-                logging.debug('')
-                logging.debug(
-                    f'returned tempfile.mkdtemp {self.userWorkdir:s}')
-
             ind = self.userWorkdir.rfind('/')
             if(ind > 0):
                 self.workspace = self.userWorkdir[ind + 1:]
-
-            if self.debug:
-                logging.debug('')
-                logging.debug(f'workspace= {self.workspace:s}')
-
 
             try:
                 os.makedirs(self.userWorkdir, exist_ok=True)
@@ -533,8 +466,7 @@ class Tap:
                 self.__printError__(self.format, self.msg)
 
             if self.debug:
-                logging.debug('')
-                logging.debug(f'userWorkdir {self.userWorkdir:s} created')
+                logging.debug(f'userWorkdir: {self.userWorkdir:s} created')
             #
             # } end of make workspace
             #
@@ -554,8 +486,8 @@ class Tap:
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'workspace= {self.workspace:s}')
-            logging.debug(f'userWorkdir= {self.userWorkdir:s}')
+            logging.debug(f'workspace   = {self.workspace:s}')
+            logging.debug(f'userWorkdir = {self.userWorkdir:s}')
 
         #
         # Make status and result table names
@@ -568,8 +500,8 @@ class Tap:
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'statuspath= {self.statuspath:s}')
-            logging.debug(f'statusurl= {self.statusurl:s}')
+            logging.debug(f'statuspath  = {self.statuspath:s}')
+            logging.debug(f'statusurl   = {self.statusurl:s}')
 
 
         self.resulttbl = ''
@@ -588,8 +520,8 @@ class Tap:
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'resultpath= {self.resultpath:s}')
-            logging.debug(f'resulturl= {self.resulturl:s}')
+            logging.debug(f'resultpath  = {self.resultpath:s}')
+            logging.debug(f'resulturl   = {self.resulturl:s}')
 
         #
         # If async and phase == PENDING: send 303 with statusurl and exit
@@ -597,11 +529,11 @@ class Tap:
 
         if self.debug:
             logging.debug('')
-            logging.debug('before setting phase to PENDING')
-            logging.debug(f'tapcontext= {self.tapcontext:s}')
-            logging.debug(f'getstatus= {self.getstatus:d}')
-            logging.debug(f'setstatus= {self.setstatus:d}')
-            logging.debug(f'param[phase]= {self.param["phase"]:s}')
+            logging.debug('Before setting phase to PENDING:\n')
+            logging.debug(f'      tapcontext   = {self.tapcontext:s}')
+            logging.debug(f'      getstatus    = {self.getstatus:d}')
+            logging.debug(f'      setstatus    = {self.setstatus:d}')
+            logging.debug(f'      param[phase] = {self.param["phase"]:s}')
 
 
         if((self.tapcontext == 'async')
@@ -616,22 +548,8 @@ class Tap:
             self.statdict['phase'] = 'PENDING'
             self.statdict['jobid'] = self.workspace
 
-            if self.debug:
-                logging.debug('')
-                logging.debug('call writeStatusMessage:')
-                logging.debug(f'maxrec= {self.maxrec:d}')
-
-            if self.debug:
-                self.__writeStatusMsg__(self.statuspath, self.statdict,
-                                        self.param, debug=1)
-            else:
-                self.__writeStatusMsg__(self.statuspath, self.statdict,
-                                        self.param)
-
-            if self.debug:
-                logging.debug('')
-                logging.debug('returned writeStatusMessage')
-                logging.debug(f'statusurl= {self.statusurl:s}')
+            self.__writeStatusMsg__(self.statuspath, self.statdict,
+                                    self.param)
 
 
             print("HTTP/1.1 303 See Other\r")
@@ -645,11 +563,6 @@ class Tap:
             # } end of PENDING case
             #
 
-        if self.debug:
-            logging.debug('')
-            logging.debug('here1')
-
-
         #
         # getStatus case: call getStatus mothod which reads status file:
         # printStatus or error messages, then exit.
@@ -661,31 +574,17 @@ class Tap:
             # {
             #
 
-            if self.debug:
-                logging.debug('')
-                logging.debug('Case getstatus')
-
             try:
                 self.__getStatus__(self.workdir, self.id, self.statuskey,
                                    self.param)
 
             except Exception as e:
-
-                if self.debug:
-                    logging.debug('')
-                    logging.debug(f'getStatus error: {str(e):s}')
-
                 self.__printError__(self.format, str(e))
 
             #
             # getStatus will exit when done
             #
             # }
-
-        if self.debug:
-            logging.debug('')
-            logging.debug('here2')
-
         #
         # setstatus to RUN case:
         # parse status file to get parameters
@@ -701,12 +600,12 @@ class Tap:
                 logging.debug('')
                 logging.debug('Case set phase RUN')
                 logging.debug('')
-                logging.debug('param:(from input)')
-                logging.debug(f'format= {self.param["format"]:s}')
-                logging.debug(f'lang= {self.param["lang"]:s}')
-                logging.debug(f'maxrec= {self.param["maxrec"]:d}')
-                logging.debug(f'query= {self.param["query"]:s}')
-                logging.debug(f'phase= {self.param["phase"]:s}')
+                logging.debug('param:(from input):\n')
+                logging.debug(f'      format= {self.param["format"]:s}')
+                logging.debug(f'      lang= {self.param["lang"]:s}')
+                logging.debug(f'      maxrec= {self.param["maxrec"]:d}')
+                logging.debug(f'      query= {self.param["query"]:s}')
+                logging.debug(f'      phase= {self.param["phase"]:s}')
 
             #
             # Parse statuspath to retrieve parameters
@@ -718,54 +617,46 @@ class Tap:
                 # {    setstatus = 1
                 #
 
-                if self.debug:
-                    logging.debug('')
-                    logging.debug('case setstatus=1')
-                    logging.debug(f'statuspath= {self.statuspath:s}')
-
                 doc = None
                 with open(self.statuspath, 'r') as fp:
                     doc = fp.read()
 
                 if self.debug:
                     logging.debug('')
-                    logging.debug('doc=')
+                    logging.debug('XML doc:')
+                    logging.debug('------------------------------------------')
                     logging.debug(doc)
+                    logging.debug('------------------------------------------')
 
                 soup = BeautifulSoup(doc, 'lxml')
 
                 parameters = soup.find('uws:parameters')
 
-                if self.debug:
-                    logging.debug('')
-                    logging.debug('parameters=')
-                    logging.debug(parameters)
-
                 parameter = parameters.find(id='query')
                 self.param['query'] = parameter.string
                 if self.debug:
-                    logging.debug('')
-                    logging.debug(f'query= {self.param["query"]:s}')
+                    logging.debug('XML status parameters:\n')
+                    logging.debug(f'      query = {self.param["query"]:s}')
 
                 parameter = parameters.find(id='format')
                 self.param['format'] = parameter.string
                 if self.debug:
                     logging.debug('')
-                    logging.debug(f'format= {self.param["format"]:s}')
+                    logging.debug(f'      format = {self.param["format"]:s}')
 
                 parameter = parameters.find(id='maxrec')
                 self.maxrecstr = parameter.string
-                if self.debug:
-                    logging.debug('')
-                    logging.debug(f'maxrecstr= {self.maxrecstr:s}')
 
                 self.param['maxrec'] = int(parameter.string)
                 if self.debug:
                     logging.debug('')
-                    logging.debug(f'maxrecstr= {self.param["maxrec"]:d}')
+                    logging.debug(f'      maxrecstr = {self.param["maxrec"]:d}')
 
-                parameter = parameters.find(id='lang')
+                parameter = parameters.find(id ='lang')
                 self.param['lang'] = parameter.string
+                if self.debug:
+                    logging.debug('')
+                    logging.debug(f'      lang = {self.param["lang"]:d}\n')
 
                 #
                 # } end setstatus = 1
@@ -774,10 +665,6 @@ class Tap:
             #
             # Rewrite statustbl
             #
-
-            if self.debug:
-                logging.debug('')
-                logging.debug('xxx0-0: write statustbl')
 
             self.statdict['process_id'] = self.pid
             self.statdict['jobid'] = self.workspace
@@ -788,10 +675,9 @@ class Tap:
             destructtime = stime + datetime.timedelta(days=4)
 
             if self.debug:
-                logging.debug('')
-                logging.debug(f'got here: statusurl= {self.statusurl:s}')
-                logging.debug(f"process_id= {self.statdict['process_id']:d}")
-                logging.debug(f"jobid= {self.statdict['jobid']:s}")
+                logging.debug(f'statusurl = {self.statusurl:s}')
+                logging.debug(f"process_id = {self.statdict['process_id']:d}")
+                logging.debug(f"jobid = {self.statdict['jobid']:s}")
                 logging.debug('stime:')
                 logging.debug(stime)
                 logging.debug('destructtime:')
@@ -799,79 +685,32 @@ class Tap:
 
             starttime = stime.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-4]
             destruction = destructtime.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-4]
+
             if self.debug:
                 logging.debug('')
                 logging.debug(f'starttime: {starttime:s}')
                 logging.debug(f'destruction= {destruction:s}')
-                logging.debug('xxx0')
 
 
             self.statdict['stime'] = stime
-            if self.debug:
-                logging.debug('')
-                logging.debug('xxx0-0-0')
-
             self.statdict['starttime'] = starttime
-            if self.debug:
-                logging.debug('')
-                logging.debug('xxx0-1')
-
             self.statdict['destruction'] = destruction
-            if self.debug:
-                logging.debug('')
-                logging.debug('xxx0-2')
-
             self.statdict['endtime'] = ''
-            if self.debug:
-                logging.debug('')
-                logging.debug('xxx0-3')
-
             self.statdict['duration'] = '0'
-
-            if self.debug:
-                logging.debug('')
-                logging.debug('xxx0-4')
-
             self.statdict['resulturl'] = self.resulturl
 
-            if self.debug:
-                logging.debug('')
-                logging.debug('call writeStatusMessage:')
-                logging.debug(f'phase= {self.statdict["phase"]:s}')
-
-            if self.debug:
-                self.__writeStatusMsg__(self.statuspath, self.statdict,
-                                        self.param, debug=1)
-            else:
-                self.__writeStatusMsg__(self.statuspath, self.statdict,
-                                        self.param)
-
-            if self.debug:
-                logging.debug('')
-                logging.debug('returned writeStatusMessage')
+            self.__writeStatusMsg__(self.statuspath, self.statdict,
+                                    self.param)
 
             #
             # Generate return response and terminate parent process
             # before proceed to run the search program
             #
 
-            if self.debug:
-                logging.debug('')
-                logging.debug('call printAsyncResponse')
-
             self.__printAsyncResponse__(self.statusurl)
-
-            if self.debug:
-                logging.debug('')
-                logging.debug('returned printAsyncResponse')
             #
             # }
             #
-
-        if self.debug:
-            logging.debug('')
-            logging.debug('here3')
-
         #
         # { Run the query for both async and sync cases:
         #
@@ -893,48 +732,24 @@ class Tap:
         # Convert ADQL query to a local database query
         #
 
-        if self.debug:
-            logging.debug('')
-            logging.debug('here 4')
-
         query_adql = self.param['query']
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'query_adql= {query_adql:s}')
+            logging.debug(f'ADQL query: {query_adql:s}\n')
 
         try:
-            if self.debug:
-                logging.debug('')
-                logging.debug('here 4-0')
-
             mode = SpatialIndex.HTM
-            if self.debug:
-                logging.debug('')
-                logging.debug('here 4-1')
 
             if(self.config.adqlparam['mode'] == 'HPX'):
                 mode = SpatialIndex.HPX
 
-            if self.debug:
-                logging.debug('')
-                logging.debug(f'mode= {mode:d}')
-
             level   = int(self.config.adqlparam['level'])
             colname = self.config.adqlparam['colname']
-
-            if self.debug:
-                logging.debug('')
-                logging.debug(f'level= {level:d}')
-                logging.debug(f'colname= {colname:s}')
 
             encoding = SpatialIndex.BASE4
             if(self.config.adqlparam['encoding'] == 'BASE10'):
                 encoding = SpatialIndex.BASE10
-
-            if self.debug:
-                logging.debug('')
-                logging.debug(f'encoding= {encoding:d}')
 
             racol = self.config.racol
             deccol = self.config.deccol
@@ -944,19 +759,22 @@ class Tap:
             zcol = self.config.adqlparam['zcol']
 
             if self.debug:
-                logging.debug('')
-                logging.debug(f'racol= {racol:s}')
-                logging.debug(f'deccol= {deccol:s}')
-                logging.debug(f'xcol= {xcol:s}')
-                logging.debug(f'ycol= {ycol:s}')
-                logging.debug(f'zcol= {zcol:s}')
+                logging.debug(f'mode     = {mode:d}')
+                logging.debug(f'level    = {level:d}')
+                logging.debug(f'colname  = {colname:s}')
+                logging.debug(f'encoding = {encoding:d}')
+                logging.debug(f'racol    = {racol:s}')
+                logging.debug(f'deccol   = {deccol:s}')
+                logging.debug(f'xcol     = {xcol:s}')
+                logging.debug(f'ycol     = {ycol:s}')
+                logging.debug(f'zcol     = {zcol:s}')
 
 
             dbms = self.config.connectInfo['dbms']
 
             if self.debug:
                 logging.debug('')
-                logging.debug(f'dbms= {dbms:s}')
+                logging.debug(f'dbms = {dbms:s}')
 
 
             adql = ADQL(dbms=dbms, mode=mode, level=level, indxcol=colname,
@@ -972,7 +790,7 @@ class Tap:
 
             if self.debug:
                 logging.debug('')
-                logging.debug(f'final query= {self.query:s}')
+                logging.debug(f'Query to DBMS: {self.query:s}')
 
         except Exception as e:
 
@@ -1009,28 +827,21 @@ class Tap:
             self.msg = 'No table name found ADQL in query.'
             self.__printError__(self.format, self.msg)
 
-        self.ddtable = self.dbtable + '_dd'
-
         if self.debug:
             logging.debug('')
-            logging.debug(f'dbtable= [{self.dbtable:s}]')
-            logging.debug(f'ddtable= {self.ddtable:s}')
+            logging.debug(f'dbtable = [{self.dbtable:s}]')
 
         self.datalevel = self.__getDatalevel__(self.dbtable)
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'datalevel= [{self.datalevel:s}]')
+            logging.debug(f'datalevel = [{self.datalevel:s}]')
 
         #
-        # Determine whether to use runQuery or propFilter to execute sql
+        # Determine whether to use runQuery or propFilter to execute SQL
         #
 
         if(self.propflag == -1):
-
-            if self.debug:
-                logging.debug('')
-                logging.debug('No input propflag:')
 
             if((self.config.propfilter.lower() == 'koa')
                 or ((self.config.propfilter.lower() == 'neid')
@@ -1038,10 +849,6 @@ class Tap:
                 self.propflag = 1
             else:
                 self.propflag = 0
-
-        if self.debug:
-            logging.debug('')
-            logging.debug(f'propflag= [{self.propflag:d}]')
 
         #
         # Check if dbtable is tap_schema tables
@@ -1058,15 +865,7 @@ class Tap:
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'propflag= [{self.propflag:d}]')
-
-        if self.debugtime:
-            time1 = datetime.datetime.now()
-            delt = (time1 - time0).total_seconds()
-            time0 = time1
-            logging.debug('')
-            logging.debug('time(initialization including adql translation):'
-                          f' {delt:f}s')
+            logging.debug(f'propflag = [{self.propflag:d}]')
 
         dbquery = None
         propfilter = None
@@ -1084,61 +883,18 @@ class Tap:
             #
 
             try:
-                if self.debug:
-                    logging.debug('')
-                    logging.debug('will call runQuery')
-                    logging.debug(
-                        f'maxrec= {self.maxrec:d} format= {self.format:s}')
 
-                if(self.debug and self.debugtime):
-
-                    dbquery = runQuery(connectInfo=self.config.connectInfo,
-                                       query=self.query,
-                                       workdir=self.userWorkdir,
-                                       format=self.format,
-                                       maxrec=self.maxrec,
-                                       racol=self.config.racol,
-                                       deccol=self.config.deccol,
-                                       debug=1,
-                                       debugtime=1)
-
-                elif self.debug:
-
-                    dbquery = runQuery(connectInfo=self.config.connectInfo,
-                                       query=self.query,
-                                       workdir=self.userWorkdir,
-                                       format=self.format,
-                                       maxrec=self.maxrec,
-                                       racol=self.config.racol,
-                                       deccol=self.config.deccol,
-                                       debug=1)
-
-                elif self.debugtime:
-
-                    dbquery = runQuery(connectInfo=self.config.connectInfo,
-                                       query=self.query,
-                                       workdir=self.userWorkdir,
-                                       format=self.format,
-                                       maxrec=self.maxrec,
-                                       racol=self.config.racol,
-                                       deccol=self.config.deccol,
-                                       debugtime=1)
-
-                else:
-                    dbquery = runQuery(connectInfo=self.config.connectInfo,
-                                       query=self.query,
-                                       workdir=self.userWorkdir,
-                                       format=self.format,
-                                       maxrec=self.maxrec,
-                                       racol=self.config.racol,
-                                       deccol=self.config.deccol)
+                dbquery = runQuery(connectInfo=self.config.connectInfo,
+                                   query=self.query,
+                                   workdir=self.userWorkdir,
+                                   format=self.format,
+                                   maxrec=self.maxrec,
+                                   racol=self.config.racol,
+                                   deccol=self.config.deccol,
+                                   debug=self.debug)
 
                 self.phase = 'COMPLETED'
                 self.ntot = dbquery.ntot
-
-                if self.debug:
-                    logging.debug('')
-                    logging.debug('returned runQuery')
 
             except Exception as e:
 
@@ -1155,18 +911,6 @@ class Tap:
 
                 else:
                     self.__printError__(self.format, str(e))
-
-            if self.debug:
-                logging.debug('')
-                logging.debug(f'Done runQuery: outpath= {dbquery.outpath:s}')
-
-            if self.debugtime:
-                time1 = datetime.datetime.now()
-                delt = (time1 - time0).total_seconds()
-                time0 = time1
-                logging.debug('')
-                logging.debug(f'time(runquery): {delt:f}s')
-
             #
             # } end runquery
             #
@@ -1179,97 +923,28 @@ class Tap:
 
             propfilter = None
             try:
-                if self.debug:
-                    logging.debug('')
-                    logging.debug('will call propFilter')
 
-                if(self.debug and self.debugtime):
-
-                    propfilter = propFilter(connectInfo=self.config \
-                                                            .connectInfo,
-                                            query=self.query,
-                                            workdir=self.userWorkdir,
-                                            racol=self.config.racol,
-                                            deccol=self.config.deccol,
-                                            cookiename=self.config.cookiename,
-                                            cookiestr=self.cookiestr,
-                                            propfilter=self.config.propfilter \
-                                                                  .lower(),
-                                            usertbl=self.config.usertbl,
-                                            accesstbl=self.config.accesstbl,
-                                            fileid=self.config.fileid,
-                                            accessid=self.config.accessid,
-                                            format=self.format,
-                                            maxrec=self.maxrec,
-                                            debugtime=1,
-                                            debug=1)
-
-                elif self.debug:
-
-                    propfilter = propFilter(connectInfo=self.config \
-                                                            .connectInfo,
-                                            query=self.query,
-                                            workdir=self.userWorkdir,
-                                            racol=self.config.racol,
-                                            deccol=self.config.deccol,
-                                            cookiename=self.config.cookiename,
-                                            cookiestr=self.cookiestr,
-                                            propfilter=self.config.propfilter \
-                                                                  .lower(),
-                                            usertbl=self.config.usertbl,
-                                            accesstbl=self.config.accesstbl,
-                                            fileid=self.config.fileid,
-                                            accessid=self.config.accessid,
-                                            format=self.format,
-                                            maxrec=self.maxrec,
-                                            debug=1)
-
-                elif self.debugtime:
-
-                    propfilter = propFilter(connectInfo=self.config \
-                                                            .connectInfo,
-                                            query=self.query,
-                                            workdir=self.userWorkdir,
-                                            racol=self.config.racol,
-                                            deccol=self.config.deccol,
-                                            cookiename=self.config.cookiename,
-                                            cookiestr=self.cookiestr,
-                                            propfilter=self.config.propfilter \
-                                                                  .lower(),
-                                            usertbl=self.config.usertbl,
-                                            accesstbl=self.config.accesstbl,
-                                            fileid=self.config.fileid,
-                                            accessid=self.config.accessid,
-                                            format=self.format,
-                                            maxrec=self.maxrec,
-                                            debugtime=1)
-
-                else:
-                    propfilter = propFilter(connectInfo=self.config \
-                                                            .connectInfo,
-                                            query=self.query,
-                                            workdir=self.userWorkdir,
-                                            racol=self.config.racol,
-                                            deccol=self.config.deccol,
-                                            cookiename=self.config.cookiename,
-                                            cookiestr=self.cookiestr,
-                                            propfilter=self.config.propfilter \
-                                                                  .lower(),
-                                            usertbl=self.config.usertbl,
-                                            accesstbl=self.config.accesstbl,
-                                            fileid=self.config.fileid,
-                                            accessid=self.config.accessid,
-                                            format=self.format,
-                                            maxrec=self.maxrec)
+                propfilter = propFilter(connectInfo=self.config \
+                                                        .connectInfo,
+                                        query=self.query,
+                                        workdir=self.userWorkdir,
+                                        racol=self.config.racol,
+                                        deccol=self.config.deccol,
+                                        cookiename=self.config.cookiename,
+                                        cookiestr=self.cookiestr,
+                                        propfilter=self.config.propfilter \
+                                                              .lower(),
+                                        usertbl=self.config.usertbl,
+                                        accesstbl=self.config.accesstbl,
+                                        fileid=self.config.fileid,
+                                        accessid=self.config.accessid,
+                                        format=self.format,
+                                        maxrec=self.maxrec,
+                                        debug=self.debug)
 
 
                 self.phase = 'COMPLETED'
                 self.ntot = propfilter.ntot
-
-                if self.debug:
-                    logging.debug('')
-                    logging.debug('returned propFilter: phase= {self.phase:s}')
-                    logging.debug(f'ntot= {self.ntot:d}')
 
             except Exception as e:
 
@@ -1282,42 +957,10 @@ class Tap:
 
                 if(self.tapcontext == 'async'):
 
-                    if self.debug:
-                        logging.debug('')
-                        logging.debug('call writeAsyncError')
-                        for key in self.param:
-                            if(key == 'maxrec'):
-                                logging.debug(
-                                    f'key= {key:s} val= {self.param[key]:d}')
-                            else:
-                                logging.debug(
-                                    f'key= {key:s} val= {self.param[key]:s}')
-
                     self.__writeAsyncError__(str(e), self.statuspath,
                                              self.statdict, self.param)
-
-                    if self.debug:
-                        logging.debug('')
-                        logging.debug('returned writeAsyncError')
-
                 else:
-                    if self.debug:
-                        logging.debug('')
-                        logging.debug('call printError')
-
                     self.__printError__(self.format, str(e))
-
-            if self.debug:
-                logging.debug('')
-                logging.debug(
-                    f'Done propfilter: outpath= {propfilter.outpath:s}')
-
-            if self.debugtime:
-                time1 = datetime.datetime.now()
-                delt = (time1 - time0).total_seconds()
-                logging.debug('')
-                logging.debug(f'time(propfilter): {delt:f}s')
-
             #
             # } end propfilter
             #
@@ -1334,35 +977,16 @@ class Tap:
 
             if self.debug:
                 logging.debug('')
-                logging.debug('case async')
-
-            if self.debugtime:
-                time0 = datetime.datetime.now()
-
-            if self.debug:
-                logging.debug('')
-                logging.debug('xxx0-0')
+                logging.debug('Case: async')
 
             etime = datetime.datetime.now()
             endtime = etime.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-4]
 
-            if self.debug:
-                logging.debug('')
-                logging.debug('xxx0-1')
-
             durationtime = etime - self.statdict['stime']
             duration = str(durationtime.total_seconds())[:4]
 
-            if self.debug:
-                logging.debug('')
-                logging.debug('xxx0-2')
-
             self.statdict['endtime'] = endtime
             self.statdict['duration'] = duration
-
-            if self.debug:
-                logging.debug('')
-                logging.debug('xxx0-3')
 
             if self.debug:
                 logging.debug('')
@@ -1372,56 +996,14 @@ class Tap:
             self.statdict['phase'] = self.phase
             self.statdict['errmsg'] = self.errmsg
 
-            if self.debug:
-                logging.debug('')
-                logging.debug('call writeStatusMsg')
-                logging.debug(f'phase= {self.statdict["phase"]:s}')
-
             self.__writeStatusMsg__(self.statuspath, self.statdict, self.param)
-
-            if self.debug:
-                logging.debug('')
-                logging.debug('returned writeStatusMsg')
-
-            if self.debugtime:
-                time1 = datetime.datetime.now()
-                delt = (time1 - time0).total_seconds()
-                logging.debug('')
-                logging.debug(f'time(async: writeStatusMsg): {delt:f}s')
-
-                delt = (time1 - self.time00).total_seconds()
-                logging.debug('')
-                logging.debug(
-                    f'time(total TAP service completion): {delt:f}s')
 
         else:
             if self.debug:
                 logging.debug('')
-                logging.debug('case sync')
-
-            if self.debug:
-                logging.debug('')
-                logging.debug('call printSyncResult')
-
-            if self.debugtime:
-                time0 = datetime.datetime.now()
+                logging.debug('Case: sync')
 
             self.__printSyncResult__(self.resultpath, self.format)
-
-            if self.debug:
-                logging.debug('')
-                logging.debug('returned printSyncResult')
-
-            if self.debugtime:
-                time1 = datetime.datetime.now()
-                delt = (time1 - time0).total_seconds()
-                logging.debug('')
-                logging.debug(f'time(sync: print return): {delt:f}s')
-
-                delt = (time1 - self.time00).total_seconds()
-                logging.debug('')
-                logging.debug(
-                    f'time(total TAP service completion): {delt:f}s')
 
         if self.debug:
             logging.debug('')
@@ -1439,18 +1021,6 @@ class Tap:
         #
         # {
         #
-        debug = 0
-
-        if('debug' in kwargs):
-            debug = kwargs['debug']
-
-        if debug:
-            logging.debug('')
-            logging.debug('Enter getStatusJob')
-            logging.debug('data=')
-            logging.debug(data)
-
-        #
         # Parse data to extract inparam
         #
 
@@ -1464,10 +1034,12 @@ class Tap:
             msg = 'Exception xmltodict.parse: ' + str(e)
             raise Exception(msg)
 
-        if debug:
+        if self.debug:
             logging.debug('')
             logging.debug('doc:')
+            logging.debug('----------------------------------------------')
             logging.debug(doc)
+            logging.debug('----------------------------------------------')
 
         job = None
         try:
@@ -1489,16 +1061,6 @@ class Tap:
         # {
         #
 
-        debug = 0
-
-        if('debug' in kwargs):
-            debug = kwargs['debug']
-
-        if debug:
-            logging.debug('')
-            logging.debug('Enter getStatusData')
-            logging.debug(f'statuspath= {statuspath:s}]')
-
         data = ''
         opened = False
         nopen = 0
@@ -1516,19 +1078,20 @@ class Tap:
                     opened = True
                     data = fp.read()
 
-                    if debug:
+                    if self.debug:
                         logging.debug('')
                         logging.debug('data=')
+                        logging.debug('-------------------------------------')
                         logging.debug(data)
+                        logging.debug('-------------------------------------')
 
             except Exception as e:
                 msg = 'Error reading status file: ' + str(e)
                 pass
 
-            if debug:
+            if self.debug:
                 logging.debug('')
-                logging.debug('here1: opened:')
-                logging.debug(opened)
+                logging.debug('opened:' + str(opened))
 
             if(opened):
                 break
@@ -1538,11 +1101,6 @@ class Tap:
 
             if(nopen > 2):
                 break
-
-        if debug:
-            logging.debug('')
-            logging.debug('here2: opened:')
-            logging.debug(opened)
 
         if(not opened):
             raise Exception(msg)
@@ -1560,23 +1118,8 @@ class Tap:
         # {
         #
 
-        debug = 0
-
-        if('debug' in kwargs):
-            debug = kwargs['debug']
-
-        if debug:
-            logging.debug('')
-            logging.debug('Enter getPhase')
-            logging.debug(f'statuspath= {statuspath:s}]')
-
         try:
             data = self.__getStatusData__(statuspath)
-
-            if debug:
-                logging.debug('')
-                logging.debug('data=')
-                logging.debug(data)
 
         except Exception as e:
 
@@ -1592,10 +1135,6 @@ class Tap:
 
         retval = job['uws:phase']
 
-        if debug:
-            logging.debug('')
-            logging.debug(f'retval= {retval:s}')
-
         return(retval)
 
         #
@@ -1609,17 +1148,6 @@ class Tap:
         #
         # {
         #
-
-        debug = 0
-
-        if('debug' in kwargs):
-            debug = kwargs['debug']
-
-        if debug:
-            logging.debug('')
-            logging.debug('Enter printStatus')
-            logging.debug(f'key= {key:s}')
-            logging.debug(f'retval= {retval:s}')
 
         #
         # Header
@@ -1685,23 +1213,7 @@ class Tap:
         # {
         #
 
-        debug = 0
-
-        if('debug' in kwargs):
-            debug = kwargs['debug']
-
-        if debug:
-            logging.debug('')
-            logging.debug('Enter getStatus')
-            logging.debug(f'workdir= {workdir:s}]')
-            logging.debug(f'workspace= {workspace:s}]')
-            logging.debug(f'key= {key:s}')
-
         statuspath = workdir + '/TAP/' + workspace + '/status.xml'
-
-        if debug:
-            logging.debug('')
-            logging.debug(f'statuspath= {statuspath:s}]')
 
         isExist = os.path.exists(statuspath)
 
@@ -1709,7 +1221,7 @@ class Tap:
             msg = 'Status file: status.tbl does not exit.'
             raise Exception(msg)
 
-        if debug:
+        if self.debug:
             logging.debug('')
             logging.debug('statuspath exists')
 
@@ -1721,11 +1233,6 @@ class Tap:
 
             msg = 'Error getStatusData: ' + str(e)
             raise Exception(msg)
-
-        if debug:
-            logging.debug('')
-            logging.debug('returned getStatusData: data=')
-            logging.debug(data)
 
         #
         # No key: return the whole status file
@@ -1758,14 +1265,11 @@ class Tap:
 
             format = parameter.string
 
-#            format = parameters.findAll('parameter',
-#                                             {'id': 'format'})[0].get_text()
-
         except Exception as e:
 
             self.__printError__('votable', str(e))
 
-        if debug:
+        if self.debug:
             logging.debug('')
             logging.debug(f'format= {format:s}')
 
@@ -1786,7 +1290,7 @@ class Tap:
             except Exception as e:
                 self.__printError__(format, str(e))
 
-            if debug:
+            if self.debug:
                 logging.debug('')
                 logging.debug('parameters:')
                 logging.debug(parameters)
@@ -1839,7 +1343,7 @@ class Tap:
 
                 retval = ''
 
-            if debug:
+            if self.debug:
                 logging.debug('')
                 logging.debug(f'retval= {retval:s}')
                 logging.debug(f'keystr= {keystr:s}')
@@ -1872,7 +1376,7 @@ class Tap:
                 except Exception as e:
                     pass
 
-            if debug:
+            if self.debug:
                 logging.debug('')
                 logging.debug(f'errmsg: {errmsg:s}')
 
@@ -1911,12 +1415,12 @@ class Tap:
                     resulturl = job['uws:results']['uws:result']['@xlink:href']
 
             except Exception as e:
-                if debug:
+                if self.debug:
                     logging.debug('')
                     logging.debug('error retrieving result')
                 pass
 
-        if debug:
+        if self.debug:
             logging.debug('')
             logging.debug(f'resulturl: {resulturl:s}')
             logging.debug('result:')
@@ -1925,7 +1429,7 @@ class Tap:
 
         if((key == 'results') or (key == 'results/resulturl')):
 
-            if debug:
+            if self.debug:
                 logging.debug('')
                 logging.debug('case1: results/resulturl')
 
@@ -1934,10 +1438,6 @@ class Tap:
 
             self.__printStatus__(key, outstr, 'xml')
             sys.exit()
-
-        if debug:
-            logging.debug('')
-            logging.debug('case2: result')
 
         if(len(resulturl) == 0):
             msg = 'resulturl not found.'
@@ -1951,9 +1451,9 @@ class Tap:
         substr = resulturl[indx:]
 
         resultpath = workdir + '/TAP/' + substr
-        if debug:
+        if self.debug:
             logging.debug('')
-            logging.debug(f'resultpath= {resultpath:s}')
+            logging.debug(f'resultpath = {resultpath:s}')
 
         fp = None
         try:
@@ -2004,19 +1504,9 @@ class Tap:
         # {
         #
 
-        debug = 0
-
-        if debug:
-            logging.debug('')
-            logging.debug(f'Enter printError: fmt= {fmt:s}')
-
         print("HTTP/1.1 200 OK\r")
 
         if(fmt == 'votable'):
-
-            if debug:
-                logging.debug('')
-                logging.debug('xxx1')
 
             print("Content-type: text/xml\r")
             print("\r")
@@ -2034,10 +1524,6 @@ class Tap:
             print('</VOTABLE>')
 
         else:
-            if debug:
-                logging.debug('')
-                logging.debug('xxx2')
-
             print("Content-type: application/json\r")
             print("\r")
 
@@ -2061,28 +1547,6 @@ class Tap:
         # {
         #
 
-        debug = 0
-
-        if('debug' in kwargs):
-            debug = kwargs['debug']
-
-            if debug:
-                logging.debug('')
-                logging.debug(f'debug= {debug:d}')
-
-        if debug:
-            logging.debug('')
-            logging.debug('Enter writeAsyncError')
-            logging.debug(f'statuspath= {statuspath:s}')
-            logging.debug(f'errmsg= {errmsg:s}')
-            logging.debug(f'format= {param["format"]:s}')
-            logging.debug(f'phase= {statdict["phase"]:s}')
-            for key in param:
-                if(key == 'maxrec'):
-                    logging.debug(f'key= {key:s} val= {param[key]:d}')
-                else:
-                    logging.debug(f'key= {key:s} val= {param[key]:s}')
-
         #
         # Set status parameters
         #
@@ -2099,21 +1563,7 @@ class Tap:
         statdict['phase'] = 'ERROR'
         statdict['errmsg'] = errmsg
 
-        if debug:
-            logging.debug('')
-            logging.debug('call writeStatusMsg')
-            logging.debug(f'statuspath= {statuspath:s}')
-            logging.debug(f'format= {param["format"]:s}')
-            logging.debug(f'maxrec= {param["maxrec"]:d}')
-
-        if debug:
-            self.__writeStatusMsg__(statuspath, statdict, param, debug=1)
-        else:
-            self.__writeStatusMsg__(statuspath, statdict, param)
-
-        if debug:
-            logging.debug('')
-            logging.debug('returned writeStatusMsg')
+        self.__writeStatusMsg__(statuspath, statdict, param)
 
         sys.exit()
 
@@ -2128,16 +1578,10 @@ class Tap:
         # {
         #
 
-        debug = 0
-
-        if('debug' in kwargs):
-            debug = kwargs['debug']
-
-        if debug:
+        if self.debug:
             logging.debug('')
-            logging.debug('Enter printSyncResult')
-            logging.debug(f'resultpath= {resultpath:s}')
-            logging.debug(f'format= [{format:s}]')
+            logging.debug(f'resultpath = {resultpath:s}')
+            logging.debug(f'format = [{format:s}]')
 
         print("HTTP/1.1 200 OK\r")
 
@@ -2160,9 +1604,7 @@ class Tap:
 
             line = fp.readline()
 
-            if debug:
-                logging.debug('')
-                logging.debug('here3-1')
+            if self.debug:
                 logging.debug(f'line= [{line:s}]')
 
             if not line:
@@ -2185,21 +1627,7 @@ class Tap:
         # { Place holder for re-direct sync response case
         #
 
-        debug = 0
-
-        if('debug' in kwargs):
-            debug = kwargs['debug']
-
-        if debug:
-            logging.debug('')
-            logging.debug('Enter printSyncResponse')
-            logging.debug(f'resulturl= {resulturl:s}')
-
         if(status == 'error'):
-
-            if debug:
-                logging.debug('')
-                logging.debug('xxx1')
 
             print("HTTP/1.1 200 OK\r")
             print("Content-type: application/json\r")
@@ -2211,18 +1639,11 @@ class Tap:
             print("}")
 
         else:
-            if debug:
-                logging.debug('')
-                logging.debug('xxx2')
-
             print("HTTP/1.1 303 See Other\r")
             print("Location: %s\r\n\r" % resulturl)
             print("Redirect Location: %s" % resulturl)
 
         sys.stdout.flush()
-        if debug:
-            logging.debug('')
-            logging.debug('done')
 
         return
 
@@ -2237,16 +1658,6 @@ class Tap:
         # async: return statusurl and kill the parent process
         #
 
-        debug = 0
-
-        if('debug' in kwargs):
-            debug = kwargs['debug']
-
-        if debug:
-            logging.debug('')
-            logging.debug('Enter printAsyncResponse')
-            logging.debug(f'statusurl= {statusurl:s}')
-
         print("HTTP/1.1 303 See Other\r")
         print("Location: %s\r\n\r" % statusurl)
         print("Redirect Location: %s" % statusurl)
@@ -2260,7 +1671,7 @@ class Tap:
 
         os.kill(os.getppid(), signal.SIGKILL)
 
-        if debug:
+        if self.debug:
             logging.debug('')
             logging.debug('parent process killed')
 
@@ -2273,32 +1684,8 @@ class Tap:
         # { TAP statis result always written in XML format
         #
 
-        debug = 0
-
-        if('debug' in kwargs):
-            debug = kwargs['debug']
-
-        if debug:
-            logging.debug('')
-            logging.debug('Enter writeStatusMsg')
-            logging.debug(f"statuspath= {statuspath:s}")
-            logging.debug(f"phase= {statdict['phase']:s}")
-            logging.debug(f"errmsg= {statdict['errmsg']:s}")
-
-            for key in param:
-                if(key == 'maxrec'):
-                    logging.debug(f'key= {key:s} val= {param[key]:d}')
-                else:
-                    logging.debug(f'key= {key:s} val= {param[key]:s}')
-
-
         format = param['format'].lower()
         maxrec = param['maxrec']
-
-        if debug:
-            logging.debug('')
-            logging.debug(f"format= {format:s}")
-            logging.debug(f"maxrec= {maxrec:d}")
 
         fp = None
         try:
@@ -2309,22 +1696,19 @@ class Tap:
             msg = 'Failed to open/create status file.'
             self.__printError__(format, msg)
 
-        if debug:
-            logging.debug('')
-            logging.debug('status file opened')
-
         try:
             fcntl.lockf(fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except Exception as e:
 
             msg = 'Cannot lock status file.'
-            if debug:
+
+            if self.debug:
                 logging.debug('')
                 logging.debug(f'{msg:s}: {str(e):s}')
 
             self.__printError__(format, msg)
 
-        if debug:
+        if self.debug:
             logging.debug('')
             logging.debug('status file locked for write')
 
@@ -2332,12 +1716,6 @@ class Tap:
 
         resulturl = statdict['resulturl']
         errmsg = statdict['errmsg']
-
-        if debug:
-            logging.debug('')
-            logging.debug(f'phase= [{phase:s}]')
-            logging.debug(f'resulturl= [{resulturl:s}]')
-            logging.debug(f'errmsg= [{errmsg:s}]')
 
         fp.write('<?xml version="1.0" encoding="UTF-8"?>\n')
 
@@ -2391,10 +1769,6 @@ class Tap:
             str1 = substr1 + '&lt;' + substr2
             ind = str1.find('<')
 
-        if debug:
-            logging.debug('')
-            logging.debug(f'str1= [{str1:s}]')
-
         ind = str1.find('>')
         while(ind >= 0):
 
@@ -2403,11 +1777,6 @@ class Tap:
 
             str1 = substr1 + '&gt;' + substr2
             ind = str1.find('>')
-
-        if debug:
-            logging.debug('')
-            logging.debug(f'final query str1= [{str1:s}]')
-
 
         fp.write(f'        <uws:parameter id="query">{str1:s}')
         fp.write('        </uws:parameter>\n')
@@ -2436,10 +1805,6 @@ class Tap:
         # Note: closing file automatically released the lock
         #
 
-        if debug:
-            logging.debug('')
-            logging.debug('done writeStatusMsg')
-
         return
 
         #
@@ -2449,14 +1814,8 @@ class Tap:
 
     def __getDatalevel__(self, dbtable, **kwargs):
 
-        debug = 0
-
-        if('debug' in kwargs):
-            debug = kwargs['debug']
-
-        if debug:
-            logging.debug('')
-            logging.debug(f'dbtable= {dbtable:s}')
+        if self.debug:
+            logging.debug(f'dbtable   = {dbtable:s}')
 
         level = ["l0",
                  "l1",
@@ -2465,9 +1824,8 @@ class Tap:
 
         nlevel = len(level)
 
-        if debug:
-            logging.debug('')
-            logging.debug(f'nlevel= {nlevel:d}')
+        if self.debug:
+            logging.debug(f'nlevel    = {nlevel:d}')
 
         datalevel = ''
         for i in range(nlevel):
@@ -2480,10 +1838,9 @@ class Tap:
                 datalevel = level[i]
                 break
 
-        if debug:
-            logging.debug('')
-            logging.debug(f'ind= {ind:d}')
-            logging.debug(f'datalevel= {datalevel:s}')
+        if self.debug:
+            logging.debug(f'ind       = {ind:d}')
+            logging.debug(f'datalevel = {datalevel:s}')
 
         return(datalevel)
 
