@@ -23,7 +23,6 @@ class runQuery:
     pid = os.getpid()
 
     debug = 0
-    debugtime = 0
 
     debugfname = './runquery.debug'
     status = ''
@@ -98,25 +97,6 @@ class runQuery:
         if('debug' in kwargs):
             self.debug = kwargs['debug']
 
-        if('debugtime' in kwargs):
-            self.debugtime = kwargs['debugtime']
-
-        if (self.debug or self.debugtime):
-
-            if(len(self.debugfname) > 0):
-
-                logging.basicConfig(filename=self.debugfname,
-                                    level=logging.DEBUG)
-
-            logging.debug('')
-            logging.debug('Enter runQuery.init')
-
-
-        if self.debugtime:
-            time0 = datetime.datetime.now()
-            logging.debug('')
-            logging.debug('Enter runQuery.init')
-
         #
         # Get keyword parameters
         #
@@ -163,9 +143,9 @@ class runQuery:
 
                 if self.debug:
                     logging.debug('')
-                    logging.debug(f'userid= {self.userid:s}')
-                    logging.debug(f'password= {self.password:s}')
-                    logging.debug(f'dbserver= {self.dbserver:s}')
+                    logging.debug(f'userid   = {self.userid:s}')
+                    logging.debug(f'password = {self.password:s}')
+                    logging.debug(f'dbserver = {self.dbserver:s}')
 
 
             if(self.dbms.lower() == 'sqlite3'):
@@ -279,20 +259,9 @@ class runQuery:
             logging.debug(f'dbtable= [{self.dbtable:s}]')
             logging.debug(f'ddtable= {self.ddtable:s}')
 
-
-        if self.debugtime:
-            time1 = datetime.datetime.now()
-            delt = (time1 - time0).total_seconds()
-            logging.debug('')
-            logging.debug(f'time(init--retrieve param): {delt:f}')
-
-
         #
         # Connect to DBMS
         #
-
-        if self.debugtime:
-            time0 = datetime.datetime.now()
 
         if(self.dbms.lower() == 'oracle'):
 
@@ -350,13 +319,6 @@ class runQuery:
 
             raise Exception(self.msg)
 
-
-        if self.debugtime:
-            time1 = datetime.datetime.now()
-            delt = (time1 - time0).total_seconds()
-            logging.debug('')
-            logging.debug(f'time(connect to DBMS): {delt:f}')
-
         #
         # Retrieve dd table
         #
@@ -366,15 +328,10 @@ class runQuery:
             logging.debug(f'self.ddtable= {self.ddtable:s}')
             logging.debug('call dataDictionary')
 
-        if self.debugtime:
-            time0 = datetime.datetime.now()
-
         self.dd = None
+
         try:
-            if self.debug:
-                self.dd = dataDictionary(self.conn, self.dbtable, debug=1)
-            else:
-                self.dd = dataDictionary(self.conn, self.dbtable)
+            self.dd = dataDictionary(self.conn, self.dbtable, self.debug)
 
             if self.debug:
                 logging.debug('')
@@ -394,12 +351,6 @@ class runQuery:
             logging.debug('')
             logging.debug('dd successfully retrieved')
 
-        if self.debugtime:
-            time1 = datetime.datetime.now()
-            delt = (time1 - time0).total_seconds()
-            logging.debug('')
-            logging.debug(f'time(retrieve DD: {delt:f}')
-
         #
         # Submit database query of user input sql
         #
@@ -408,9 +359,6 @@ class runQuery:
             logging.debug('')
             logging.debug(f'sql = {self.sql:s}')
             logging.debug('call execute sql')
-
-        if self.debugtime:
-            time0 = datetime.datetime.now()
 
         cursor = self.conn.cursor()
 
@@ -429,66 +377,20 @@ class runQuery:
             logging.debug('')
             logging.debug('returned executeSql')
 
-        if self.debugtime:
-            time1 = datetime.datetime.now()
-            delt = (time1 - time0).total_seconds()
-            logging.debug('')
-            logging.debug(f'time(execute query): {delt:f}')
-
     #
     # Call writeResult
     #
 
-        if self.debugtime:
-            time0 = datetime.datetime.now()
-
         try:
-            if(self.debug and self.debugtime):
-
-                wresult = writeResult(cursor,
-                                      self.userworkdir,
-                                      self.dd,
-                                      format=self.format,
-                                      maxrec=self.maxrec,
-                                      coldesc=self.coldesc,
-                                      racol=self.racol,
-                                      deccol=self.deccol,
-                                      debugtime=1,
-                                      debug=1)
-
-            elif self.debugtime:
-
-                wresult = writeResult(cursor,
-                                      self.userworkdir,
-                                      self.dd,
-                                      format=self.format,
-                                      maxrec=self.maxrec,
-                                      coldesc=self.coldesc,
-                                      racol=self.racol,
-                                      deccol=self.deccol,
-                                      debugtime=1)
-
-            elif self.debug:
-
-                wresult = writeResult(cursor,
-                                      self.userworkdir,
-                                      self.dd,
-                                      format=self.format,
-                                      maxrec=self.maxrec,
-                                      coldesc=self.coldesc,
-                                      racol=self.racol,
-                                      deccol=self.deccol,
-                                      debug=1)
-
-            else:
-                wresult = writeResult(cursor,
-                                      self.userworkdir,
-                                      self.dd,
-                                      format=self.format,
-                                      maxrec=self.maxrec,
-                                      coldesc=self.coldesc,
-                                      racol=self.racol,
-                                      deccol=self.deccol)
+            wresult = writeResult(cursor,
+                                  self.userworkdir,
+                                  self.dd,
+                                  format=self.format,
+                                  maxrec=self.maxrec,
+                                  coldesc=self.coldesc,
+                                  racol=self.racol,
+                                  deccol=self.deccol,
+                                  debug=self.debug)
 
         except Exception as e:
 
@@ -501,12 +403,6 @@ class runQuery:
         if self.debug:
             logging.debug('')
             logging.debug('returned writeResultfile')
-
-        if self.debugtime:
-            time1 = datetime.datetime.now()
-            delt = (time1 - time0).total_seconds()
-            logging.debug('')
-            logging.debug(f'time(write output): {delt:f}')
 
         self.stat = 'ok'
         self.outpath = wresult.outpath
@@ -534,7 +430,7 @@ class runQuery:
         if('debug' in kwargs):
             debug = kwargs['debug']
 
-        if debug:
+        if self.debug:
             logging.debug('')
             logging.debug('Enter executeSql')
             logging.debug(f'sql:= {sql:s}')
@@ -545,7 +441,7 @@ class runQuery:
 
             msg = str(e).replace('"', "'")
 
-            if debug:
+            if self.debug:
                 logging.debug('')
                 logging.debug(f'create table exception: {str(msg):s}')
 

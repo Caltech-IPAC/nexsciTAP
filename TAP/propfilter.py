@@ -19,7 +19,6 @@ class propFilter:
     pid = os.getpid()
 
     debug = 0
-    debugtime = 0
 
     status = ''
     msg = ''
@@ -144,15 +143,8 @@ class propFilter:
         if('debug' in kwargs):
             self.debug = kwargs['debug']
 
-        if('debugtime' in kwargs):
-            self.debugtime = kwargs['debugtime']
-
         if self.debug:
             logging.debug('')
-            logging.debug('Enter propFilter.init')
-
-        if self.debugtime:
-            self.time0 = datetime.datetime.now()
             logging.debug('Enter propFilter.init')
 
         #
@@ -205,9 +197,10 @@ class propFilter:
 
                 if self.debug:
                     logging.debug('')
-                    logging.debug(f'userid= {self.userid:s}')
-                    logging.debug(f'password= {self.password:s}')
-                    logging.debug(f'dbserver= {self.dbserver:s}')
+                    logging.debug(f'dbms = {self.dbms:s}')
+                    logging.debug(f'userid = {self.userid:s}')
+                    logging.debug(f'password = {self.password:s}')
+                    logging.debug(f'dbserver = {self.dbserver:s}')
 
 
             if(self.dbms.lower() == 'sqlite3'):
@@ -238,8 +231,9 @@ class propFilter:
 
                 if self.debug:
                     logging.debug('')
-                    logging.debug(f'db= {self.db:s}')
-                    logging.debug(f'tap_schema= {self.tap_schema:s}')
+                    logging.debug(f'dbms = {self.dbms:s}')
+                    logging.debug(f'db = {self.db:s}')
+                    logging.debug(f'tap_schema = {self.tap_schema:s}')
 
             #
             # } dbms info
@@ -253,11 +247,6 @@ class propFilter:
             self.msg = \
                 'Failed to retrieve required input parameter [userworkdir]'
             raise Exception(self.msg)
-
-        if self.debug:
-            logging.debug('')
-            logging.debug(f'userworkdir= {self.userworkdir:s}')
-
 
         self.cookiename = ''
         if('cookiename' in kwargs):
@@ -301,11 +290,6 @@ class propFilter:
         if('deccol' in kwargs):
             self.deccol  = kwargs['deccol']
 
-        if self.debug:
-            logging.debug('')
-            logging.debug(f'racol= {self.racol:s}')
-            logging.debug(f'deccol= {self.deccol:s}')
-
         self.query_in = ''
         if('query' in kwargs):
             self.query_in  = kwargs['query']
@@ -313,16 +297,6 @@ class propFilter:
         if(len(self.query_in) == 0):
             self.msg = 'Failed to retrieve required input parameter [query]'
             raise Exception(self.msg)
-
-        if self.debug:
-            logging.debug('')
-            logging.debug(f'cookiestr= {self.cookiestr:s}')
-            logging.debug(f'usertbl= {self.usertbl:s}')
-            logging.debug(f'accesstbl= {self.accesstbl:s}')
-            logging.debug(f'fileid= {self.fileid:s}')
-            logging.debug(f'fileid_allowed= {self.fileid_allowed:s}')
-            logging.debug(f'accessid= {self.accessid:s}')
-            logging.debug(f'propfilter= {self.propfilter:s}')
 
         if('format' in kwargs):
             self.format = kwargs['format']
@@ -339,19 +313,25 @@ class propFilter:
                     maxrecstr + "] to integer."
                 raise Exception(self.msg)
 
-        if self.debug:
-            logging.debug('')
-            logging.debug(f'format= {self.format:s}')
-            logging.debug(f'maxrec= {self.maxrec:d}')
-
         self.query = self.query_in
 
-        if self.debugtime:
-            self.time1 = datetime.datetime.now()
-            self.delt = (self.time1 - self.time0).total_seconds()
-            self.time0 = self.time1
+        if self.debug:
             logging.debug('')
-            logging.debug(f'time(retrieve input params): {self.delt:f}')
+            logging.debug('kwargs:')
+            logging.debug(f'      userworkdir = {self.userworkdir:s}')
+            logging.debug(f'      cookiestr = {self.cookiestr:s}')
+            logging.debug(f'      usertbl = {self.usertbl:s}')
+            logging.debug(f'      accesstbl = {self.accesstbl:s}')
+            logging.debug(f'      fileid = {self.fileid:s}')
+            logging.debug(f'      fileid_allowed = {self.fileid_allowed:s}')
+            logging.debug(f'      accessid = {self.accessid:s}')
+            logging.debug(f'      propfilter = {self.propfilter:s}')
+            logging.debug(f'      racol = {self.racol:s}')
+            logging.debug(f'      deccol = {self.deccol:s}')
+            logging.debug(f'      format = {self.format:s}')
+            logging.debug(f'      maxrec = {self.maxrec:d}')
+            logging.debug(f'      query = {self.query:s}')
+
 
         #
         # } done get input param
@@ -360,9 +340,6 @@ class propFilter:
         #
         # { Connect to DBMS
         #
-
-        if self.debugtime:
-            time0 = datetime.datetime.now()
 
         if(self.dbms.lower() == 'oracle'):
 
@@ -374,7 +351,7 @@ class propFilter:
 
                 if self.debug:
                     logging.debug('')
-                    logging.debug('connected to Oracle, database ' +
+                    logging.debug('Connected to Oracle, database ' +
                                   self.dbserver)
 
             except Exception as e:
@@ -391,7 +368,7 @@ class propFilter:
 
                 if self.debug:
                     logging.debug('')
-                    logging.debug('connected to SQLite3, database ' + self.db)
+                    logging.debug('Connected to SQLite3, database ' + self.db)
 
                 cmd = 'ATTACH DATABASE ? AS TAP_SCHEMA'
 
@@ -422,13 +399,6 @@ class propFilter:
 
             raise Exception(self.msg)
 
-
-        if self.debugtime:
-            time1 = datetime.datetime.now()
-            delt = (time1 - time0).total_seconds()
-            logging.debug('')
-            logging.debug(f'time(connect to DBMS): {delt:f}')
-
         #
         # } end connect to dbms
         #
@@ -440,17 +410,9 @@ class propFilter:
         if(self.dbms.lower() == 'oracle'):
 
             try:
-                if self.debug:
-                    logging.debug('')
-                    logging.debug('call parseSql:')
-
                 cursor = self.conn.cursor()
 
                 self.__parseSql__(cursor, self.query)
-
-                if self.debug:
-                    logging.debug('')
-                    logging.debug('returned parseSql:')
 
             except Exception as e:
 
@@ -482,39 +444,23 @@ class propFilter:
         if len(tables) > 0:
             self.dbtable = tables[0]
 
-        if(len(self.dbtable) > 0):
-            self.ddtable = self.dbtable + '_dd'
-
         if self.debug:
             logging.debug('')
-            logging.debug(f'dbtable= [{self.dbtable:s}]')
-            logging.debug(f'ddtable= {self.ddtable:s}')
+            logging.debug(f'dbtable = [{self.dbtable:s}]')
 
         #
         # Parse query: to extract query pieces for propfilter
         #
 
-        if self.debugtime:
-            self.time0 = datetime.datetime.now()
-
-        if self.debug:
-            self.__parseQuery__(self.query, debug=1)
-        else:
-            self.__parseQuery__(self.query)
+        self.__parseQuery__(self.query)
 
         if self.debug:
             logging.debug('')
-            logging.debug('returned parseQuery:')
-            logging.debug(f'orderbystr= {self.orderbystr:s}')
-            logging.debug(f'groupbystr= {self.groupbystr:s}')
-            logging.debug(f'wherestr= {self.wherestr:s}')
-            logging.debug(f'selectstr= {self.selectstr:s}')
-
-        if self.debugtime:
-            self.time1 = datetime.datetime.now()
-            self.delt = (self.time1 - self.time0).total_seconds()
-            logging.debug('')
-            logging.debug(f'time(parseQuery): {self.delt:f}')
+            logging.debug('Returned parseQuery:')
+            logging.debug(f'      orderbystr = {self.orderbystr:s}')
+            logging.debug(f'      groupbystr = {self.groupbystr:s}')
+            logging.debug(f'      wherestr = {self.wherestr:s}')
+            logging.debug(f'      selectstr = {self.selectstr:s}')
 
         #
         # Validate user
@@ -526,26 +472,9 @@ class propFilter:
 
         if(ind != -1):
 
-            if self.debugtime:
-                self.time0 = datetime.datetime.now()
-
             try:
-                if self.debug:
-                    logging.debug('')
-                    logging.debug('call validateUser')
-
-                if self.debug:
-                    self.__validateUser__(self.cookiename, self.cookiestr,
-                                          self.propfilter, self.usertbl,
-                                          debug=1)
-                else:
-                    self.__validateUser__(self.cookiename, self.cookiestr,
-                                          self.propfilter, self.usertbl)
-
-                if self.debug:
-                    logging.debug('')
-                    logging.debug('returned validateUser')
-                    logging.debug(f'userid= {self.userid:s}')
+                self.__validateUser__(self.cookiename, self.cookiestr,
+                                      self.propfilter, self.usertbl)
 
             except Exception as e:
 
@@ -557,37 +486,17 @@ class propFilter:
 
                 raise Exception(self.msg)
 
-            if self.debugtime:
-                self.time1 = datetime.datetime.now()
-                self.delt = (self.time1 - self.time0).total_seconds()
-                logging.debug('')
-                logging.debug(f'time(validateUser): {self.delt:f}')
-
         if self.debug:
             logging.debug('')
-            logging.debug(f'final userid= {self.userid:s}')
+            logging.debug(f'final userid = {self.userid:s}')
 
         #
-        # Retrieve data dictionary
+        # Retrieve data dictionary from TAP_SCHEMA
         #
-
-        if self.debug:
-            logging.debug('')
-            logging.debug('call dataDictionary')
-
-        if self.debugtime:
-            self.time0 = datetime.datetime.now()
 
         self.dd = None
         try:
-            if self.debug:
-                self.dd = dataDictionary(self.conn, self.dbtable, debug=1)
-            else:
-                self.dd = dataDictionary(self.conn, self.dbtable)
-
-            if self.debug:
-                logging.debug('')
-                logging.debug('returned dataDictionary')
+            self.dd = dataDictionary(self.conn, self.debug, self.dbtable)
 
         except Exception as e:
 
@@ -599,29 +508,15 @@ class propFilter:
 
             raise Exception(self.msg)
 
-        if self.debug:
-            logging.debug('')
-            logging.debug('dd successfully retrieved')
-
-        if self.debugtime:
-            self.time1 = datetime.datetime.now()
-            self.delt = (self.time1 - self.time0).total_seconds()
-            logging.debug('')
-            logging.debug(f'time(retrieve DD: {self.delt:f}')
-
         #
         # Create tmp_accessiddbtbl
         #
-
-        if self.debug:
-            logging.debug('')
-            logging.debug(f'userid= {self.userid:s}')
 
         tmp_accessiddbtbl = 'tmp_' + self.accessid + str(os.getpid())
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'tmp_accessiddbtbl= {tmp_accessiddbtbl:s}')
+            logging.debug(f'tmp_accessiddbtbl = {tmp_accessiddbtbl:s}')
 
         if(len(self.userid) > 0):
 
@@ -629,28 +524,10 @@ class propFilter:
             # {
             #
 
-            if self.debugtime:
-                self.time0 = datetime.datetime.now()
-
             try:
-                if self.debug:
-                    logging.debug('')
-                    logging.debug('call createTmpAccessiddb')
-
-                if self.debug:
-                    self.__createTmpAccessiddb__(tmp_accessiddbtbl,
-                                                 self.userid, self.accessid,
-                                                 self.accesstbl, debug=1)
-                else:
-                    self.__createTmpAccessiddb__(tmp_accessiddbtbl,
-                                                 self.userid, self.accessid,
-                                                 self.accesstbl)
-
-                if self.debug:
-                    logging.debug('')
-                    logging.debug('returned createTmpAccessiddb')
-                    logging.debug('here0: returned createTmpAccessiddb')
-
+                self.__createTmpAccessiddb__(tmp_accessiddbtbl,
+                                             self.userid, self.accessid,
+                                             self.accesstbl)
             except Exception as e:
 
                 self.msg = 'Failed to create tmp_accessiddbtbl: ' + str(e)
@@ -658,12 +535,6 @@ class propFilter:
                 if self.debug:
                     logging.debug('')
                     logging.debug(f'{self.msg:s}')
-
-            if self.debugtime:
-                self.time1 = datetime.datetime.now()
-                self.delt = (self.time1 - self.time0).total_seconds()
-                logging.debug('')
-                logging.debug(f'time(createTmpAccessiddb): {self.delt:f}')
 
             if self.debug:
                 logging.debug('')
@@ -678,35 +549,17 @@ class propFilter:
         #
 
         tmp_fileidAlloweddbtbl = 'tmp_fileidallowed' + str(os.getpid())
+
         if self.debug:
             logging.debug('')
             logging.debug(f'tmp_fileidAllowddbtbl= {tmp_fileidAlloweddbtbl:s}')
 
-        if self.debugtime:
-            self.time0 = datetime.datetime.now()
-
         try:
-            if self.debug:
-                logging.debug('')
-                logging.debug('call createTmpFileiddb')
-                logging.debug(f'wherestr= {self.wherestr:s}')
 
-            if self.debug:
-                self.__createTmpFileiddb__(tmp_fileidAlloweddbtbl,
-                                           self.fileid, self.fileid_allowed,
-                                           self.dbtable, self.wherestr,
-                                           self.accessid, tmp_accessiddbtbl,
-                                           debug=1)
-            else:
-                self.__createTmpFileiddb__(tmp_fileidAlloweddbtbl,
-                                           self.fileid, self.fileid_allowed,
-                                           self.dbtable, self.wherestr,
-                                           self.accessid, tmp_accessiddbtbl)
-
-            if self.debug:
-                logging.debug('')
-                logging.debug('returned createTmpFileiddb: tmp_fileidAlloweddbtbl')
-
+            self.__createTmpFileiddb__(tmp_fileidAlloweddbtbl,
+                                       self.fileid, self.fileid_allowed,
+                                       self.dbtable, self.wherestr,
+                                       self.accessid, tmp_accessiddbtbl)
         except Exception as e:
 
             self.msg = str(e)
@@ -716,20 +569,6 @@ class propFilter:
                 logging.debug(f'{self.msg:s}')
 
             raise Exception(self.msg)
-
-        if self.debugtime:
-            self.time1 = datetime.datetime.now()
-            self.delt = (self.time1 - self.time0).total_seconds()
-            logging.debug('')
-            logging.debug(f'time(createTmpFileiddb): {self.delt:f}')
-
-        if self.debug:
-            logging.debug('')
-            logging.debug('{tmp_fileidAlloweddbtbl created}')
-
-
-        if self.debugtime:
-            self.time0 = datetime.datetime.now()
 
         #
         # Construct the final select statement for table joint
@@ -743,8 +582,8 @@ class propFilter:
             logging.debug('')
             logging.debug(
                 f'select(before adding groupby and orderby: sql= {sql:s}')
-            logging.debug(f'groupbystr= {self.groupbystr:s}')
-            logging.debug(f'orderbystr= {self.orderbystr:s}')
+            logging.debug(f'groupbystr = {self.groupbystr:s}')
+            logging.debug(f'orderbystr = {self.orderbystr:s}')
 
         #
         # Add group by clause
@@ -766,7 +605,7 @@ class propFilter:
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'groupby added: sql= {sql:s}')
+            logging.debug(f'groupby added: sql = {sql:s}')
 
         #
         # Add order by clause
@@ -788,7 +627,7 @@ class propFilter:
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'orderby added: sql= {sql:s}')
+            logging.debug(f'orderby added: sql = {sql:s}')
 
         cursor = self.conn.cursor()
 
@@ -808,23 +647,12 @@ class propFilter:
 
             raise Exception(self.msg)
 
-        if self.debugtime:
-            self.time1 = datetime.datetime.now()
-            self.delt = (self.time1 - self.time0).total_seconds()
-            logging.debug('')
-            logging.debug(f'time(perform joint statement): {self.delt:f}')
-
-        if self.debug:
-            logging.debug('')
-            logging.debug('join select statement executed')
-
-
         ncol = len(cursor.description)
         exclcol = ncol - 1
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'ncol= {ncol:d} exclcol= {exclcol:d}')
+            logging.debug(f'ncol = {ncol:d} exclcol= {exclcol:d}')
 
         #
         # Call writeResult
@@ -834,60 +662,16 @@ class propFilter:
             logging.debug('')
             logging.debug('call writeResultfile')
 
-        if self.debugtime:
-            self.time0 = datetime.datetime.now()
-
         try:
-            if(self.debug and self.debugtime):
-
-                wresult = writeResult(cursor,
-                                      self.userworkdir,
-                                      self.dd,
-                                      format=self.format,
-                                      maxrec=self.maxrec,
-                                      coldesc=self.coldesc,
-                                      racol=self.racol,
-                                      deccol=self.deccol,
-                                      debugtime=1,
-                                      debug=1)
-
-            elif self.debugtime:
-
-                wresult = writeResult(cursor,
-                                      self.userworkdir,
-                                      self.dd,
-                                      format=self.format,
-                                      maxrec=self.maxrec,
-                                      coldesc=self.coldesc,
-                                      racol=self.racol,
-                                      deccol=self.deccol,
-                                      debugtime=1)
-
-            elif self.debug:
-
-                wresult = writeResult(cursor,
-                                      self.userworkdir,
-                                      self.dd,
-                                      format=self.format,
-                                      maxrec=self.maxrec,
-                                      coldesc=self.coldesc,
-                                      racol=self.racol,
-                                      deccol=self.deccol,
-                                      debug=1)
-
-            else:
-                wresult = writeResult(cursor,
-                                      self.userworkdir,
-                                      self.dd,
-                                      format=self.format,
-                                      maxrec=self.maxrec,
-                                      coldesc=self.coldesc,
-                                      racol=self.racol,
-                                      deccol=self.deccol)
-
-            if self.debug:
-                logging.debug('')
-                logging.debug('returned writeResultfile')
+            wresult = writeResult(cursor,
+                                  self.userworkdir,
+                                  self.dd,
+                                  format=self.format,
+                                  maxrec=self.maxrec,
+                                  coldesc=self.coldesc,
+                                  racol=self.racol,
+                                  deccol=self.deccol,
+                                  debug=self.debug)
 
         except Exception as e:
 
@@ -924,17 +708,6 @@ class propFilter:
                 logging.debug('')
                 logging.debug('tmp_accessiddbtbl dropped')
 
-        if self.debug:
-            logging.debug('')
-            logging.debug('done propFilter')
-
-        if self.debugtime:
-            self.time1 = datetime.datetime.now()
-            self.delt = (self.time1 - self.time0).total_seconds()
-            logging.debug('')
-            logging.debug(f'time(writeResult joined table): {self.delt:f}')
-            logging.debug(f'ntot= {self.ntot:d}')
-
         return
 
         #
@@ -948,15 +721,10 @@ class propFilter:
         #
         # {
 
-        debug = 0
-
-        if('debug' in kwargs):
-            debug = kwargs['debug']
-
-        if debug:
+        if self.debug:
             logging.debug('')
-            logging.debug(f'Enter parseQuery: query= [{query:s}]')
-            logging.debug(f'dbtable= [{self.dbtable:s}]')
+            logging.debug(f'Enter parseQuery: query = [{query:s}]')
+            logging.debug(f'                  dbtable = [{self.dbtable:s}]')
 
         instrume = ["hires",
                     "nirspec",
@@ -992,9 +760,9 @@ class propFilter:
         if(ind != -1):
             selectstr = query[0:ind]
 
-        if debug:
+        if self.debug:
             logging.debug('')
-            logging.debug(f'selectstr= [{selectstr:s}]')
+            logging.debug(f'selectstr = [{selectstr:s}]')
 
         #
         # Retrieve instrument and datalevel from dbtable name:
@@ -1009,9 +777,9 @@ class propFilter:
 
             ninst = len(instrume)
 
-            if debug:
+            if self.debug:
                 logging.debug('')
-                logging.debug(f'ninst= {ninst:d}')
+                logging.debug(f'ninst = {ninst:d}')
 
             self.instrument = ''
             for i in range(ninst):
@@ -1024,9 +792,9 @@ class propFilter:
                     self.instrument = instrume[i]
                     break
 
-            if debug:
+            if self.debug:
                 logging.debug('')
-                logging.debug(f'instrument= {self.instrument:s}')
+                logging.debug(f'instrument = {self.instrument:s}')
 
             ninst = len(instrume)
 
@@ -1043,9 +811,9 @@ class propFilter:
 
             nlevel = len(level)
 
-            if debug:
+            if self.debug:
                 logging.debug('')
-                logging.debug(f'nlevel= {nlevel:d}')
+                logging.debug(f'nlevel = {nlevel:d}')
 
             self.datalevel = ''
             for i in range(nlevel):
@@ -1058,9 +826,9 @@ class propFilter:
                     self.datalevel = level[i]
                     break
 
-            if debug:
+            if self.debug:
                 logging.debug('')
-                logging.debug(f'datalevel= {self.datalevel:s}')
+                logging.debug(f'datalevel = {self.datalevel:s}')
 
             if(self.datalevel == 'l0' or self.datalevel == 'eng'):
 
@@ -1071,10 +839,10 @@ class propFilter:
                 self.fileid_allowed = self.datalevel.lower() + \
                     self.fileid_allowed
 
-            if debug:
+            if self.debug:
                 logging.debug('')
-                logging.debug(f'fileid= {self.fileid:s}')
-                logging.debug(f'fileid_allowed= {self.fileid_allowed:s}')
+                logging.debug(f'fileid = {self.fileid:s}')
+                logging.debug(f'fileid_allowed = {self.fileid_allowed:s}')
             #
             # }
             #
@@ -1089,9 +857,9 @@ class propFilter:
         if(ind != -1):
             substr = query[ind:]
 
-        if debug:
+        if self.debug:
             logging.debug('')
-            logging.debug(f'substr= [{substr:s}]')
+            logging.debug(f'substr = [{substr:s}]')
 
 
         if(len(substr) > 0):
@@ -1100,65 +868,35 @@ class propFilter:
             # { where clause exists
             #
 
-            if debug:
-                logging.debug('')
-                logging.debug('xxx1')
-
             ind1 = -1
             ind2 = -1
 
             ind1 = substr.lower().find('order by')
             ind2 = substr.lower().find('group by')
 
-            if debug:
-                logging.debug('')
-                logging.debug(f'xxx1-1: ind1= {ind1:d} ind2= {ind2:d}')
-
             if((ind1 >= 0) and (ind2 >= 0)):
 
-                if debug:
-                    logging.debug('')
-                    logging.debug('xxx1-2')
-
                 if(ind1 < ind2):
-
-                    if debug:
-                        logging.debug('')
-                        logging.debug('xxx1-3')
-
                     wherestr = substr[0:ind1]
                     orderbystr = substr[ind1:ind2]
                     groupbystr = substr[ind2:]
                 else:
-                    if debug:
-                        logging.debug('')
-                        logging.debug('xxx1-4')
-
                     wherestr = substr[0:ind2]
                     groupbystr = substr[ind2:ind1]
                     orderbystr = substr[ind1:]
 
             elif(ind1 >= 0):
 
-                if debug:
-                    logging.debug('')
-                    logging.debug('xxx1-5')
-
                 wherestr = substr[0:ind1]
                 orderbystr = substr[ind1:]
 
             elif(ind2 >= 0):
-
-                if debug:
-                    logging.debug('')
-                    logging.debug('xxx1-6')
 
                 wherestr = substr[0:ind2]
                 groupbystr = substr[ind2:]
 
             else:
                 wherestr = substr
-
             #
             # }
             #
@@ -1174,47 +912,23 @@ class propFilter:
             ind1 = query.lower().find('order by')
             ind2 = query.lower().find('group by')
 
-            if debug:
-                logging.debug('')
-                logging.debug('xxx2')
-
             ind = -1
             if((ind1 >= 0) and (ind2 >= 0)):
 
-                if debug:
-                    logging.debug('')
-                    logging.debug('xxx2-1')
-
                 if(ind1 < ind2):
-
-                    if debug:
-                        logging.debug('')
-                        logging.debug('xxx2-2')
 
                     orderbystr = query[ind1:ind2]
                     groupbystr = query[ind2:]
 
                 else:
-                    if debug:
-                        logging.debug('')
-                        logging.debug('xxx2-3')
-
                     groupbystr = query[ind2:ind1]
                     orderbystr = query[ind1:]
 
             elif(ind1 >= 0):
 
-                if debug:
-                    logging.debug('')
-                    logging.debug('xxx 2-4')
-
                 orderbystr = query[ind1:]
 
             elif(ind2 >= 0):
-
-                if debug:
-                    logging.debug('')
-                    logging.debug('xxx 2-5')
 
                 groupbystr = query[ind2:]
 
@@ -1227,65 +941,16 @@ class propFilter:
         self.orderbystr = orderbystr
         self.groupbystr = groupbystr
 
-        if debug:
+        if self.debug:
             logging.debug('')
-            logging.debug(f'self.selectstr= {self.selectstr:s}')
-            logging.debug(f'self.wherestr= {self.wherestr:s}')
-            logging.debug(f'self.orderby= {self.orderbystr:s}')
-            logging.debug(f'self.groupby= {self.groupbystr:s}')
-
-        #
-        # Retrieve selectcols
-        #
-
-        """
-        if debug:
-            logging.debug('')
-            logging.debug(f'retrieve selectcols')
-            logging.debug(f'selectstr= {selectstr:s}')
-
-        str1 = selectstr[7:].strip()
-
-        if debug:
-            logging.debug('')
-            logging.debug(f'str1= {str1:s}')
-
-        while(len(str1) > 0):
-
-            ind = str1.find(',')
-
-            col = ''
-            if(ind != -1):
-                col = str1[0:ind].strip()
-                str1 = str1[ind+1:]
-            else:
-                col = str1.strip()
-                str1 = ''
-
-            if debug:
-                logging.debug('')
-                logging.debug(f'col= {col:s}')
-                logging.debug(f'str1= {str1:s}')
-
-            self.selectcols.append(col)
-
-            if(len(str1) == 0):
-                break
-
-        if debug:
-            logging.debug('')
-            logging.debug(f'len(selectcols)= {len(self.selectcols):d}')
-            logging.debug(self.selectcols)
-        """
+            logging.debug(f'self.selectstr = {self.selectstr:s}')
+            logging.debug(f'self.wherestr = {self.wherestr:s}')
+            logging.debug(f'self.orderby = {self.orderbystr:s}')
+            logging.debug(f'self.groupby = {self.groupbystr:s}')
 
         #
         # Retrieve groupbycols
         #
-
-        if debug:
-            logging.debug('')
-            logging.debug('retrieve groupbycols')
-            logging.debug(f'groupbystr= {groupbystr:s}')
 
         ind = groupbystr.lower().find('by ')
         str1 = groupbystr[ind+3:].strip()
@@ -1301,29 +966,19 @@ class propFilter:
                 col = str1.strip()
                 str1 = ''
 
-            if debug:
-                logging.debug('')
-                logging.debug(f'col= {col:s}')
-                logging.debug(f'str1= {str1:s}')
-
             self.groupbycols.append(col)
 
             if(len(str1) == 0):
                 break
 
-        if debug:
+        if self.debug:
             logging.debug('')
-            logging.debug(f'len(groupbycols)= {len(self.groupbycols):d}')
+            logging.debug(f'len(groupbycols) = {len(self.groupbycols):d}')
             logging.debug(self.groupbycols)
 
         #
         # Retrieve orderbycols
         #
-
-        if debug:
-            logging.debug('')
-            logging.debug('retrieve orderbycols')
-            logging.debug(f'orderbystr= {orderbystr:s}')
 
         ind = orderbystr.lower().find('by ')
         str1 = orderbystr[ind+3:].strip()
@@ -1339,19 +994,14 @@ class propFilter:
                 col = str1.strip()
                 str1 = ''
 
-            if debug:
-                logging.debug('')
-                logging.debug(f'col= {col:s}')
-                logging.debug(f'str1= {str1:s}')
-
             self.orderbycols.append(col)
 
             if(len(str1) == 0):
                 break
 
-        if debug:
+        if self.debug:
             logging.debug('')
-            logging.debug(f'len(orderbycols)= {len(self.orderbycols):d}')
+            logging.debug(f'len(orderbycols) = {len(self.orderbycols):d}')
             logging.debug(self.orderbycols)
 
         return
@@ -1368,17 +1018,6 @@ class propFilter:
         # {
         #
 
-        debug = 0
-
-        if('debug' in kwargs):
-            debug = kwargs['debug']
-
-        if debug:
-            logging.debug('')
-            logging.debug(f'Enter validateUser: cookiename= [{cookiename:s}]')
-            logging.debug(f'cookiestr= {cookiestr:s}')
-            logging.debug(f'usertbl= {usertbl:s}')
-
         #
         #  If cookiestr exists: validate userid/encodedpass
         #
@@ -1386,20 +1025,12 @@ class propFilter:
         msg = ''
         ind = cookiestr.find(cookiename)
 
-        if debug:
-            logging.debug('')
-            logging.debug(f'ind= {ind:d}')
-
         substr = ''
         if(ind != -1):
             substr = cookiestr[ind:]
         else:
             msg = 'Failed to find cookiename: [{cookiename:s}] in cookiestr'
             raise Exception(msg)
-
-        if debug:
-            logging.debug('')
-            logging.debug(f'substr= {substr:s}')
 
         #
         # Separate cookiestr from cookiename
@@ -1409,10 +1040,6 @@ class propFilter:
         ind = substr.find('=')
         if(ind != -1):
             substr1 = substr[ind+1:]
-
-        if debug:
-            logging.debug('')
-            logging.debug(f'substr1= {substr1:s}')
 
         #
         # Empty cookie str is OK, treat it as anonymous user
@@ -1424,23 +1051,13 @@ class propFilter:
         arr = substr1.split('|')
         narr = len(arr)
 
-        if debug:
-            logging.debug('')
-            logging.debug(f'narr= {narr:d}')
-
-        for i in range(0, narr):
-
-            if debug:
-                logging.debug('')
-                logging.debug(f'= {i:d} arr= {arr[i]:s}')
-
         self.userid = arr[0]
         self.encodedpass = arr[1]
 
-        if debug:
+        if self.debug:
             logging.debug('')
-            logging.debug(f'userid= {self.userid:s}')
-            logging.debug(f'encodedpass= {self.encodedpass:s}')
+            logging.debug(f'userid = {self.userid:s}')
+            logging.debug(f'encodedpass = {self.encodedpass:s}')
 
         if(self.userid == 'anon'):
             self.userid = ''
@@ -1462,9 +1079,9 @@ class propFilter:
             sql = "select password from " + usertbl + \
                 " where userid='" + self.userid + "'"
 
-        if debug:
+        if self.debug:
             logging.debug('')
-            logging.debug(f'sql= {sql:s}')
+            logging.debug(f'User lookup sql= {sql:s}')
 
         try:
             self.__executeSql__(cursor, sql)
@@ -1473,16 +1090,11 @@ class propFilter:
 
             self.msg = 'Failed to execute [' + sql + ']: ' + str(e)
 
-            if debug:
+            if self.debug:
                 logging.debug('')
                 logging.debug(f'{self.msg:s}')
 
             raise Exception(self.msg)
-
-        if debug:
-            logging.debug('')
-            logging.debug('returned executeSql')
-            logging.debug('call singleValueResult')
 
         password = ''
 
@@ -1493,32 +1105,19 @@ class propFilter:
 
             elif(propfilter == 'neid'):
 
-                if debug:
-                    logging.debug('')
-                    logging.debug('neid: call singleValueResult:')
-
-                if debug:
-                    password = self.__singleValueResult__(cursor, 'password',
-                                                          debug=1)
-                else:
-                    password = self.__singleValueResult__(cursor, 'password')
-
-                if debug:
-                    logging.debug('')
-                    logging.debug('returned singleValueResult')
-                    logging.debug(f'password = {password:s}')
+                password = self.__singleValueResult__(cursor, 'password')
 
         except Exception as e:
 
             self.msg = 'Failed to retrieve singleValueResult: ' + str(e)
 
-            if debug:
+            if self.debug:
                 logging.debug('')
                 logging.debug(f'{self.msg:s}')
 
             raise Exception(self.msg)
 
-        if debug:
+        if self.debug:
             logging.debug('')
             logging.debug(f'password = {password:s}')
 
@@ -1547,33 +1146,18 @@ class propFilter:
         # {
         #
 
-        debug = 0
-
-        if('debug' in kwargs):
-            debug = kwargs['debug']
-
-        if debug:
-            logging.debug('')
-            logging.debug(f'Enter singleValueResult: keyword= {keyword:s}')
-
-        #
         # Retrieve single row data containing single column password from cursor
         #
 
         ncol = len(cursor.description)
 
-        if debug:
-            logging.debug('')
-            logging.debug(f'ncol= {ncol:d}')
-
-
         rows = cursor.fetchmany()
         nrec = len(rows)
 
-        if debug:
+        if self.debug:
             logging.debug('')
-            logging.debug(f'nrec= {nrec:d}')
-            logging.debug(f'arraysize= {cursor.arraysize:d}')
+            logging.debug(f'nrec = {nrec:d}')
+            logging.debug(f'arraysize = {cursor.arraysize:d}')
 
         keyval = ''
         row = 0
@@ -1581,9 +1165,9 @@ class propFilter:
 
             colname = cursor.description[col][0]
 
-            if debug:
+            if self.debug:
                 logging.debug('')
-                logging.debug(f'colname= {colname:s}')
+                logging.debug(f'colname = {colname:s}')
 
             val = rows[row][col]
 
@@ -1593,15 +1177,13 @@ class propFilter:
             else:
                 valstr = str(val)
 
-            if debug:
-                logging.debug('')
-                logging.debug(f'colname= {colname:s}')
+            if self.debug:
                 logging.debug(f'valstr= {valstr:s}')
 
             if(colname.lower() == keyword):
                 keyval = valstr
 
-        if debug:
+        if self.debug:
             logging.debug('')
             logging.debug(f'keyval= {keyval:s}')
 
@@ -1618,18 +1200,6 @@ class propFilter:
         # {
         #
 
-        debug = 0
-
-        if('debug' in kwargs):
-            debug = kwargs['debug']
-
-        if debug:
-            logging.debug('')
-            logging.debug('Enter writeSinglecolResult')
-            logging.debug(f'outpath= {outpath:s}')
-            logging.debug(f'colwidth= {colwidth:d}')
-
-        #
         # Open outpath for write
         #
 
@@ -1640,14 +1210,14 @@ class propFilter:
 
             msg = 'Failed to open output file [' + outpath + ']'
 
-            if debug:
+            if self.debug:
                 logging.debug('')
                 logging.debug(f'errmsg= {msg:s}')
                 logging.debug(f'str(e)= {str(e):s}')
 
             raise Exception(msg)
 
-        if debug:
+        if self.debug:
             logging.debug('')
             logging.debug(f'{outpath:s} opened for write')
 
@@ -1692,11 +1262,6 @@ class propFilter:
         ncol = len(cursor.description)
         cursor.arraysize = 10000
 
-        if debug:
-            logging.debug('')
-            logging.debug(f'ncol= {ncol:d}')
-            logging.debug(f'arraysize= {cursor.arraysize:d}')
-
         ntot = 0
 
         while True:
@@ -1706,11 +1271,6 @@ class propFilter:
             nrec = len(rows)
 
             ntot = ntot + nrec
-
-            if debug:
-                logging.debug('')
-                logging.debug(f'nrec= {nrec:d}')
-                logging.debug(f'ntot= {ntot:d}')
 
             for row in range(nrec):
 
@@ -1734,9 +1294,6 @@ class propFilter:
 
         fp.close()
 
-        if debug:
-            logging.debug('')
-            logging.debug('Done writeSinglecolResult')
         return
 
         #
@@ -1751,25 +1308,9 @@ class propFilter:
         # {
         #
 
-        debug = 0
-
-        if('debug' in kwargs):
-            debug = kwargs['debug']
-
-        if debug:
-            logging.debug('')
-            logging.debug('Enter createTmpAccessiddb')
-            logging.debug(f'tmp_accessiddbtbl= {tmp_accessiddbtbl:s}')
-            logging.debug(f'userid= {userid:s}')
-            logging.debug(f'accesstbl= {accesstbl:s}')
-
-        #
         # Create tmp_accessiddbtbl, but first drop tmp_accessiddbtbl just in case
         # it might already existed
         #
-
-        if self.debugtime:
-            self.time0 = datetime.datetime.now()
 
         try:
             self.__dropDbtbl__(tmp_accessiddbtbl)
@@ -1777,7 +1318,7 @@ class propFilter:
         except Exception as e:
 
             self.msg = 'Failed to create tmp_accessiddbtbl: ' + str(e)
-            if debug:
+            if self.debug:
                 logging.debug('')
                 logging.debug(f'{self.msg:s}')
             pass
@@ -1786,27 +1327,23 @@ class propFilter:
         sql = "create global temporary table " + tmp_accessiddbtbl + \
             "(" + accessid + " varchar(22)) on commit preserve rows"
 
-        if debug:
+        if self.debug:
             logging.debug('')
-            logging.debug(f'sql= {sql:s}')
+            logging.debug(f'temp table create sql= {sql:s}')
 
         cursor = self.conn.cursor()
         try:
             self.__executeSql__(cursor, sql)
 
-            if debug:
-                logging.debug('')
-                logging.debug(f'returned from executeSql: {sql:s}')
-
         except Exception as e:
 
             self.msg = 'Failed to create tmp_accessiddbtbl: ' + str(e)
-            if debug:
+            if self.debug:
                 logging.debug('')
                 logging.debug(f'{self.msg:s}')
             raise Exception(self.msg)
 
-        if debug:
+        if self.debug:
             logging.debug('')
             logging.debug('tmp_accessiddbtbl created')
 
@@ -1819,84 +1356,22 @@ class propFilter:
             "(select lower(" + accessid + ") as " + accessid + \
             " from " + accesstbl + " where userid = '" + userid + "')"
 
-        if debug:
+        if self.debug:
             logging.debug('')
-            logging.debug(f'sql= {sql:s}')
+            logging.debug(f'temp table insert sql= {sql:s}')
 
         cursor = self.conn.cursor()
         try:
             self.__executeSql__(cursor, sql)
 
-            if debug:
-                logging.debug('')
-                logging.debug(f'returned from executeSql: {sql:s}')
-
         except Exception as e:
 
-            self.msg = 'Failed to insert data toe tmp_accessiddbtbl: ' + str(e)
-            if debug:
+            self.msg = 'Failed to insert data to tmp_accessiddbtbl: ' + str(e)
+            if self.debug:
                 logging.debug('')
                 logging.debug(f'{self.msg:s}')
 
             raise Exception(self.msg)
-
-        if debug:
-            logging.debug('')
-            logging.debug('insert tmp_accessiddbtbl statement executed')
-
-        #
-        # Select accessid from tmp_iddbtbl: just to verify
-        #
-        """
-        sql = "select * from " + tmp_accessiddbtbl
-
-        if debug:
-            logging.debug('')
-            logging.debug(f'sql= {sql:s}')
-
-        cursor = self.conn.cursor()
-        try:
-            self.__executeSql__(cursor, sql)
-
-            if debug:
-                logging.debug('')
-                logging.debug(f'returned from executeSql: {sql:s}')
-
-        except Exception as e:
-
-            self.msg = 'Failed to select from tmp_accessiddbtbl: ' + str(e)
-            if debug:
-                logging.debug('')
-                logging.debug(f'{self.msg:s}')
-
-            raise Exception(self.msg)
-
-        if debug:
-            logging.debug('')
-            logging.debug('select id statement executed')
-
-        accessidpath = self.userworkdir + '/accessid.tbl'
-
-        if debug:
-            logging.debug('')
-            logging.debug(f'accessidpath= {accessidpath:s}')
-
-        try:
-            self.__writeSinglecolResult__(cursor, accessidpath, 22)
-
-            if debug:
-                logging.debug('')
-                logging.debug('returned from writeSinglecolResult: {sql:s}')
-
-        except Exception as e:
-
-            self.msg = 'Failed to write result to accessidtbl: ' + str(e)
-            if debug:
-                logging.debug('')
-                logging.debug(f'{self.msg:s}')
-
-            raise Exception(self.msg)
-        """
 
         return
 
@@ -1913,29 +1388,9 @@ class propFilter:
         # {
         #
 
-        debug = 0
-
-        if('debug' in kwargs):
-            debug = kwargs['debug']
-
-        if debug:
-            logging.debug('')
-            logging.debug('Enter createTmpFileiddb')
-            logging.debug(f'tmp_fileiddbtbl= {tmp_fileiddbtbl:s}')
-            logging.debug(f'fileid= {fileid:s}')
-            logging.debug(f'fileid_allowed= {fileid_allowed:s}')
-            logging.debug(f'dbtable= {dbtable:s}')
-            logging.debug(f'accessid= {accessid:s}')
-            logging.debug(f'tmp_accessiddbtbl= {tmp_accessiddbtbl:s}')
-            logging.debug(f'wherestr= {wherestr:s}')
-
-        #
         # Create tmp_fileiddbtbl, but first drop tmp_fileiddbtbl just in case
         # it might already existed
         #
-
-        if self.debugtime:
-            self.time0 = datetime.datetime.now()
 
         try:
             self.__dropDbtbl__(tmp_fileiddbtbl)
@@ -1943,7 +1398,7 @@ class propFilter:
         except Exception as e:
 
             self.msg = 'Failed to create tmp_fileiddbtbl: ' + str(e)
-            if debug:
+            if self.debug:
                 logging.debug('')
                 logging.debug(f'{self.msg:s}')
             pass
@@ -1952,29 +1407,21 @@ class propFilter:
         sql = "create global temporary table " + tmp_fileiddbtbl + \
             "(" + fileid_allowed + " varchar(35)) on commit preserve rows"
 
-        if debug:
+        if self.debug:
             logging.debug('')
-            logging.debug(f'sql= {sql:s}')
+            logging.debug(f'fileid temp table create sql= {sql:s}')
 
         cursor = self.conn.cursor()
         try:
             self.__executeSql__(cursor, sql)
 
-            if debug:
-                logging.debug('')
-                logging.debug(f'returned from executeSql: {sql:s}')
-
         except Exception as e:
 
             self.msg = 'Failed to create tmp_accessiddbtbl: ' + str(e)
-            if debug:
+            if self.debug:
                 logging.debug('')
                 logging.debug(f'{self.msg:s}')
             raise Exception(self.msg)
-
-        if debug:
-            logging.debug('')
-            logging.debug('tmp_fileididdbtbl created')
 
         #
         # Insert into tmp_fileiddbtbl: select koaid_allowed from dbtable with
@@ -1984,12 +1431,8 @@ class propFilter:
         #
 
         access_constraint = ''
-        if(self.propfilter == 'koa'):
 
-            if debug:
-                logging.debug('')
-                logging.debug('construct koa access_constraint')
-                logging.debug(f'instrument= {self.instrument:s}')
+        if(self.propfilter == 'koa'):
 
             if(self.instrument.lower() == 'hires'):
 
@@ -2015,7 +1458,7 @@ class propFilter:
                     access_constraint = \
                         "(current_date > add_months(date_obs, propint))"
 
-            if debug:
+            if self.debug:
                 logging.debug('')
                 logging.debug(
                     f'koa: access_constraint= {access_constraint:s}')
@@ -2025,12 +1468,6 @@ class propFilter:
         #
 
         elif(self.propfilter == 'neid'):
-
-            if debug:
-                logging.debug('')
-                logging.debug('construct neid access_constraint')
-                logging.debug(f'datalevel= {self.datalevel:s}')
-
 
             if((self.datalevel.lower() == 'l0') or
                (self.datalevel.lower() == 'eng')):
@@ -2069,14 +1506,10 @@ class propFilter:
                     access_constraint = \
                         "(current_date > add_months(obsdate, l2propint))"
 
-            if debug:
+            if self.debug:
                 logging.debug('')
                 logging.debug(
                     f'neid: access_constraint= {access_constraint:s}')
-
-        if debug:
-            logging.debug('')
-            logging.debug(f'access_constraint= {access_constraint:s}')
 
 
         selectstr = ''
@@ -2087,9 +1520,9 @@ class propFilter:
             selectstr = "select " + fileid + " from " + dbtable  + \
                 " where " + access_constraint
 
-        if debug:
+        if self.debug:
             logging.debug('')
-            logging.debug(f'selectstr= {selectstr:s}')
+            logging.debug(f'selectstr = {selectstr:s}')
 
         #
         # Test the selectstr
@@ -2099,56 +1532,38 @@ class propFilter:
         try:
             self.__executeSql__(cursor, selectstr)
 
-            if debug:
-                logging.debug('')
-                logging.debug(f'returned from executeSql: {selectstr:s}')
-
         except Exception as e:
 
             self.msg = f'Failed to execute select statement [{selectstr:s}]: '\
                 + str(e)
-            if debug:
+
+            if self.debug:
                 logging.debug('')
                 logging.debug(f'{self.msg:s}')
 
             raise Exception(self.msg)
-
-        if debug:
-            logging.debug('')
-            logging.debug('select statement executed successfully')
-
 
         sql = "insert into " + tmp_fileiddbtbl + \
             "(" + selectstr + ")"
 
-        if debug:
+        if self.debug:
             logging.debug('')
-            logging.debug(f'sql= {sql:s}')
+            logging.debug(f'fileid temp table insert sql= {sql:s}')
 
-
-        if self.debugtime:
-            self.time0 = datetime.datetime.now()
 
         cursor = self.conn.cursor()
+
         try:
             self.__executeSql__(cursor, sql)
 
-            if debug:
-                logging.debug('')
-                logging.debug(f'returned from executeSql: {sql:s}')
-
         except Exception as e:
 
-            self.msg = 'Failed to insert data toe tmp_fileiddbtbl: ' + str(e)
-            if debug:
+            self.msg = 'Failed to insert data to tmp_fileiddbtbl: ' + str(e)
+            if self.debug:
                 logging.debug('')
                 logging.debug(f'{self.msg:s}')
 
             raise Exception(self.msg)
-
-        if debug:
-            logging.debug('')
-            logging.debug('insert tmp_fileiddbtbl statement executed')
 
         #
         # Select accessid from tmp_fileiddbtbl: just to verify
@@ -2156,48 +1571,36 @@ class propFilter:
 
         sql = "select * from " + tmp_fileiddbtbl
 
-        if debug:
+        if self.debug:
             logging.debug('')
-            logging.debug(f'sql= {sql:s}')
+            logging.debug(f'fileid temp table select sql = {sql:s}')
 
         cursor = self.conn.cursor()
         try:
             self.__executeSql__(cursor, sql)
 
-            if debug:
-                logging.debug('')
-                logging.debug(f'returned from executeSql: {sql:s}')
-
         except Exception as e:
 
             self.msg = 'Failed to select from tmp_fileiddbtbl: ' + str(e)
-            if debug:
+            if self.debug:
                 logging.debug('')
                 logging.debug(f'{self.msg:s}')
 
             raise Exception(self.msg)
 
-        if debug:
-            logging.debug('')
-            logging.debug('select id statement executed')
-
         fileidpath = self.userworkdir + '/' + tmp_fileiddbtbl + '.tbl'
 
-        if debug:
+        if self.debug:
             logging.debug('')
-            logging.debug(f'fileidpath= {fileidpath:s}')
+            logging.debug(f'fileidpath = {fileidpath:s}')
 
         try:
             self.__writeSinglecolResult__(cursor, fileidpath, 35)
 
-            if debug:
-                logging.debug('')
-                logging.debug('returned from writeSinglecolResult: {sql:s}')
-
         except Exception as e:
 
             self.msg = 'Failed to write result to fileidtbl: ' + str(e)
-            if debug:
+            if self.debug:
                 logging.debug('')
                 logging.debug(f'{self.msg:s}')
 
@@ -2217,22 +1620,12 @@ class propFilter:
         # {
         #
 
-        debug = 0
-
-        if('debug' in kwargs):
-            debug = kwargs['debug']
-
-        if debug:
-            logging.debug('')
-            logging.debug('Enter executeSql')
-            logging.debug(f'sql:= {sql:s}')
-
         try:
             cursor.execute(sql)
 
         except Exception as e:
 
-            if debug:
+            if self.debug:
                 logging.debug('')
                 logging.debug(f'Failed to executeSql: {str(e):s}')
 
@@ -2241,7 +1634,7 @@ class propFilter:
             if self.debug:
                 logging.debug('')
                 logging.debug(
-                    f'returned encodeSqlerrmsg: self.msg= {self.msg:s}')
+                    f'returned encodeSqlerrmsg: self.msg = {self.msg:s}')
 
             raise Exception(self.msg)
 
@@ -2256,22 +1649,12 @@ class propFilter:
         # {
         #
 
-        debug = 0
-
-        if('debug' in kwargs):
-            debug = kwargs['debug']
-
-        if debug:
-            logging.debug('')
-            logging.debug('Enter parseSql')
-            logging.debug(f'sql:= {sql:s}')
-
         try:
             cursor.parse(sql)
 
         except Exception as e:
 
-            if debug:
+            if self.debug:
                 logging.debug('')
                 logging.debug(f'Failed to parseSql: {str(e):s}')
 
@@ -2288,18 +1671,6 @@ class propFilter:
         # {
         #
 
-        debug = 0
-
-        if('debug' in kwargs):
-            debug = kwargs['debug']
-
-        if debug:
-            logging.debug('')
-            logging.debug('Enter encodeSqlerrmsg')
-            logging.debug(f'errmsg= {errmsg:s}')
-
-        #
-        #
         # Oracle error might contain characters that needs fixing for
         # xml structure
         #
@@ -2308,19 +1679,11 @@ class propFilter:
 
         errmsg = errmsg.replace('"', "'")
 
-        if debug:
-            logging.debug('')
-            logging.debug(f'here1: errmsg= {errmsg:s}')
-
         #
         # Replace < with &lt;
         #
 
         errmsg = errmsg.replace('<', '&lt;')
-
-        if debug:
-            logging.debug('')
-            logging.debug(f'here1: errmsg= {errmsg:s}')
 
         #
         # Replace > with &gt;
@@ -2328,9 +1691,9 @@ class propFilter:
 
         errmsg = errmsg.replace('>', '&gt;')
 
-        if debug:
+        if self.debug:
             logging.debug('')
-            logging.debug(f'here1: errmsg= {errmsg:s}')
+            logging.debug(f'errmsg = {errmsg:s}')
 
         self.msg = errmsg
 
@@ -2347,33 +1710,24 @@ class propFilter:
         # {
         #
 
-        debug = 0
-
-        if('debug' in kwargs):
-            debug = kwargs['debug']
-
-        if debug:
-            logging.debug('')
-            logging.debug('Enter dropDbtbl')
-
         cursor_drop = self.conn.cursor()
         dropsql = 'drop table ' + dbtable
 
-        if debug:
+        if self.debug:
             logging.debug('')
-            logging.debug(f'dropsql:= {dropsql:s}')
+            logging.debug(f'drop table sql = {dropsql:s}')
 
         try:
             cursor_drop.execute(dropsql)
 
-            if debug:
+            if self.debug:
                 logging.debug('')
                 logging.debug(f'table {dbtable:s} successfully dropped')
 
         except Exception as e:
             pass
 
-            if debug:
+            if self.debug:
                 logging.debug('')
                 logging.debug(f'drop table exception: {str(e):s}')
         return
