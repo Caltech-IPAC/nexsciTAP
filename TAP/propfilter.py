@@ -197,10 +197,13 @@ class propFilter:
 
                 if self.debug:
                     logging.debug('')
-                    logging.debug(f'dbms = {self.dbms:s}')
-                    logging.debug(f'userid = {self.userid:s}')
-                    logging.debug(f'password = {self.password:s}')
+                    logging.debug(f'dbms     = {self.dbms:s}')
                     logging.debug(f'dbserver = {self.dbserver:s}')
+                    logging.debug( 'userid   = [Not shown for security reasons].')
+                    logging.debug( 'password = [Not shown for security reasons].')
+                #   Change to the following to temporarily debug login
+                #   logging.debug(f'userid   = {self.userid:s}')
+                #   logging.debug(f'password = {self.password:s}')
 
 
             if(self.dbms.lower() == 'sqlite3'):
@@ -1119,7 +1122,9 @@ class propFilter:
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'password = {password:s}')
+            logging.debug(f'password = [Not shown for security reasons.]')
+        #   Change to following to debug password    
+        #   logging.debug(f'password = {password:s}')
 
         if(len(password) == 0):
 

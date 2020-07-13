@@ -37,7 +37,6 @@ class runQuery:
 
     conn = None
     dbtable = ''
-    ddtable = ''
 
     sql = ''
     racol = ''
@@ -243,7 +242,6 @@ class runQuery:
         #
 
         self.dbtable = ''
-        self.ddtable = ''
 
         tn = TableNames()
         tables = tn.extract_tables(self.sql)
@@ -251,13 +249,9 @@ class runQuery:
         if len(tables) > 0:
             self.dbtable = tables[0]
 
-        if(len(self.dbtable) > 0):
-            self.ddtable = self.dbtable + '_dd'
-
         if self.debug:
             logging.debug('')
             logging.debug(f'dbtable= [{self.dbtable:s}]')
-            logging.debug(f'ddtable= {self.ddtable:s}')
 
         #
         # Connect to DBMS
@@ -323,19 +317,10 @@ class runQuery:
         # Retrieve dd table
         #
 
-        if self.debug:
-            logging.debug('')
-            logging.debug(f'self.ddtable= {self.ddtable:s}')
-            logging.debug('call dataDictionary')
-
         self.dd = None
 
         try:
             self.dd = dataDictionary(self.conn, self.dbtable, self.debug)
-
-            if self.debug:
-                logging.debug('')
-                logging.debug('returned dataDictionary')
 
         except Exception as e:
 
@@ -349,7 +334,7 @@ class runQuery:
 
         if self.debug:
             logging.debug('')
-            logging.debug('dd successfully retrieved')
+            logging.debug('DD successfully retrieved')
 
         #
         # Submit database query of user input sql
@@ -400,10 +385,6 @@ class runQuery:
 
             raise Exception(str(e))
 
-        if self.debug:
-            logging.debug('')
-            logging.debug('returned writeResultfile')
-
         self.stat = 'ok'
         self.outpath = wresult.outpath
         self.ntot = wresult.ntot
@@ -412,7 +393,7 @@ class runQuery:
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'here0: outpath= {self.outpath:s}')
+            logging.debug(f'outpath = {self.outpath:s}')
 
         #
         # } end of init def

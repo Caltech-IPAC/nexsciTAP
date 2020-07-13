@@ -68,7 +68,7 @@ class configParam:
         self.dbms = dbms
 
         if self.debug:
-            logging.debug(f'      dbms = {self.dbms:s}')
+            logging.debug(f'      dbms   = {self.dbms:s}')
 
         if(len(self.dbms) == 0):
             self.status = 'error'
@@ -112,8 +112,11 @@ class configParam:
             if self.debug:
                 logging.debug('')
                 logging.debug(f"      dbserver = {self.connectInfo['dbserver']:s}")
-                logging.debug(f"      dbuser = {self.connectInfo['userid']:s}")
-                logging.debug(f"      password = {self.connectInfo['password']:s}")
+                logging.debug( "      dbuser   = [Not shown for security reasons.]")
+                logging.debug( "      password = [Not shown for security reasons.]")
+            #   Change to below (temporarily) to debug login info.
+            #   logging.debug(f"      dbuser   = {self.connectInfo['userid']:s}")
+            #   logging.debug(f"      password = {self.connectInfo['password']:s}")
 
 
         if(dbms == 'sqlite3'):
@@ -138,9 +141,9 @@ class configParam:
 
             if self.debug:
                 logging.debug('')
-                logging.debug(f"      db = {self.connectInfo['db']:s}")
+                logging.debug(f"      db         = {self.connectInfo['db']:s}")
                 logging.debug(
-                    f"tap_schema= {self.connectInfo['tap_schema']:s}")
+                    f"      tap_schema = {self.connectInfo['tap_schema']:s}")
 
 
         self.adqlparam = {}
@@ -261,18 +264,18 @@ class configParam:
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'      workdir = {self.workdir:s}')
-            logging.debug(f'      workurl = {self.workurl:s}')
-            logging.debug(f'      httpurl = {self.httpurl:s}')
-            logging.debug(f'      cgipgm = {self.cgipgm:s}')
-            logging.debug(f'      port = {self.port:s}')
+            logging.debug(f'      workdir    = {self.workdir:s}')
+            logging.debug(f'      workurl    = {self.workurl:s}')
+            logging.debug(f'      httpurl    = {self.httpurl:s}')
+            logging.debug(f'      cgipgm     = {self.cgipgm:s}')
+            logging.debug(f'      port       = {self.port:s}')
             logging.debug(f'      cookiename = {self.cookiename:s}')
-            logging.debug(f'      usertbl = {self.usertbl:s}')
-            logging.debug(f'      accesstbl = {self.accesstbl:s}')
+            logging.debug(f'      usertbl    = {self.usertbl:s}')
+            logging.debug(f'      accesstbl  = {self.accesstbl:s}')
             logging.debug(f'      propfilter = {self.propfilter:s}')
-            logging.debug(f'      fileid = {self.fileid:s}')
-            logging.debug(f'      accessid = {self.accessid:s}')
-            logging.debug(f'      racol = {self.racol:s}')
-            logging.debug(f'      deccol = {self.deccol:s}')
+            logging.debug(f'      fileid     = {self.fileid:s}')
+            logging.debug(f'      accessid   = {self.accessid:s}')
+            logging.debug(f'      racol      = {self.racol:s}')
+            logging.debug(f'      deccol     = {self.deccol:s}')
 
         return
