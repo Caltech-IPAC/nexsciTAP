@@ -328,7 +328,7 @@ class Tap:
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'cookiestr= {self.cookiestr:s}')
+            logging.debug(f'cookiestr = {self.cookiestr:s}')
 
         #
         #  Extract configfile name from TAP_CONF environment variable
@@ -557,6 +557,11 @@ class Tap:
             print("Redirect Location: %s" % self.statusurl)
 
             sys.stdout.flush()
+
+            if self.debug:
+                logging.debug('')
+                logging.debug('Return HTTP redirect to status.xml and exit.')
+
             sys.exit()
 
             #
@@ -1007,7 +1012,7 @@ class Tap:
 
         if self.debug:
             logging.debug('')
-            logging.debug('TAP service done')
+            logging.debug('TAP service done. Return data or status and exit.')
 
         sys.exit()
 
