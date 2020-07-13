@@ -96,6 +96,10 @@ class runQuery:
         if('debug' in kwargs):
             self.debug = kwargs['debug']
 
+        self.arraysize = 10000
+        if('arraysize' in kwargs):
+            self.arraysize = kwargs['arraysize']
+
         #
         # Get keyword parameters
         #
@@ -372,6 +376,7 @@ class runQuery:
                                   self.dd,
                                   format=self.format,
                                   maxrec=self.maxrec,
+                                  arraysize=self.arraysize,
                                   coldesc=self.coldesc,
                                   racol=self.racol,
                                   deccol=self.deccol,
