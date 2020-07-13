@@ -119,6 +119,10 @@ class writeResult:
         if('coldesc' in kwargs):
             self.coldesc = kwargs['coldesc']
 
+        self.arraysize = 10000
+        if('arraysize' in kwargs):
+            self.arraysize = kwargs['arraysize']
+
         if self.debug:
             logging.debug('')
             logging.debug('from kwargs:')
@@ -129,6 +133,7 @@ class writeResult:
             logging.debug(f'      coldesc     = {self.coldesc:d}')
             logging.debug(f'      ind_exclcol = {self.ind_exclcol:d}')
             logging.debug(f'      maxrec      = {self.maxrec:d}')
+            logging.debug(f'      arraysize   = {self.arraysize:d}')
 
         self.status = ''
 
@@ -203,7 +208,8 @@ class writeResult:
         scale = None
         size = 0
 
-        nfetch = 10000
+        nfetch = self.arraysize
+
         self.cursor.arraysize = nfetch
 
         i = 0
@@ -708,7 +714,8 @@ class writeResult:
         # Start fetching data lines
         #
 
-        nfetch = 10000
+        nfetch = self.arraysize
+
         self.cursor.arraysize = nfetch
 
         ibatch = 0

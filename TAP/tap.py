@@ -369,6 +369,9 @@ class Tap:
         self.workurl = self.config.workurl
         self.httpurl = self.config.httpurl
         self.cgipgm  = self.config.cgipgm
+
+        self.arraysize = self.config.arraysize
+
         self.cookiename = self.config.cookiename
 
         if self.debug:
@@ -377,6 +380,7 @@ class Tap:
             logging.debug(f'workurl    = {self.workurl:s}')
             logging.debug(f'httpurl    = {self.httpurl:s}')
             logging.debug(f'cgipgm     = {self.cgipgm:s}')
+            logging.debug(f'arraysize  = {self.arraysize:d}')
             logging.debug(f'cookiename = {self.cookiename:s}')
             logging.debug(f'fileid     = {self.config.fileid:s}')
             logging.debug(f'accessid   = {self.config.accessid:s}')
@@ -894,6 +898,7 @@ class Tap:
                                    workdir=self.userWorkdir,
                                    format=self.format,
                                    maxrec=self.maxrec,
+                                   arraysize=self.arraysize,
                                    racol=self.config.racol,
                                    deccol=self.config.deccol,
                                    debug=self.debug)
@@ -945,6 +950,7 @@ class Tap:
                                         accessid=self.config.accessid,
                                         format=self.format,
                                         maxrec=self.maxrec,
+                                        arraysize=self.arraysize,
                                         debug=self.debug)
 
 

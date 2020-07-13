@@ -147,9 +147,19 @@ class propFilter:
             logging.debug('')
             logging.debug('Enter propFilter.init')
 
+
         #
         # { Get input parameters
         #
+
+        self.arraysize = 10000
+
+        if('arraysize' in kwargs):
+            self.arraysize = kwargs['arraysize']
+
+        if self.arraysize < 1:
+            self.arraysize = 10000
+
 
         if('connectInfo' in kwargs):
 
@@ -1162,7 +1172,8 @@ class propFilter:
         if self.debug:
             logging.debug('')
             logging.debug(f'nrec = {nrec:d}')
-            logging.debug(f'arraysize = {cursor.arraysize:d}')
+            logging.debug('')
+            logging.debug(f'cursor.arraysize = {cursor.arraysize:d}')
 
         keyval = ''
         row = 0
@@ -1265,7 +1276,8 @@ class propFilter:
         #
 
         ncol = len(cursor.description)
-        cursor.arraysize = 10000
+
+        cursor.arraysize = self.arraysize
 
         ntot = 0
 
