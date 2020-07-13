@@ -43,8 +43,8 @@ to be explicit for clarity::
    # Parameters for sqlite3 interface
    #
    [sqlite3]
-   DB=/work/jcg/ps.db
-   TAP_SCHEMA=/work/jcg/tap_schema.db
+   DB=/work/sqlite/ps.db
+   TAP_SCHEMA=/work/sqlite/tap_schema.db
 
 
    # Spatial indexing settings
@@ -104,6 +104,8 @@ for that:
 - **DB** SQLite3 database file containing the tables to be served.
 
 - **TAP_SCHEMA** SQLite3 database file containing the five "TAP_SCHEMA" tables.
+
+These files can be stored anywhere you like.
 
 
 Spatial Indexing Settings.  Refer to the indexing documentation for a better 

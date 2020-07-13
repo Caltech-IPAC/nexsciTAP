@@ -121,14 +121,14 @@ class writeResult:
 
         if self.debug:
             logging.debug('')
-            logging.debug('kwargs:')
-            logging.debug(f'      racol = {self.racol:s}')
-            logging.debug(f'      deccol = {self.deccol:s}')
-            logging.debug(f'      ind_racol = {self.ind_racol:d}')
-            logging.debug(f'      ind_deccol = {self.ind_deccol:d}')
-            logging.debug(f'      coldesc = {self.coldesc:d}')
+            logging.debug('from kwargs:')
+            logging.debug(f'      racol       = {self.racol:s}')
+            logging.debug(f'      deccol      = {self.deccol:s}')
+            logging.debug(f'      ind_racol   = {self.ind_racol:d}')
+            logging.debug(f'      ind_deccol  = {self.ind_deccol:d}')
+            logging.debug(f'      coldesc     = {self.coldesc:d}')
             logging.debug(f'      ind_exclcol = {self.ind_exclcol:d}')
-            logging.debug(f'      maxrec = {self.maxrec:d}')
+            logging.debug(f'      maxrec      = {self.maxrec:d}')
 
         self.status = ''
 
@@ -219,7 +219,8 @@ class writeResult:
 
             if self.debug:
                 logging.debug('')
-                logging.debug(f'ind_exclcol= {self.ind_exclcol:d}')
+                logging.debug('----------------------------------------------')
+                logging.debug(f'ind_exclcol= {self.ind_exclcol:d}\n')
                 logging.debug(f'i = {i:d} col = ' + str(col))
 
             #
@@ -291,7 +292,7 @@ class writeResult:
                 dbdatatype = 'FLOAT'
 
             if self.debug:
-                logging.debug(f'dbdatatype = {dbdatatype:s}')
+                logging.debug(f'dbdatatype    = {dbdatatype:s}')
 
             size = None
             if(col[2] is not None):
@@ -301,7 +302,7 @@ class writeResult:
                     size = len(colname)
 
                 if self.debug:
-                    logging.debug(f'size = {size:d}')
+                    logging.debug(f'size      = {size:d}')
 
 
             precision = None
@@ -316,7 +317,7 @@ class writeResult:
                 scale = col[5]
 
                 if self.debug:
-                    logging.debug(f'scale = {scale:d}')
+                    logging.debug(f'scale     = {scale:d}')
 
             #
             # } end  extract dbdatatype, display_size, precision,
@@ -405,13 +406,13 @@ class writeResult:
 
                 if self.debug:
                     logging.debug('')
-                    logging.debug('Column in dd:')
-                    logging.debug(f'      colnamd = {colname:s}')
+                    logging.debug('Column is in dd:')
+                    logging.debug(f'      colname = {colname:s}')
                     logging.debug(f'      coltype = {coltype:s}')
-                    logging.debug(f'      dbtype = {dbtype:s}')
-                    logging.debug(f'      fmt = {fmt:s}')
-                    logging.debug(f'      width = {width:d}')
-                    logging.debug(f'      desc = {desc:s}')
+                    logging.debug(f'      dbtype  = {dbtype:s}')
+                    logging.debug(f'      fmt     = {fmt:s}')
+                    logging.debug(f'      width   = {width:d}')
+                    logging.debug(f'      desc    = {desc:s}')
 
                 #
                 # } end char/date/datetime/timestamp: verify format with
@@ -588,10 +589,10 @@ class writeResult:
                 if self.debug:
                     logging.debug('')
                     logging.debug('column not in dd')
-                    logging.debug(f'      width= {width:d}')
-                    logging.debug(f'      dbtype= {dbtype:s}')
-                    logging.debug(f'      coltype= {coltype:s}')
-                    logging.debug(f'      fmt= {fmt:s}')
+                    logging.debug(f'      width   = {width:d}')
+                    logging.debug(f'      dbtype  = {dbtype:s}')
+                    logging.debug(f'      coltype = {coltype:s}')
+                    logging.debug(f'      fmt     = {fmt:s}')
 
 
                 isddcolarr.append(0)
@@ -627,15 +628,18 @@ class writeResult:
 
         if self.debug:
 
+            logging.debug('')
+            logging.debug('DD summary:')
+
             for i in range(0, len_arr):
                 logging.debug('')
-                logging.debug(f'name[{i:d}]= [{namearr[i]:s}]')
-                logging.debug(f'type[{i:d}]= [{typearr[i]:s}]')
-                logging.debug(f'dbtype[{i:d}]= [{dbtypearr[i]:s}]')
-                logging.debug(f'fmt[{i:d}]= [{fmtarr[i]:s}]')
-                logging.debug(f'width[{i:d}]= [{widtharr[i]:d}]')
-                logging.debug(f'units[{i:d}]= [{unitsarr[i]:s}]')
-                logging.debug(f'desc[{i:d}]= [{descarr[i]:s}]')
+                logging.debug(f'      name[{i:d}]   = [{namearr[i]:s}]')
+                logging.debug(f'      type[{i:d}]   = [{typearr[i]:s}]')
+                logging.debug(f'      dbtype[{i:d}] = [{dbtypearr[i]:s}]')
+                logging.debug(f'      fmt[{i:d}]    = [{fmtarr[i]:s}]')
+                logging.debug(f'      width[{i:d}]  = [{widtharr[i]:d}]')
+                logging.debug(f'      units[{i:d}]  = [{unitsarr[i]:s}]')
+                logging.debug(f'      desc[{i:d}]   = [{descarr[i]:s}]')
 
         ddlist.append(namearr)
         ddlist.append(typearr)
@@ -698,6 +702,7 @@ class writeResult:
         if self.debug:
             logging.debug('')
             logging.debug('Start constructing rowslist')
+            logging.debug('----------------------------------------')
 
         #
         # Start fetching data lines
@@ -724,8 +729,8 @@ class writeResult:
             nrec = len(rows)
 
             if self.debug:
-                logging.debug('')
                 logging.debug(f'nrec = {nrec:d}')
+                logging.debug('')
 
             rowslist = []
 
@@ -775,11 +780,7 @@ class writeResult:
                     #
 
                 if self.debug:
-                    logging.debug('')
-                    logging.debug('rowlist:')
-                    logging.debug('----------------------------------------')
                     logging.debug(rowlist)
-                    logging.debug('----------------------------------------')
 
                 rowslist.append(rowlist)
 
@@ -792,6 +793,9 @@ class writeResult:
                 #
                 # } end of l loop
                 #
+
+            if self.debug:
+                logging.debug('----------------------------------------')
 
             if(ibatch == 0):
 

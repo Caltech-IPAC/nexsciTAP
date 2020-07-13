@@ -11,21 +11,23 @@ like::
 the DMBS checks to see if it has an "index" on either ra or dec.  The index itself is
 based on a sorted list of the parameter values; going through this list in order between
 the low and high value allows the database to jump from record to record in the table,
-by only having to do two I/Os for every record touched - one on the index and one on
-the table record.  If this is a small fraction of the table total, the overall time
-is much smaller than reading through the whole table.
+therefore only having to do two I/Os for every record touched (*i.e.,* the index and
+the table record).  If this is a small fraction of the table total, the overall time
+is much small than reading through the whole table (the alternative).
 
-Only one of the constraints can be used for any given query: the DBMS only allows us we  step through
-the records in one order.  The DBMS also contains a histogram of the values for each
-indexed column and estimates up front which constraint will involve the smaller 
+Only one of the constraints can be used for any given query (we can only step through
+the records in one order).  The DBM also contains a histogram of the values for each
+indexed columns and estimates up front which constraint will involve the smaller 
 number of I/Os.  In the same way, it can determine whether the index chosen is worth
 the effort.  For instance, a range that would touch half the records would actually
 take longer than "scanning" just the data records.
 
-This technology is referred to as a "B+-Tree". There are a number of practical consequences of this approach.  Some columns have values
+This technology is referred to as a "B+-Tree".
+
+There are a number of practical consequences of this approach.  Some columns have values
 that are distributed in ways that make indexing ineffective.  Index too many columns and
 you waste too much time deciding on the right index.  Indices on columns no one ever 
-constrains waste database disk space.
+constrains are pointless.
 
 
 Composite Indices
@@ -36,7 +38,8 @@ groups where all the records have the same value for that parameter, you can the
 inside the group by a second parameter.  And if the nested sorting helps in queries
 then a composite index is useful.
 
-Our primary goal in nexsciTAP is to speed up spatial queries and for position parameters in astronomical tables, and neither of the above conditions is satisfied:  If you sort on 
+Our primary goal here is to speed up spatial queries and for position parameters in
+astronomical tables neither of the above conditions is satisfied:  If you sort on 
 RA first you don't get large groups of equal RA so then sorting on Dec gets you nowhere
 and even if the RAs did group, a composite index of this sort doesn't help with 
 region queries.
@@ -44,22 +47,23 @@ region queries.
 
 Tesselation
 -----------
-There is a technique that allows the basic B-Tree index to 
+Somewhat surprisingly, there is a technique that allows the basic B-Tree index to 
 speed up 2D spatial queries.  It involves subdividing the sky into little regions
-(*e.g.,* RA/Dec boxes though that particular "tesselation" does cause problems of its own)
+(*e.g.,* RA/Dec boxes though that particular "tesselation" has a bunch of problems)
 and assigning a single integer ID to each region in such a way that IDs that are 
 close together numerically have a strong tendency to be close together on the sky.
 
 This is accomplished using a Z-ordered curve (https://en.wikipedia.org/wiki/Z-order_curve).
-There are different "tesselations" of the sky (our library supports two; see below) but the choice has little effect on query speed.  More important is how "deep" you go in
+There are different "tesselations" of the sky (our library supports two) but the
+choice has little effect on query speed.  More important is how "deep" you go in
 the heirarchical subdivision though even this is a secondary effect.
 
 Basically, for each record you identify a cell ID and save this in the database 
 record.   All coordinates inside the same cell will get the same ID.  The ID column is 
 indexed using the DBMS built-in B-Tree functionality.
 
-Then later when processing a search request that asks for all the records in a cone on the 
-sky, you determine which cell IDs overlap the region, in whole or in part.  A further 
+Then later when processing search request that asks for all the records in a cone on the 
+sky, you determine which cell IDs overlap the region (in whole or in part).  A further 
 refinement is to turn this list into a set of ID ranges.
 
 Sending this constraint on ID to the DBMS, you would get back all the records in all 
@@ -67,7 +71,7 @@ those cells, a superset of the data you want.  But if you also store in the data
 columns giving the 3-vector coordinates of each point you can augment the query 
 with a constraint that weeds out just the records matching the exact geometry.
 
-Here's a concrete example.  Tesselating the sky using HTM cells (see next section),
+Here's a concrete example.  Tesselating the sky using HTM cells (more on that later),
 we can turn a constraint like::
 
     within 1 degree of (293.5607117,-23.1312775) 
@@ -89,14 +93,15 @@ into the following::
               OR (htm20 BETWEEN 12304947085312 AND 12305047748607) 
               OR (htm20 BETWEEN 12305065050112 AND 12305079143739))
 
-This query may look long-winded to the eye but the DBMS executes to quickly. 
+So the DBMS does all the work.  This query may look long-winded but it is no problem
+for the DBMS and quite fast. 
 
 
 HTM and HPX
 -----------
-The performance of a spatial query does not fact depend strongly on choice of tessselation scheme (Berriman et al. 2017. "A Study of the Efficiency of Spatial Indexing Methods Applied to Large Astronomical Databases."  https://arxiv.org/pdf/1806.08866.pdf.)  
-We support two tessellation schemes: HTM and HPX.
-
+As we said, the choice of tessselation scheme doesn't matter too much.  In fact,
+we have done a study for NASA that demonstrates this.  But since we have the 
+capability (from that study) we have include two in our software suite.
 
 Heirarchical Triangular Mesh (HTM) subdivides the sky into triangles.  The base
 level is the set of eight triangles defined by the poles and the cardinal points
@@ -106,15 +111,20 @@ into four roughly equal parts; three containing the original corners and one
 in the center.
 
 HPX is base on the HEALPix tesselation.  HEALPix was originally developed to 
-support numerical integration on the sphere, and was intended for application data acquired by cosmic background experiments. The HEALPix cells are diamonds on the sky and get divided intofour in such a way as to maintain equal area in each sub-cell.  This is important
-for the original use has little impact on database indexing.
+support numerical integration on the sphere and has a number of interesting 
+characteristics.  The HEALPix cells are diamonds on the sky and get divided into
+four in such a way as to maintain equal area in each sub-cell.  This is important
+for the original use but doesn't matter for database indexing.
 
 
 Optimal Tesselation
 -------------------
-There is no best tesselation and the "optimal" tesselation depth depends on the 
-set of queries that are most commonly sent to your DBMS.  Level 20 depth results in ~arcsecond cells and level 7 is around half a degree.
-In tests we ran of the full range of cell sizes and with cone searches on
+There is no best tesselation and the "best" tesselation depth depends on the 
+set of queries that are most commonly sent to your DBMS.  Level 20 depth (as
+we used above) results in ~arcsecond cells and level 7 is around half a degree.
+In test we ran of the full range of cell sizes and a with cone searches on
 the sky ranging from arcsecond to a few degrees, uniformly distributed 
-in log(radius), the optimum for common astronomy catalogs was near  level 14.
+in log(radius), the optimum was somewhere in the center (around level 14).
 
+See the next section for information on software tools to help populate the
+x, y, z and spatial-index columns.

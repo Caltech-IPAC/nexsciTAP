@@ -192,7 +192,7 @@ class Tap:
         for key in self.form:
 
             if self.debug:
-                logging.debug(f'      key: {key:s}   val: {self.form[key].value:s}')
+                logging.debug(f'      key: {key:<15}   val: {self.form[key].value:s}')
 
             if(key.lower() == 'propflag'):
                 self.propflag = int(self.form[key].value)
@@ -256,20 +256,20 @@ class Tap:
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'format= {self.format:s}')
-            logging.debug(f'maxrec= {self.maxrec:d}')
+            logging.debug(f'format = {self.format:s}')
+            logging.debug(f'maxrec = {self.maxrec:d}')
 
         self.param['maxrec'] = self.maxrec
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'nparam= {self.nparam:d}')
+            logging.debug(f'nparam = {self.nparam:d}')
 
             for key in self.param:
                 if(key == 'maxrec'):
-                    logging.debug(f'key= {key:s} value= {self.param[key]:d}')
+                    logging.debug(f'key = {key:<15} value = {self.param[key]:d}')
                 else:
-                    logging.debug(f'key= {key:s} value= {self.param[key]:s}')
+                    logging.debug(f'key = {key:<15} value = {self.param[key]:s}')
 
 
         if("PATH_INFO" in os.environ):
@@ -314,11 +314,11 @@ class Tap:
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'statuskey = {self.statuskey:s}')
+            logging.debug(f'statuskey  = {self.statuskey:s}')
             logging.debug(f'tapcontext = {self.tapcontext:s}')
-            logging.debug(f'getstatus = {self.getstatus:d}')
-            logging.debug(f'setstatus = {self.setstatus:d}')
-            logging.debug(f'id = {self.id:s}')
+            logging.debug(f'getstatus  = {self.getstatus:d}')
+            logging.debug(f'setstatus  = {self.setstatus:d}')
+            logging.debug(f'id         = {self.id:s}')
 
         #
         # Retrieve cookiestr
@@ -656,7 +656,7 @@ class Tap:
                 self.param['lang'] = parameter.string
                 if self.debug:
                     logging.debug('')
-                    logging.debug(f'      lang = {self.param["lang"]:d}\n')
+                    logging.debug(f'      lang = {self.param["lang"]:s}\n')
 
                 #
                 # } end setstatus = 1
@@ -1200,6 +1200,10 @@ class Tap:
             sys.stdout.flush()
 
         sys.stdout.flush()
+
+        if self.debug:
+            logging.debug('Write status to user and exit.')
+
         return
 
         #
@@ -1213,12 +1217,10 @@ class Tap:
         # {
         #
 
-        statuspath = workdir + '/TAP/' + workspace + '/status.xml'
-
-        isExist = os.path.exists(statuspath)
+        isExist = os.path.exists(self.statuspath)
 
         if(isExist == 0):
-            msg = 'Status file: status.tbl does not exit.'
+            msg = 'Status file: status.xml does not exist.'
             raise Exception(msg)
 
         if self.debug:
@@ -1227,7 +1229,7 @@ class Tap:
 
         data = ''
         try:
-            data = self.__getStatusData__(statuspath)
+            data = self.__getStatusData__(self.statuspath)
 
         except Exception as e:
 
@@ -1237,6 +1239,10 @@ class Tap:
         #
         # No key: return the whole status file
         #
+
+        if self.debug:
+            logging.debug('')
+            logging.debug('Return status.xml to user and exit.')
 
         if(len(key) == 0):
 
@@ -1581,7 +1587,10 @@ class Tap:
         if self.debug:
             logging.debug('')
             logging.debug(f'resultpath = {resultpath:s}')
-            logging.debug(f'format = [{format:s}]')
+            logging.debug(f'format     = [{format:s}]\n')
+
+            logging.debug('Output lines:')
+            logging.debug('-------------------------------------------------')
 
         print("HTTP/1.1 200 OK\r")
 
@@ -1605,13 +1614,16 @@ class Tap:
             line = fp.readline()
 
             if self.debug:
-                logging.debug(f'line= [{line:s}]')
+                logging.debug(f'[{line:s}]')
 
             if not line:
                 break
 
             sys.stdout.write(line)
             sys.stdout.flush()
+
+        if self.debug:
+            logging.debug('-------------------------------------------------')
 
         fp.close()
         return
