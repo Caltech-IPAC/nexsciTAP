@@ -355,7 +355,7 @@ class Tap:
 
         self.config = None
         try:
-            self.config = configParam(self.configpath, self.debug)
+            self.config = configParam(self.configpath, debug=self.debug)
 
         except Exception as e:
 

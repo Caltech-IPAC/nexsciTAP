@@ -37,7 +37,7 @@ class dataDictionary:
     nfetch = 1000
 
 
-    def __init__(self, conn, table, debug, **kwargs):
+    def __init__(self, conn, table, **kwargs):
 
         """
         A dataDictionary specifies the following properites of each column in
@@ -64,7 +64,8 @@ class dataDictionary:
 
         """
 
-        self.debug = debug
+        if('debug' in kwargs):
+            self.debug = kwargs['debug']
 
         if self.debug:
             logging.debug('')

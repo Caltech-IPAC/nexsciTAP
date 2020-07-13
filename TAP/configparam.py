@@ -27,11 +27,12 @@ class configParam:
 
     debug = 0
 
-    def __init__(self, path, debug, **kwargs):
+    def __init__(self, path, **kwargs):
+
+        if('debug' in kwargs):
+            self.debug = kwargs['debug']
 
         self.configpath = path
-
-        self.debug = debug
 
         if self.debug:
             logging.debug('')
@@ -74,6 +75,17 @@ class configParam:
             self.status = 'error'
             self.msg = 'Failed to find database server name in config_file'
             raise Exception(self.msg)
+
+
+        arraysize = 10000
+
+        if('ArraySize' in confobj[self.server]):
+            try:
+                arraysize = int(confobj[self.server]['ArraySize'])
+            except Exception as e:
+                arraysize = 10000
+
+        self.arraysize = arraysize
 
 
         self.connectInfo = {}

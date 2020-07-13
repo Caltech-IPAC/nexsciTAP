@@ -324,7 +324,7 @@ class runQuery:
         self.dd = None
 
         try:
-            self.dd = dataDictionary(self.conn, self.dbtable, self.debug)
+            self.dd = dataDictionary(self.conn, self.dbtable, debug=self.debug)
 
         except Exception as e:
 
