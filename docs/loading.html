@@ -1,7 +1,8 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
   
@@ -11,18 +12,12 @@
   
 
   
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-
-  
   
   
   
 
   
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -34,6 +29,10 @@
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
     
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Converting ADQL to Local SQL" href="ADQL_translation.html" />
@@ -51,7 +50,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home" alt="Documentation Home"> nexsciTAP
+            <a href="index.html" class="icon icon-home"> nexsciTAP
           
 
           
@@ -74,7 +73,6 @@
           
         </div>
 
-        
         <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
             
@@ -92,6 +90,7 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="tap_architecture.html">Behind the Scenes: How the TAP Service Works</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tap_schema.html">Setting up Your TAP_SCHEMA Tables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="secure_data.html">Keeping Your Data Secure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="spatial_index.html">DBMS-Agnostic Spatial Indexing</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Adding Spatial Indexing to Your Data</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#do-i-need-a-spatial-index">Do I Need a Spatial Index</a></li>
@@ -113,7 +112,6 @@
             
           
         </div>
-        
       </div>
     </nav>
 
@@ -152,7 +150,7 @@
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li><a href="index.html">Docs</a> &raquo;</li>
         
       <li>Adding Spatial Indexing to Your Data</li>
     
@@ -182,7 +180,7 @@ spatial indexing.  Even if you have coordinates but no need to search spatially,
 might as well not bother.</p>
 <p>For a small table, a spatial search could be done with just the (x,y,z) columns or even
 with just (RA,Dec) (or other coordinates).  We haven’t implemented this variant since
-once you start augmenting your table with additional columns, you might as well go all
+once you start augmenting your table with these additional columns, you might as well go all
 the way.</p>
 <p>If you want to start with a table that doesn’t have the spatial index column set, you
 are free to do so; just don’t try to include CONTAINS() constraints in any queries.
@@ -208,7 +206,8 @@ is a dependency of nexsciTAP.  If you are working in C, download the source
 <h2>Computing Values for the New Columns<a class="headerlink" href="#computing-values-for-the-new-columns" title="Permalink to this headline">¶</a></h2>
 <p>There is code for computing all this in the SpatialIndex package.  The underlying
 libraries there are written in C and there is an example program (SpatialIndex/src/sptIndx.c)
-that adds (x,y,z) and both HTM and HPX spatial index ID columns to a CSV file.</p>
+that adds (x,y,z) and both HTM and HPX spatial index ID columns to a CSV file (you specify
+the tesselation level).</p>
 </div>
 </div>
 
@@ -232,19 +231,11 @@ that adds (x,y,z) and both HTM and HPX spatial index ID columns to a CSV file.</
 
   <div role="contentinfo">
     <p>
-        
         &copy; Copyright 2020, NExScI / IPAC / Caltech
 
     </p>
   </div>
-    
-    
-    
-    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
-    
-    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
-    
-    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -255,6 +246,7 @@ that adds (x,y,z) and both HTM and HPX spatial index ID columns to a CSV file.</
 
   </div>
   
+
 
   <script type="text/javascript">
       jQuery(function () {

@@ -1,7 +1,8 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
   
@@ -11,18 +12,12 @@
   
 
   
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-
-  
   
   
   
 
   
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -34,6 +29,10 @@
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
     
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Extending the Service" href="extending.html" />
@@ -51,7 +50,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home" alt="Documentation Home"> nexsciTAP
+            <a href="index.html" class="icon icon-home"> nexsciTAP
           
 
           
@@ -74,7 +73,6 @@
           
         </div>
 
-        
         <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
             
@@ -92,6 +90,7 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="tap_architecture.html">Behind the Scenes: How the TAP Service Works</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tap_schema.html">Setting up Your TAP_SCHEMA Tables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="secure_data.html">Keeping Your Data Secure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="spatial_index.html">DBMS-Agnostic Spatial Indexing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="loading.html">Adding Spatial Indexing to Your Data</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Converting ADQL to Local SQL</a><ul>
@@ -115,7 +114,6 @@
             
           
         </div>
-        
       </div>
     </nav>
 
@@ -154,7 +152,7 @@
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li><a href="index.html">Docs</a> &raquo;</li>
         
       <li>Converting ADQL to Local SQL</li>
     
@@ -179,7 +177,7 @@
 <h1>Converting ADQL to Local SQL<a class="headerlink" href="#converting-adql-to-local-sql" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="sql-variations-between-dbmss">
 <h2>SQL Variations Between DBMSs<a class="headerlink" href="#sql-variations-between-dbmss" title="Permalink to this headline">¶</a></h2>
-<p>Like most standards, SQL left enough ambiguity and there were enough things missing
+<p>Like most standards, SQL left enough ambiguity and there were enough holes
 that existing implementations vary enough to be noticeable.  In defining the
 Astronomical Data Query Language (ADQL) the VO community picked specific solutions
 for some of this.</p>
@@ -223,7 +221,7 @@ AND/OR query.</p>
 approach.  Since the bulk of any ADQL query is going to match the local
 DBMS SQL just fine, we decided to pre-process the ADQL into local SQL
 before giving it to the engine.</p>
-<p>We use Oracle internally (because of a Caltech site license), so that is
+<p>We use Oracle internally (because of a Caltech site license), so that was
 our first implementation.</p>
 <p>We will start with the following ADQL:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">select</span> <span class="n">TOP</span> <span class="mi">100</span> <span class="n">ra</span><span class="p">,</span> <span class="n">dec</span>
@@ -391,7 +389,7 @@ a form usable by the DBMS:</p>
 <p>With these data structures, we can fairly easily move the TOP specification inside the WHERE
 clause as a constraint on ROWNUM and convert each CONTAINS() block into the equivalent constraints
 on the (x,y,z) and spatial index (here ‘htm20’) columns using the tools
-described in <a class="reference internal" href="spatial_index.html"><span class="doc">DBMS-Agnostic Spatial Indexing</span></a> xxxxx:</p>
+described in <a class="reference internal" href="spatial_index.html"><span class="doc">DBMS-Agnostic Spatial Indexing</span></a>:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">select</span> <span class="n">ra</span><span class="p">,</span> <span class="n">dec</span>
 <span class="kn">from</span> <span class="nn">iraspsc</span>
 <span class="n">where</span> <span class="p">(((</span><span class="o">-</span><span class="mf">0.797580403011</span><span class="o">*</span><span class="n">x</span><span class="p">)</span><span class="o">+</span><span class="p">(</span><span class="mf">0.603104711077</span><span class="o">*</span><span class="n">y</span><span class="p">)</span><span class="o">+</span><span class="p">(</span><span class="o">-</span><span class="mf">0.011410881210</span><span class="o">*</span><span class="n">z</span><span class="p">)</span><span class="o">&gt;=</span><span class="mf">9.999999945169e-01</span><span class="p">)</span>
@@ -406,15 +404,16 @@ described in <a class="reference internal" href="spatial_index.html"><span class
 </div>
 <p>Note that the spatial part of this translation is DBMS-agnostic; it would work just as
 well with PostgreSQL or SQLite.  The conversion of the TOP directive is actually hardest
-for Oracle; other DBMSs would be even easier.</p>
+for Oracle given that it has to become part of the WHERE clause; for other DBMSs it would
+be easier.</p>
 </div>
 <div class="section" id="extending-the-paradigm">
 <h2>Extending the Paradigm<a class="headerlink" href="#extending-the-paradigm" title="Permalink to this headline">¶</a></h2>
 <p>Our databases do not contain records which themselves have extended geometry and we
-can therefore forego ADQL functions like INTERSECTS().  To address this, we would first
-choose a DBMS with intrinsic multi-dimensional support (<em>e.g.,</em> a R-Tree index).
-Our translator could then convert the geometric functions into the extended local
-DBMS syntax.</p>
+can therefore forego ADQL functions like INTERSECTS() in this first implementation.
+To address this later, we would first choose a DBMS with intrinsic multi-dimensional
+support (<em>e.g.,</em> a R-Tree index).  Our translator could then convert the geometric
+functions into the extended local DBMS syntax.</p>
 <p>We tried to write the ADQL translation code in particular to facilitate extension
 and reuse.  If you have a different DBMS or need for extended objects or even
 new special functions for your own use, we would be happy to work with you to
@@ -450,8 +449,8 @@ a real need, we will revisit this.</p>
 <div class="section" id="convex-polygons">
 <h2>Convex Polygons<a class="headerlink" href="#convex-polygons" title="Permalink to this headline">¶</a></h2>
 <p>In the ADQL specification there is no specification that polygons should be convex
-(actually, it doesn’t even specify that the line can’t cross).  This distinction is
-important in practice since the usual way of checking whether a point is in a polygon
+(actually, it doesn’t even specify that the polygon lines shouldn’t cross).  This distinction
+is important in practice since the usual way of checking whether a point is in a polygon
 (<em>i.e.,</em> go around the outside of the polygon and see if the point is alway on the same side
 of the edge lines by doing cross- and dot-products) fails for a concave polygon.</p>
 <p>There are various ways to compensate for this, including decomposing the concave
@@ -482,19 +481,11 @@ convex polygon.</p>
 
   <div role="contentinfo">
     <p>
-        
         &copy; Copyright 2020, NExScI / IPAC / Caltech
 
     </p>
   </div>
-    
-    
-    
-    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
-    
-    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
-    
-    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -505,6 +496,7 @@ convex polygon.</p>
 
   </div>
   
+
 
   <script type="text/javascript">
       jQuery(function () {
