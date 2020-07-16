@@ -3,7 +3,7 @@ Converting ADQL to Local SQL
 
 SQL Variations Between DBMSs
 ----------------------------
-Like most standards, SQL left enough ambiguity and there were enough things missing
+Like most standards, SQL left enough ambiguity and there were enough holes
 that existing implementations vary enough to be noticeable.  In defining the
 Astronomical Data Query Language (ADQL) the VO community picked specific solutions
 for some of this.
@@ -53,7 +53,7 @@ approach.  Since the bulk of any ADQL query is going to match the local
 DBMS SQL just fine, we decided to pre-process the ADQL into local SQL
 before giving it to the engine.
 
-We use Oracle internally (because of a Caltech site license), so that is
+We use Oracle internally (because of a Caltech site license), so that was
 our first implementation.  
 
 We will start with the following ADQL::
@@ -223,7 +223,7 @@ a form usable by the DBMS::
 With these data structures, we can fairly easily move the TOP specification inside the WHERE 
 clause as a constraint on ROWNUM and convert each CONTAINS() block into the equivalent constraints 
 on the (x,y,z) and spatial index (here 'htm20') columns using the tools 
-described in :doc:`spatial_index` xxxxx::
+described in :doc:`spatial_index`::
 
    select ra, dec
    from iraspsc
@@ -239,15 +239,16 @@ described in :doc:`spatial_index` xxxxx::
 
 Note that the spatial part of this translation is DBMS-agnostic; it would work just as
 well with PostgreSQL or SQLite.  The conversion of the TOP directive is actually hardest
-for Oracle; other DBMSs would be even easier.
+for Oracle given that it has to become part of the WHERE clause; for other DBMSs it would 
+be easier.
 
 Extending the Paradigm
 ----------------------
 Our databases do not contain records which themselves have extended geometry and we 
-can therefore forego ADQL functions like INTERSECTS().  To address this, we would first 
-choose a DBMS with intrinsic multi-dimensional support (*e.g.,* a R-Tree index).  
-Our translator could then convert the geometric functions into the extended local
-DBMS syntax.
+can therefore forego ADQL functions like INTERSECTS() in this first implementation.
+To address this later, we would first choose a DBMS with intrinsic multi-dimensional
+support (*e.g.,* a R-Tree index).  Our translator could then convert the geometric
+functions into the extended local DBMS syntax.
 
 We tried to write the ADQL translation code in particular to facilitate extension
 and reuse.  If you have a different DBMS or need for extended objects or even 
@@ -290,8 +291,8 @@ a real need, we will revisit this.
 Convex Polygons
 ---------------
 In the ADQL specification there is no specification that polygons should be convex
-(actually, it doesn't even specify that the line can't cross).  This distinction is
-important in practice since the usual way of checking whether a point is in a polygon
+(actually, it doesn't even specify that the polygon lines shouldn't cross).  This distinction
+is important in practice since the usual way of checking whether a point is in a polygon
 (*i.e.,* go around the outside of the polygon and see if the point is alway on the same side 
 of the edge lines by doing cross- and dot-products) fails for a concave polygon.
 

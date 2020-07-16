@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>TAP Docstrings &mdash; nexsciTAP 1.1.3 documentation</title>
+  <title>Keeping Your Data Secure &mdash; nexsciTAP 1.1.3 documentation</title>
   
 
   
@@ -35,7 +35,8 @@
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="prev" title="ADQL Docstrings" href="adql_docs.html" /> 
+    <link rel="next" title="DBMS-Agnostic Spatial Indexing" href="spatial_index.html" />
+    <link rel="prev" title="Setting up Your TAP_SCHEMA Tables" href="tap_schema.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -86,10 +87,10 @@
 <li class="toctree-l1"><a class="reference internal" href="operations.html">Operations Issues</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Appendices</span></p>
-<ul>
+<ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="tap_architecture.html">Behind the Scenes: How the TAP Service Works</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tap_schema.html">Setting up Your TAP_SCHEMA Tables</a></li>
-<li class="toctree-l1"><a class="reference internal" href="secure_data.html">Keeping Your Data Secure</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Keeping Your Data Secure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="spatial_index.html">DBMS-Agnostic Spatial Indexing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="loading.html">Adding Spatial Indexing to Your Data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ADQL_translation.html">Converting ADQL to Local SQL</a></li>
@@ -97,10 +98,10 @@
 <li class="toctree-l1"><a class="reference internal" href="coordinates.html">A Note on Coordinates</a></li>
 </ul>
 <p class="caption"><span class="caption-text">The Code</span></p>
-<ul class="current">
+<ul>
 <li class="toctree-l1"><a class="reference internal" href="spatial_index_docs.html">spatial_index Docstrings</a></li>
 <li class="toctree-l1"><a class="reference internal" href="adql_docs.html">ADQL Docstrings</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">TAP Docstrings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tap_docs.html">TAP Docstrings</a></li>
 </ul>
 
             
@@ -146,13 +147,13 @@
     
       <li><a href="index.html">Docs</a> &raquo;</li>
         
-      <li>TAP Docstrings</li>
+      <li>Keeping Your Data Secure</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
             
-            <a href="_sources/tap_docs.rst.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/secure_data.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
@@ -165,39 +166,27 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="module-TAP.tap">
-<span id="tap-docstrings"></span><h1>TAP Docstrings<a class="headerlink" href="#module-TAP.tap" title="Permalink to this headline">¶</a></h1>
-<dl class="py class">
-<dt id="TAP.tap.Tap">
-<em class="property">class </em><code class="sig-prename descclassname">TAP.tap.</code><code class="sig-name descname">Tap</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#TAP.tap.Tap" title="Permalink to this definition">¶</a></dt>
-<dd><p>This class is the main program to process the TAP query submitted by a
-web client, it performs the following functionality:</p>
-<ol class="arabic">
-<li><p>extract input parameters,</p></li>
-<li><p>read parameters from TAP configuration file(TAP.ini), the path of the
-config file is specified by the environment variable ‘TAP_CONF’,</p>
-<p>‘TAP.ini’ contains web server info, database server info, spatial
-index setting, and special column names for filtering the proprietary
-data.</p>
-</li>
-<li><p>convert ADQL query to ORACLE query,</p></li>
-<li><p>retrieve metadata from database, applies proprietary filter if
-it is specified by the project.</p></li>
-</ol>
-<blockquote>
-<div><p>query(char):  an ADQL query(required)</p>
-<dl class="simple">
-<dt>phase(char): the phase it input is either PENDING or RUN,</dt><dd><p>if not specified, set to PENDING.</p>
-</dd>
-<dt>format(char): output metadata table format:</dt><dd><p>votable, ipac, cvs, or tvs; default is votable.</p>
-</dd>
-<dt>maxrec(int): integer number of records to be returned;</dt><dd><p>if not specified, all records are returned.</p>
-</dd>
-</dl>
-</div></blockquote>
-<p>Date: February 05, 2019(Mihseh Kong)</p>
-</dd></dl>
-
+  <div class="section" id="keeping-your-data-secure">
+<h1>Keeping Your Data Secure<a class="headerlink" href="#keeping-your-data-secure" title="Permalink to this headline">¶</a></h1>
+<p>The whole point of TAP is to allow general relational queries against your tables.
+But what if you have tables that contain sensitive information?  The short answer
+is that you shouldn’t make them visible to TAP.</p>
+<p>Similarly, while nexsciTAP limits input SQL to performing SELECT statements, the
+tables visible to TAP should be read-only.</p>
+<p>In all the DBMSs with which we are familiar, it is possible to create read-only
+views of the tables you want to expose in a separate schema.  This schema is
+frequently nothing but views of tables in other schema.  This completely
+protects the data from being corrupted.</p>
+<p>Similarly, any sensitive data can be kept out of the directly-readable space.
+This doesn’t mean you have no access to it.  For instance, some of our implementations
+use user and project databases for determining which records in the searchable data
+table a user is allowed to access.  This “proprietary filtering” is done in a
+custom module, modifying the query the user entered to include the right joins and
+filtering to get the right records.  This code is allowed to see the schema containing
+the secure data.</p>
+<p>But the user’s original query, which gets checked against the TAP_SCHEMA list of
+accessible tables, doesn’t mention these sensitive tables and would not be allowed
+to query them directly.</p>
 </div>
 
 
@@ -208,8 +197,10 @@ it is specified by the project.</p></li>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
+        <a href="spatial_index.html" class="btn btn-neutral float-right" title="DBMS-Agnostic Spatial Indexing" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
-        <a href="adql_docs.html" class="btn btn-neutral float-left" title="ADQL Docstrings" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+        <a href="tap_schema.html" class="btn btn-neutral float-left" title="Setting up Your TAP_SCHEMA Tables" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

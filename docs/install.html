@@ -1,7 +1,8 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
   
@@ -11,18 +12,12 @@
   
 
   
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-
-  
   
   
   
 
   
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -34,6 +29,10 @@
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
     
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Configuration Instructions" href="configure.html" />
@@ -51,7 +50,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home" alt="Documentation Home"> nexsciTAP
+            <a href="index.html" class="icon icon-home"> nexsciTAP
           
 
           
@@ -74,7 +73,6 @@
           
         </div>
 
-        
         <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
             
@@ -97,6 +95,7 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="tap_architecture.html">Behind the Scenes: How the TAP Service Works</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tap_schema.html">Setting up Your TAP_SCHEMA Tables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="secure_data.html">Keeping Your Data Secure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="spatial_index.html">DBMS-Agnostic Spatial Indexing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="loading.html">Adding Spatial Indexing to Your Data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ADQL_translation.html">Converting ADQL to Local SQL</a></li>
@@ -113,7 +112,6 @@
             
           
         </div>
-        
       </div>
     </nav>
 
@@ -152,7 +150,7 @@
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li><a href="index.html">Docs</a> &raquo;</li>
         
       <li>Installation Instructions</li>
     
@@ -177,11 +175,11 @@
 <h1>Installation Instructions<a class="headerlink" href="#installation-instructions" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="beforehand">
 <h2>Beforehand<a class="headerlink" href="#beforehand" title="Permalink to this headline">¶</a></h2>
-<p>Python packages can specify that they depend on and the installer
-will recursively install all of these as well.  For our nexsciTAP
+<p>Python packages can specify other packages that they depend on and the
+installer will recursively install all of these as well.  For our nexsciTAP
 package you will want whatever DB API 2.0 goes along with your DBMS
 (<em>e.g.</em> cx_Oracle for Oracle, sqlite for SQLite3, <em>etc.</em>).  We can’t
-know which DBMS you have or which adapter you want to use.  So we leave
+know which DBMS you have or which adapter you want to use so we leave
 it up to you to “pip install” the correct one separately.</p>
 <p>If you forget, your Python will inform you what is missing when you
 try to run the code.</p>
@@ -196,10 +194,11 @@ CGI programs, you can just do the following:</p>
 </pre></div>
 </div>
 <p>then create a Python executable in your “/cgi-bin” directory tree (wherever
-you have that set up (we use …/cgi-bin/TAP/nph-tap.py under Apache):</p>
+you have that set up (we use …/cgi-bin/TAP/nph-tap.py under Apache).  Here
+is a minimal but fully functional example:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">env</span> <span class="n">python</span>
 
-<span class="kn">from</span> <span class="nn">TAP</span> <span class="kn">import</span> <span class="n">tap</span>
+<span class="kn">from</span> <span class="nn">TAP</span> <span class="k">import</span> <span class="n">tap</span>
 
 <span class="n">tap</span><span class="o">.</span><span class="n">main</span><span class="p">()</span>
 </pre></div>
@@ -228,8 +227,9 @@ packages), you can build them yourself from source in GitHub.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">setup</span><span class="o">.</span><span class="n">py</span> <span class="n">bdist_wheel</span>
 </pre></div>
 </div>
-<p>command for each package and then “pip install” the wheel file this builds in
-the ./dist subdirectory.  This gets us to the same place as the “pip install” in the
+<p>command for each package.  This builds a “wheel” (.whl) file in the package ./dist
+subdirectory. You then “pip install” that file and it becomes part of your Python
+installation.  This gets us to the same place as the “pip install” in the
 Quickstart.  We still have to add the same CGI program and configuration file.</p>
 </div>
 </div>
@@ -254,19 +254,11 @@ Quickstart.  We still have to add the same CGI program and configuration file.</
 
   <div role="contentinfo">
     <p>
-        
         &copy; Copyright 2020, NExScI / IPAC / Caltech
 
     </p>
   </div>
-    
-    
-    
-    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
-    
-    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
-    
-    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -277,6 +269,7 @@ Quickstart.  We still have to add the same CGI program and configuration file.</
 
   </div>
   
+
 
   <script type="text/javascript">
       jQuery(function () {

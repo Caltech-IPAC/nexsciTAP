@@ -16,6 +16,7 @@ The NExScI TAP Service
 
    tap_architecture
    tap_schema
+   secure_data
    spatial_index
    loading
    ADQL_translation
@@ -49,7 +50,7 @@ The NExScI TAP service is a Python implementation of the protocol using open-sou
 and extensible code.  It is easy to install and configure and easy to extend to
 other DBMSs.
 
-Because queries against spatial regions on the sky is so common in astronomy, 
+Because queries against spatial regions on the sky are so common in astronomy, 
 ADQL extends SQL with standard spatial constraint functions.  In order to support
 these extensions, NExScI TAP includes a formalism for fast spatially-indexed
 searches which doesn't require modification of the underlying DBMS.

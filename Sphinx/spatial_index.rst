@@ -13,7 +13,7 @@ based on a sorted list of the parameter values; going through this list in order
 the low and high value allows the database to jump from record to record in the table,
 therefore only having to do two I/Os for every record touched (*i.e.,* the index and
 the table record).  If this is a small fraction of the table total, the overall time
-is much small than reading through the whole table (the alternative).
+is much smaller than reading through the whole table (the alternative).
 
 Only one of the constraints can be used for any given query (we can only step through
 the records in one order).  The DBM also contains a histogram of the values for each
@@ -62,7 +62,7 @@ Basically, for each record you identify a cell ID and save this in the database
 record.   All coordinates inside the same cell will get the same ID.  The ID column is 
 indexed using the DBMS built-in B-Tree functionality.
 
-Then later when processing search request that asks for all the records in a cone on the 
+Then later, when processing search request that asks for all the records in a cone on the 
 sky, you determine which cell IDs overlap the region (in whole or in part).  A further 
 refinement is to turn this list into a set of ID ranges.
 
@@ -101,7 +101,7 @@ HTM and HPX
 -----------
 As we said, the choice of tessselation scheme doesn't matter too much.  In fact,
 we have done a study for NASA that demonstrates this.  But since we have the 
-capability (from that study) we have include two in our software suite.
+capability (from that study) we have include two tesselations in our toolkit:
 
 Heirarchical Triangular Mesh (HTM) subdivides the sky into triangles.  The base
 level is the set of eight triangles defined by the poles and the cardinal points
@@ -124,7 +124,7 @@ set of queries that are most commonly sent to your DBMS.  Level 20 depth (as
 we used above) results in ~arcsecond cells and level 7 is around half a degree.
 In test we ran of the full range of cell sizes and a with cone searches on
 the sky ranging from arcsecond to a few degrees, uniformly distributed 
-in log(radius), the optimum was somewhere in the center (around level 14).
+in log(radius), the optimum was somewhere in the middle (around level 14).
 
 See the next section for information on software tools to help populate the
 x, y, z and spatial-index columns.

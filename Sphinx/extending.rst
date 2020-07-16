@@ -28,7 +28,8 @@ Oracle
 ~~~~~~
 For Oracle,
 the initialization takes the form::
-conn = cx_Oracle.connect (dbuser, dbpassword, dbserver)
+
+   conn = cx_Oracle.connect (dbuser, dbpassword, dbserver)
 
 PostgreSQL
 ~~~~~~~~~~
@@ -38,17 +39,19 @@ conn = psycopg2.connect(host='localhost',database='exodev', user='exo_dbuser', p
 
 and the same sort of INI block can be used (see the Configuration
 section)::
-[pgdb]
-host=localhost
-database=exodev
-user=exo_dbuser
-password=XXXXXXXX
+
+   [pgdb]
+   host=localhost
+   database=exodev
+   user=exo_dbuser
+   password=XXXXXXXX
 
 SQLite3
 ~~~~~~~
 SQLite3 has the simplist of initializations.  Since it works directly
 on files with no server/login, it can be initialized with just::
-conn = sqlite3.connect('exodev.db')
+
+   conn = sqlite3.connect('exodev.db')
 
 where 'example.db' is any SQLite3 file.  This is an intrinsic
 part of the SQLite3 Python package.
@@ -57,7 +60,8 @@ MySQL
 ~~~~~
 For MySQL,
 we use the MySQLdb package::
-conn = MySQLdb.connect('localhost', 'dbuser', 'XXXXXXX', 'exodb')
+
+   conn = MySQLdb.connect('localhost', 'dbuser', 'XXXXXXX', 'exodb')
 
 
 Table Upload
@@ -107,7 +111,7 @@ code we do have if your needs are similar.
 
 Dealing with Extended Objects (Images in Particular)
 ----------------------------------------------------
-Tesselation-based spatial index works great for point-like data like 
+resselation-based spatial indexing works great for point-like data like 
 astronomical catalogs and can even be used with small extended objects.
 For instance, if you have metadata for images that are all small you
 can index the image center coordinates and then pad the queries by the
