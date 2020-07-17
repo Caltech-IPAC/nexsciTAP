@@ -35,7 +35,7 @@
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Installation Instructions" href="install.html" /> 
+    <link rel="next" title="The NExScI TAP Service" href="intro.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -81,6 +81,7 @@
             
               <p class="caption"><span class="caption-text">Getting &quot;Up and Running&quot;</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="intro.html">The NExScI TAP Service</a></li>
 <li class="toctree-l1"><a class="reference internal" href="install.html">Installation Instructions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="configure.html">Configuration Instructions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="operations.html">Operations Issues</a></li>
@@ -170,6 +171,11 @@
 <div class="toctree-wrapper compound">
 <p class="caption"><span class="caption-text">Getting &quot;Up and Running&quot;</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="intro.html">The NExScI TAP Service</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#what-is-nexsci-tap">What is NExScI TAP?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#structure-of-this-documentation">Structure of this Documentation</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="install.html">Installation Instructions</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="install.html#beforehand">Beforehand</a></li>
 <li class="toctree-l2"><a class="reference internal" href="install.html#quickstart">Quickstart</a></li>
@@ -232,37 +238,6 @@
 <li class="toctree-l1"><a class="reference internal" href="tap_docs.html">TAP Docstrings</a></li>
 </ul>
 </div>
-<div class="section" id="what-is-nexsci-tap">
-<h2>What is NExScI TAP?<a class="headerlink" href="#what-is-nexsci-tap" title="Permalink to this headline">¶</a></h2>
-<p>Tabular data in astronomy (and other sciences) is commonly housed in relational
-databases.  This may be final reduced data like astronomical catalogs or searchable
-metadata for image or spectra.  Research projects very often start with database
-searches of these tables, often followed by the download of associated data files.</p>
-<p>The International Virtual Astronomy Alliance (IVOA) Table Access Protocol (TAP)
-provides a standard interface specification for such queries.  TAP defines how
-to compose the request using ADQL (a dialect of the standard Structured Query
-Language SQL), how to submit the request to a remote server (either in foreground
-or, for slow queries, in background), and how to retrieve results when they are
-ready.</p>
-<p>The NExScI TAP service is a Python implementation of the protocol using open-source
-and extensible code.  It is easy to install and configure and easy to extend to
-other DBMSs.</p>
-<p>Because queries against spatial regions on the sky are so common in astronomy,
-ADQL extends SQL with standard spatial constraint functions.  In order to support
-these extensions, NExScI TAP includes a formalism for fast spatially-indexed
-searches which doesn’t require modification of the underlying DBMS.</p>
-</div>
-<div class="section" id="structure-of-this-documentation">
-<h2>Structure of this Documentation<a class="headerlink" href="#structure-of-this-documentation" title="Permalink to this headline">¶</a></h2>
-<p>NExScI TAP is aimed at operations of all scales, from a single table that a researcher
-wishes to share to the largest mission archives.</p>
-<p>In order to get these archives on-line quickly, this documentation focuses initially
-on installation and configuration, then overviews TAP operations and the structure
-of the service, and finally delves into the details of the spatial indexing and the
-translation of ADQL into the local DBMS SQL.</p>
-<p>For those who prefer to understand how things work before they start running them,
-the latter sections have been written to make sense as stand-alone documents.</p>
-</div>
 </div>
 
 
@@ -273,7 +248,7 @@ the latter sections have been written to make sense as stand-alone documents.</p
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="install.html" class="btn btn-neutral float-right" title="Installation Instructions" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="intro.html" class="btn btn-neutral float-right" title="The NExScI TAP Service" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
     </div>

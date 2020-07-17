@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Adding Spatial Indexing to Your Data &mdash; nexsciTAP 1.1.3 documentation</title>
+  <title>The NExScI TAP Service &mdash; nexsciTAP 1.1.3 documentation</title>
   
 
   
@@ -35,8 +35,8 @@
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Converting ADQL to Local SQL" href="ADQL_translation.html" />
-    <link rel="prev" title="DBMS-Agnostic Spatial Indexing" href="spatial_index.html" /> 
+    <link rel="next" title="Installation Instructions" href="install.html" />
+    <link rel="prev" title="The NExScI TAP Service" href="index.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -81,24 +81,23 @@
             
             
               <p class="caption"><span class="caption-text">Getting &quot;Up and Running&quot;</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="intro.html">The NExScI TAP Service</a></li>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">The NExScI TAP Service</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#what-is-nexsci-tap">What is NExScI TAP?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#structure-of-this-documentation">Structure of this Documentation</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="install.html">Installation Instructions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="configure.html">Configuration Instructions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="operations.html">Operations Issues</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Appendices</span></p>
-<ul class="current">
+<ul>
 <li class="toctree-l1"><a class="reference internal" href="tap_architecture.html">Behind the Scenes: How the TAP Service Works</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tap_schema.html">Setting up Your TAP_SCHEMA Tables</a></li>
 <li class="toctree-l1"><a class="reference internal" href="secure_data.html">Keeping Your Data Secure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="spatial_index.html">DBMS-Agnostic Spatial Indexing</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Adding Spatial Indexing to Your Data</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#do-i-need-a-spatial-index">Do I Need a Spatial Index</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#augmenting-your-tables-with-the-necessary-columns">Augmenting Your Tables with the Necessary Columns</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#computing-values-for-the-new-columns">Computing Values for the New Columns</a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="loading.html">Adding Spatial Indexing to Your Data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ADQL_translation.html">Converting ADQL to Local SQL</a></li>
 <li class="toctree-l1"><a class="reference internal" href="extending.html">Extending the Service</a></li>
 <li class="toctree-l1"><a class="reference internal" href="coordinates.html">A Note on Coordinates</a></li>
@@ -153,13 +152,13 @@
     
       <li><a href="index.html">Docs</a> &raquo;</li>
         
-      <li>Adding Spatial Indexing to Your Data</li>
+      <li>The NExScI TAP Service</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
             
-            <a href="_sources/loading.rst.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/intro.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
@@ -172,43 +171,39 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="adding-spatial-indexing-to-your-data">
-<h1>Adding Spatial Indexing to Your Data<a class="headerlink" href="#adding-spatial-indexing-to-your-data" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="do-i-need-a-spatial-index">
-<h2>Do I Need a Spatial Index<a class="headerlink" href="#do-i-need-a-spatial-index" title="Permalink to this headline">¶</a></h2>
-<p>If you have tables without sky coordinates, there is not much point in worrying about
-spatial indexing.  Even if you have coordinates but no need to search spatially, you
-might as well not bother.</p>
-<p>For a small table, a spatial search could be done with just the (x,y,z) columns or even
-with just (RA,Dec) (or other coordinates).  We haven’t implemented this variant since
-once you start augmenting your table with these additional columns, you might as well go all
-the way.</p>
-<p>If you want to start with a table that doesn’t have the spatial index column set, you
-are free to do so; just don’t try to include CONTAINS() constraints in any queries.
-You can add the spatial capabilities later (though it will require reloading the tables).</p>
+  <div class="section" id="the-nexsci-tap-service">
+<h1>The NExScI TAP Service<a class="headerlink" href="#the-nexsci-tap-service" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="what-is-nexsci-tap">
+<h2>What is NExScI TAP?<a class="headerlink" href="#what-is-nexsci-tap" title="Permalink to this headline">¶</a></h2>
+<p>Tabular data in astronomy (and other sciences) is commonly housed in relational
+databases.  This may be final reduced data like astronomical catalogs or searchable
+metadata for image or spectra or anything else.  Research projects very often start
+with database searches of these tables, often followed by the download of associated
+data files.</p>
+<p>The International Virtual Astronomy Alliance (IVOA) Table Access Protocol (TAP)
+provides a standard interface specification for such queries.  TAP defines how
+to compose the request using ADQL (a dialect of the standard Structured Query
+Language SQL), how to submit the request to a remote server (either in foreground
+or, for slow queries, in background), and how to retrieve results when they are
+ready.</p>
+<p>The NExScI TAP service is a Python implementation of the protocol using open-source
+and extensible code.  It is easy to install and configure and easy to extend to
+other DBMSs.</p>
+<p>Because queries against spatial regions on the sky are so common in astronomy,
+ADQL extends SQL with standard spatial constraint functions.  In order to support
+these extensions, NExScI TAP includes a formalism for fast spatially-indexed
+searches which doesn’t require modification of the underlying DBMS.</p>
 </div>
-<div class="section" id="augmenting-your-tables-with-the-necessary-columns">
-<h2>Augmenting Your Tables with the Necessary Columns<a class="headerlink" href="#augmenting-your-tables-with-the-necessary-columns" title="Permalink to this headline">¶</a></h2>
-<p>There are four columns you will need to add if you are going to support our built-in
-spatial indexing: x, y, z and spt_ind.  The first three are the unit sphere geometry
-three-vector of the point and are calculated simply as:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">x</span> <span class="o">=</span> <span class="n">sin</span><span class="p">(</span><span class="n">RA</span><span class="p">)</span> <span class="o">*</span> <span class="n">cos</span><span class="p">(</span><span class="n">Dec</span><span class="p">)</span>
-<span class="n">y</span> <span class="o">=</span> <span class="n">cos</span><span class="p">(</span><span class="n">RA</span><span class="p">)</span> <span class="o">*</span> <span class="n">cos</span><span class="p">(</span><span class="n">Dec</span><span class="p">)</span>
-<span class="n">z</span> <span class="o">=</span> <span class="n">sin</span><span class="p">(</span><span class="n">Dec</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>It is best to maintain theses as full double precision numbers.</p>
-<p>The fourth is the spatial index value (an integer).  If you need to generate this, use
-our SpatialIndex package.  If you are working in Python, you already have this as it
-is a dependency of nexsciTAP.  If you are working in C, download the source
-(<a class="reference external" href="https://github.com/Caltech-IPAC/SpatialIndex.git">https://github.com/Caltech-IPAC/SpatialIndex.git</a>) from GitHub and build it (run “make”).</p>
-</div>
-<div class="section" id="computing-values-for-the-new-columns">
-<h2>Computing Values for the New Columns<a class="headerlink" href="#computing-values-for-the-new-columns" title="Permalink to this headline">¶</a></h2>
-<p>There is code for computing all this in the SpatialIndex package.  The underlying
-libraries there are written in C and there is an example program (SpatialIndex/src/sptIndx.c)
-that adds (x,y,z) and both HTM and HPX spatial index ID columns to a CSV file (you specify
-the tesselation level).</p>
+<div class="section" id="structure-of-this-documentation">
+<h2>Structure of this Documentation<a class="headerlink" href="#structure-of-this-documentation" title="Permalink to this headline">¶</a></h2>
+<p>NExScI TAP is aimed at operations of all scales, from a single table that a researcher
+wishes to share to the largest mission archives.</p>
+<p>In order to get these archives on-line quickly, this documentation focuses initially
+on installation and configuration, then overviews TAP operations and the structure
+of the service, and finally delves into the details of the spatial indexing and the
+translation of ADQL into the local DBMS SQL.</p>
+<p>For those who prefer to understand how things work before they start running them,
+most of the appendices have been written to make sense as stand-alone documents.</p>
 </div>
 </div>
 
@@ -220,10 +215,10 @@ the tesselation level).</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="ADQL_translation.html" class="btn btn-neutral float-right" title="Converting ADQL to Local SQL" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="install.html" class="btn btn-neutral float-right" title="Installation Instructions" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="spatial_index.html" class="btn btn-neutral float-left" title="DBMS-Agnostic Spatial Indexing" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="index.html" class="btn btn-neutral float-left" title="The NExScI TAP Service" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
