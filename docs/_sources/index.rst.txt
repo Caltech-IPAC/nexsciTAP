@@ -10,6 +10,8 @@ The NExScI TAP Service
    install
    configure
    operations
+   formatting
+   clients
 
 .. toctree::
    :maxdepth: 2
