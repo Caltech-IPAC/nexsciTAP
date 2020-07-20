@@ -83,7 +83,7 @@ class propFilter:
         #
 
         """
-        propFilter filters out the proprietary data from the input tabe.
+        propFilter filters out the proprietary data from the input table.
 
         Required keyword parameters:
 
@@ -564,7 +564,7 @@ class propFilter:
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'tmp_fileidAllowddbtbl= {tmp_fileidAlloweddbtbl:s}')
+            logging.debug(f'tmp_fileidAlloweddbtbl= {tmp_fileidAlloweddbtbl:s}')
 
         try:
 
@@ -583,7 +583,7 @@ class propFilter:
             raise Exception(self.msg)
 
         #
-        # Construct the final select statement for table joint
+        # Construct the final select statement for table join
         #
 
         sql = self.selectstr + " from " + self.dbtable + \
@@ -1325,7 +1325,7 @@ class propFilter:
         #
 
         # Create tmp_accessiddbtbl, but first drop tmp_accessiddbtbl just in case
-        # it might already existed
+        # it might already exist
         #
 
         try:

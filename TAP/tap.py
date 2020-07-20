@@ -572,7 +572,7 @@ class Tap:
             #
 
         #
-        # getStatus case: call getStatus mothod which reads status file:
+        # getStatus case: call getStatus method which reads status file:
         # printStatus or error messages, then exit.
         #
 
@@ -1703,7 +1703,7 @@ class Tap:
     def __writeStatusMsg__(self, statuspath, statdict, param, **kwargs):
 
         #
-        # { TAP statis result always written in XML format
+        # { TAP status result always written in XML format
         #
 
         format = param['format'].lower()

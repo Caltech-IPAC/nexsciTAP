@@ -1,0 +1,10 @@
+*.[oa]
+*~
+/Sphinx/_build
+/TAP/__pycache__
+/TAP/writerecs.cpython-36m-darwin.so
+/build
+/dist
+/final_dist
+/final_wheel
+/nexsciTAP.egg-info

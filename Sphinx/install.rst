@@ -3,11 +3,11 @@ Installation Instructions
 
 Beforehand
 ----------
-Python packages can specify that they depend on and the installer
-will recursively install all of these as well.  For our nexsciTAP
+Python packages can specify other packages that they depend on and the 
+installer will recursively install all of these as well.  For our nexsciTAP
 package you will want whatever DB API 2.0 goes along with your DBMS
 (*e.g.* cx_Oracle for Oracle, sqlite for SQLite3, *etc.*).  We can't 
-know which DBMS you have or which adapter you want to use.  So we leave
+know which DBMS you have or which adapter you want to use so we leave
 it up to you to "pip install" the correct one separately.
 
 If you forget, your Python will inform you what is missing when you 
@@ -25,7 +25,8 @@ CGI programs, you can just do the following::
     pip install nexsciTAP
 
 then create a Python executable in your "/cgi-bin" directory tree (wherever
-you have that set up (we use .../cgi-bin/TAP/nph-tap.py under Apache)::
+you have that set up (we use .../cgi-bin/TAP/nph-tap.py under Apache).  Here
+is a minimal but fully functional example::
 
     /bin/env python
 
@@ -63,8 +64,9 @@ Once you have these downloaded, you can run the standard::
 
    python setup.py bdist_wheel
 
-command for each package and then "pip install" the wheel file this builds in 
-the ./dist subdirectory.  This gets us to the same place as the "pip install" in the
+command for each package.  This builds a "wheel" (.whl) file in the package ./dist
+subdirectory. You then "pip install" that file and it becomes part of your Python
+installation.  This gets us to the same place as the "pip install" in the
 Quickstart.  We still have to add the same CGI program and configuration file.
 
 

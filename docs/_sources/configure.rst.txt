@@ -2,7 +2,7 @@ Configuration Instructions
 ==========================
 
 Here we have a little bit of a chicken-and-egg problem.  A few of the parameters
-in the configuration file presumes some understanding of the spatial indexing.
+in the configuration file presume some understanding of the spatial indexing.
 We will describe the parameters as we encounter them but for a real understanding
 please refer to later sections.
 
@@ -14,7 +14,7 @@ and the password to log into the DBMS) cannot be known to the end users.
 To consolidate this all in one place, the service reads a number of configuration
 parameters from a file, found by referring to an environment variable "TAP_CONFIG".
 This file is read using the fairly standard ConfigObj package and uses the common
-INI format, originally from Windows.  The data is is simple line-based keyword/value
+INI format, originally from Windows.  The data is in simple line-based keyword/value
 format and has (optionally) section labels (in square brackets).  It can be 
 hierarchical, though we don't need or use that complexity.
 
@@ -68,7 +68,7 @@ the machine and service configuration:
 
 - **TAP_WORKDIR** This is a the absolute path to the disk space NExScI TAP is supposed
   to use as working space.  It will create a "TAP" subdirectory here and then a collection
-  of temporary, uniquely-named session subdirectories of that.
+  of temporary, uniquely-named session subdirectories.
 
 - **TAP_WORKURL** The above disk space needs to be URL-accessible (and you have to 
   arrange with your web server to make it so).  This is the base URL to the same space.
@@ -79,9 +79,9 @@ the machine and service configuration:
 - **HTTP_PORT** And the port number as well (often the standard 80).
 
 - **CGI_PGM** Similarly, we need to know how to address the NExScI TAP service 
-  executable.  By default, this would be something like "/cgi-bin/nph-tap.py" but
+  executable.  By default, this would be something like "/cgi-bin/TAP/nph-tap.py" but
   you may want to use an alias to streamline the address (we do in this example).
-  Setting that up is again a matter on web server configuration.
+  Setting that up is again a matter of web server configuration.
 
 
 For Oracle there are three parameters needed to make a connection.  These are 
@@ -93,11 +93,11 @@ well-known quantities you can get from your DBA:
 - **UserID** Once you initiate a connection, you will need a valid user iD.
 
 - **Password** And password.  These three parameters are the arguments to the 
-  cx_Oracle Python package initiation.  cx_Oracle is conformant to the Python DB
+  cx_Oracle Python package initialization.  cx_Oracle is conformant with the Python DB
   API 2.0 spec.  Other databases will have different detailed connection parameters.
 
 For SQLite3 you need to point as the database files (SQLite3 works using files rather
-than a daemon process.  Since the TAP standard insists on having the TAP_SCHEMA tables
+than a daemon process).  Since the TAP standard insists on having the TAP_SCHEMA tables
 in a different schema (in SQLite3 a different file), we have a second parameter
 for that:
 
@@ -114,7 +114,7 @@ understanding.  Here we will be terse:
 - **ADQL_MODE** We support two sky tesselations for our spatial indexing. Here we
   are using HTM (Heirarchical Triangular Mesh) as opposed to HPX (HEALPix).
 
-- **ADQL_LEVEL** Any tesselation recurse arbitrarily deeply.  The level specify
+- **ADQL_LEVEL** Any tesselation recurses arbitrarily deeply.  The level specify
   how deep this is and correspond to a smallest "cell" size (here HTM 20 cells are
   about 0.3 arcseconds on a side).
 
@@ -125,12 +125,12 @@ understanding.  Here we will be terse:
 - **ADQL_ENCODING** This one is arcane and only really applies to HTM in practice.
   Since tesselations are based on recursive decomposition of spatial cells into 
   four, sometimes (and mostly for debugging) it is nice to have database values
-  be base 4 numbers.  But this increasing the number of digits by a lot and normally
+  be base 4 numbers.  But this increases the number of digits by a fair bit and normally
   regular base 10 numbers are easier to store.
 
 - **ADQL_XCOL** The spatial indexing cell numbers allow very quick subsetting but
   the results are only approximate (*i.e.* some of the records in a "matching" cell
-  are outside the exact geometry defined (like a cone on the sky).  Including the
+  are outside the exact geometry defined; like a cone on the sky).  Including the
   (x,y,z) geometric tree-vector coordinates of the location allow us to perform an
   exact secondary filter of the data.  Again, you may not want to use the name 'x'
   for this x-column so we let you set the name explicitly here.

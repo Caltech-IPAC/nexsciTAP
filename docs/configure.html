@@ -1,7 +1,8 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
   
@@ -11,18 +12,12 @@
   
 
   
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-
-  
   
   
   
 
   
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -34,6 +29,10 @@
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
     
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Operations Issues" href="operations.html" />
@@ -51,7 +50,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home" alt="Documentation Home"> nexsciTAP
+            <a href="index.html" class="icon icon-home"> nexsciTAP
           
 
           
@@ -74,7 +73,6 @@
           
         </div>
 
-        
         <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
             
@@ -84,6 +82,7 @@
             
               <p class="caption"><span class="caption-text">Getting &quot;Up and Running&quot;</span></p>
 <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="intro.html">The NExScI TAP Service</a></li>
 <li class="toctree-l1"><a class="reference internal" href="install.html">Installation Instructions</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Configuration Instructions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="operations.html">Operations Issues</a></li>
@@ -92,6 +91,7 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="tap_architecture.html">Behind the Scenes: How the TAP Service Works</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tap_schema.html">Setting up Your TAP_SCHEMA Tables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="secure_data.html">Keeping Your Data Secure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="spatial_index.html">DBMS-Agnostic Spatial Indexing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="loading.html">Adding Spatial Indexing to Your Data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ADQL_translation.html">Converting ADQL to Local SQL</a></li>
@@ -108,7 +108,6 @@
             
           
         </div>
-        
       </div>
     </nav>
 
@@ -147,7 +146,7 @@
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li><a href="index.html">Docs</a> &raquo;</li>
         
       <li>Configuration Instructions</li>
     
@@ -171,7 +170,7 @@
   <div class="section" id="configuration-instructions">
 <h1>Configuration Instructions<a class="headerlink" href="#configuration-instructions" title="Permalink to this headline">¶</a></h1>
 <p>Here we have a little bit of a chicken-and-egg problem.  A few of the parameters
-in the configuration file presumes some understanding of the spatial indexing.
+in the configuration file presume some understanding of the spatial indexing.
 We will describe the parameters as we encounter them but for a real understanding
 please refer to later sections.</p>
 <p>As we say in the previous section, starting the NExScI TAP service does not require
@@ -181,7 +180,7 @@ and the password to log into the DBMS) cannot be known to the end users.</p>
 <p>To consolidate this all in one place, the service reads a number of configuration
 parameters from a file, found by referring to an environment variable “TAP_CONFIG”.
 This file is read using the fairly standard ConfigObj package and uses the common
-INI format, originally from Windows.  The data is is simple line-based keyword/value
+INI format, originally from Windows.  The data is in simple line-based keyword/value
 format and has (optionally) section labels (in square brackets).  It can be
 hierarchical, though we don’t need or use that complexity.</p>
 <p>We will illustrate our TAP.conf file through a complete example.  Note that a
@@ -232,16 +231,16 @@ used to implement the connection.  Here we have selected “oracle” but also s
 example (inactive) of an SQLite3 connection.</p></li>
 <li><p><strong>TAP_WORKDIR</strong> This is a the absolute path to the disk space NExScI TAP is supposed
 to use as working space.  It will create a “TAP” subdirectory here and then a collection
-of temporary, uniquely-named session subdirectories of that.</p></li>
+of temporary, uniquely-named session subdirectories.</p></li>
 <li><p><strong>TAP_WORKURL</strong> The above disk space needs to be URL-accessible (and you have to
 arrange with your web server to make it so).  This is the base URL to the same space.</p></li>
 <li><p><strong>HTTP_URL</strong> A TAP session can involve multiple HTTP connections for various bits
 of information.  So the machine address needs to be folded in in several places.</p></li>
 <li><p><strong>HTTP_PORT</strong> And the port number as well (often the standard 80).</p></li>
 <li><p><strong>CGI_PGM</strong> Similarly, we need to know how to address the NExScI TAP service
-executable.  By default, this would be something like “/cgi-bin/nph-tap.py” but
+executable.  By default, this would be something like “/cgi-bin/TAP/nph-tap.py” but
 you may want to use an alias to streamline the address (we do in this example).
-Setting that up is again a matter on web server configuration.</p></li>
+Setting that up is again a matter of web server configuration.</p></li>
 </ul>
 <p>For Oracle there are three parameters needed to make a connection.  These are
 well-known quantities you can get from your DBA:</p>
@@ -250,11 +249,11 @@ well-known quantities you can get from your DBA:</p>
 as configured in Oracle.</p></li>
 <li><p><strong>UserID</strong> Once you initiate a connection, you will need a valid user iD.</p></li>
 <li><p><strong>Password</strong> And password.  These three parameters are the arguments to the
-cx_Oracle Python package initiation.  cx_Oracle is conformant to the Python DB
+cx_Oracle Python package initialization.  cx_Oracle is conformant with the Python DB
 API 2.0 spec.  Other databases will have different detailed connection parameters.</p></li>
 </ul>
 <p>For SQLite3 you need to point as the database files (SQLite3 works using files rather
-than a daemon process.  Since the TAP standard insists on having the TAP_SCHEMA tables
+than a daemon process).  Since the TAP standard insists on having the TAP_SCHEMA tables
 in a different schema (in SQLite3 a different file), we have a second parameter
 for that:</p>
 <ul class="simple">
@@ -267,7 +266,7 @@ understanding.  Here we will be terse:</p>
 <ul class="simple">
 <li><p><strong>ADQL_MODE</strong> We support two sky tesselations for our spatial indexing. Here we
 are using HTM (Heirarchical Triangular Mesh) as opposed to HPX (HEALPix).</p></li>
-<li><p><strong>ADQL_LEVEL</strong> Any tesselation recurse arbitrarily deeply.  The level specify
+<li><p><strong>ADQL_LEVEL</strong> Any tesselation recurses arbitrarily deeply.  The level specify
 how deep this is and correspond to a smallest “cell” size (here HTM 20 cells are
 about 0.3 arcseconds on a side).</p></li>
 <li><p><strong>ADQL_COLNAME</strong> For our custom spatial indexing to work, tables need to include
@@ -276,11 +275,11 @@ for us) but you may have some reason to use another name.</p></li>
 <li><p><strong>ADQL_ENCODING</strong> This one is arcane and only really applies to HTM in practice.
 Since tesselations are based on recursive decomposition of spatial cells into
 four, sometimes (and mostly for debugging) it is nice to have database values
-be base 4 numbers.  But this increasing the number of digits by a lot and normally
+be base 4 numbers.  But this increases the number of digits by a fair bit and normally
 regular base 10 numbers are easier to store.</p></li>
 <li><p><strong>ADQL_XCOL</strong> The spatial indexing cell numbers allow very quick subsetting but
 the results are only approximate (<em>i.e.</em> some of the records in a “matching” cell
-are outside the exact geometry defined (like a cone on the sky).  Including the
+are outside the exact geometry defined; like a cone on the sky).  Including the
 (x,y,z) geometric tree-vector coordinates of the location allow us to perform an
 exact secondary filter of the data.  Again, you may not want to use the name ‘x’
 for this x-column so we let you set the name explicitly here.</p></li>
@@ -309,19 +308,11 @@ for this x-column so we let you set the name explicitly here.</p></li>
 
   <div role="contentinfo">
     <p>
-        
         &copy; Copyright 2020, NExScI / IPAC / Caltech
 
     </p>
   </div>
-    
-    
-    
-    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
-    
-    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
-    
-    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -332,6 +323,7 @@ for this x-column so we let you set the name explicitly here.</p></li>
 
   </div>
   
+
 
   <script type="text/javascript">
       jQuery(function () {

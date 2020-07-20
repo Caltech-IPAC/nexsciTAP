@@ -1,7 +1,8 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
   
@@ -11,18 +12,12 @@
   
 
   
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-
-  
   
   
   
 
   
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -34,10 +29,14 @@
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
     
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Adding Spatial Indexing to Your Data" href="loading.html" />
-    <link rel="prev" title="Setting up Your TAP_SCHEMA Tables" href="tap_schema.html" /> 
+    <link rel="prev" title="Keeping Your Data Secure" href="secure_data.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -51,7 +50,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home" alt="Documentation Home"> nexsciTAP
+            <a href="index.html" class="icon icon-home"> nexsciTAP
           
 
           
@@ -74,7 +73,6 @@
           
         </div>
 
-        
         <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
             
@@ -84,6 +82,7 @@
             
               <p class="caption"><span class="caption-text">Getting &quot;Up and Running&quot;</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="intro.html">The NExScI TAP Service</a></li>
 <li class="toctree-l1"><a class="reference internal" href="install.html">Installation Instructions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="configure.html">Configuration Instructions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="operations.html">Operations Issues</a></li>
@@ -92,6 +91,7 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="tap_architecture.html">Behind the Scenes: How the TAP Service Works</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tap_schema.html">Setting up Your TAP_SCHEMA Tables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="secure_data.html">Keeping Your Data Secure</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">DBMS-Agnostic Spatial Indexing</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#b-tree">B-Tree</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#composite-indices">Composite Indices</a></li>
@@ -115,7 +115,6 @@
             
           
         </div>
-        
       </div>
     </nav>
 
@@ -154,7 +153,7 @@
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li><a href="index.html">Docs</a> &raquo;</li>
         
       <li>DBMS-Agnostic Spatial Indexing</li>
     
@@ -189,7 +188,7 @@ based on a sorted list of the parameter values; going through this list in order
 the low and high value allows the database to jump from record to record in the table,
 therefore only having to do two I/Os for every record touched (<em>i.e.,</em> the index and
 the table record).  If this is a small fraction of the table total, the overall time
-is much small than reading through the whole table (the alternative).</p>
+is much smaller than reading through the whole table (the alternative).</p>
 <p>Only one of the constraints can be used for any given query (we can only step through
 the records in one order).  The DBM also contains a histogram of the values for each
 indexed columns and estimates up front which constraint will involve the smaller
@@ -229,7 +228,7 @@ the heirarchical subdivision though even this is a secondary effect.</p>
 <p>Basically, for each record you identify a cell ID and save this in the database
 record.   All coordinates inside the same cell will get the same ID.  The ID column is
 indexed using the DBMS built-in B-Tree functionality.</p>
-<p>Then later when processing search request that asks for all the records in a cone on the
+<p>Then later, when processing search request that asks for all the records in a cone on the
 sky, you determine which cell IDs overlap the region (in whole or in part).  A further
 refinement is to turn this list into a set of ID ranges.</p>
 <p>Sending this constraint on ID to the DBMS, you would get back all the records in all
@@ -265,7 +264,7 @@ for the DBMS and quite fast.</p>
 <h2>HTM and HPX<a class="headerlink" href="#htm-and-hpx" title="Permalink to this headline">¶</a></h2>
 <p>As we said, the choice of tessselation scheme doesn’t matter too much.  In fact,
 we have done a study for NASA that demonstrates this.  But since we have the
-capability (from that study) we have include two in our software suite.</p>
+capability (from that study) we have include two tesselations in our toolkit:</p>
 <p>Heirarchical Triangular Mesh (HTM) subdivides the sky into triangles.  The base
 level is the set of eight triangles defined by the poles and the cardinal points
 around the equator.  The nesting of the levels is done by finding the midpoints
@@ -285,7 +284,7 @@ set of queries that are most commonly sent to your DBMS.  Level 20 depth (as
 we used above) results in ~arcsecond cells and level 7 is around half a degree.
 In test we ran of the full range of cell sizes and a with cone searches on
 the sky ranging from arcsecond to a few degrees, uniformly distributed
-in log(radius), the optimum was somewhere in the center (around level 14).</p>
+in log(radius), the optimum was somewhere in the middle (around level 14).</p>
 <p>See the next section for information on software tools to help populate the
 x, y, z and spatial-index columns.</p>
 </div>
@@ -302,7 +301,7 @@ x, y, z and spatial-index columns.</p>
         <a href="loading.html" class="btn btn-neutral float-right" title="Adding Spatial Indexing to Your Data" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="tap_schema.html" class="btn btn-neutral float-left" title="Setting up Your TAP_SCHEMA Tables" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="secure_data.html" class="btn btn-neutral float-left" title="Keeping Your Data Secure" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -311,19 +310,11 @@ x, y, z and spatial-index columns.</p>
 
   <div role="contentinfo">
     <p>
-        
         &copy; Copyright 2020, NExScI / IPAC / Caltech
 
     </p>
   </div>
-    
-    
-    
-    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
-    
-    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
-    
-    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -334,6 +325,7 @@ x, y, z and spatial-index columns.</p>
 
   </div>
   
+
 
   <script type="text/javascript">
       jQuery(function () {
