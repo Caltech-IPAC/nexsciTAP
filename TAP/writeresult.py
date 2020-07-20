@@ -625,7 +625,7 @@ class writeResult:
         #
         # At this point the namearr, typearr, dbtypearr, widtharr of
         # output columns are assigned: add them to the ddlist for
-        # sending to C routine (We don't send the whold dd to C routine
+        # sending to C routine (We don't send the whole dd to C routine
         # to avoid excess data transfer)
         #
 
@@ -726,7 +726,7 @@ class writeResult:
         while True:
 
             #
-            # { start of while loop for fechting data lines;
+            # { start of while loop for fetching data lines;
             #   max 10000 lines at a time
             #
 

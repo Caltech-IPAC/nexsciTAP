@@ -10,7 +10,7 @@ might as well not bother.
 
 For a small table, a spatial search could be done with just the (x,y,z) columns or even
 with just (RA,Dec) (or other coordinates).  We haven't implemented this variant since 
-once you start augmenting your table with additional columns, you might as well go all
+once you start augmenting your table with these additional columns, you might as well go all
 the way.
 
 If you want to start with a table that doesn't have the spatial index column set, you
@@ -40,4 +40,5 @@ Computing Values for the New Columns
 ------------------------------------
 There is code for computing all this in the SpatialIndex package.  The underlying
 libraries there are written in C and there is an example program (SpatialIndex/src/sptIndx.c)
-that adds (x,y,z) and both HTM and HPX spatial index ID columns to a CSV file.
+that adds (x,y,z) and both HTM and HPX spatial index ID columns to a CSV file (you specify
+the tesselation level).

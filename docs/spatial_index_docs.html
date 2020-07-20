@@ -1,7 +1,8 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
   
@@ -11,18 +12,12 @@
   
 
   
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-
-  
   
   
   
 
   
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -34,6 +29,10 @@
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
     
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="ADQL Docstrings" href="adql_docs.html" />
@@ -51,7 +50,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home" alt="Documentation Home"> nexsciTAP
+            <a href="index.html" class="icon icon-home"> nexsciTAP
           
 
           
@@ -74,7 +73,6 @@
           
         </div>
 
-        
         <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
             
@@ -84,6 +82,7 @@
             
               <p class="caption"><span class="caption-text">Getting &quot;Up and Running&quot;</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="intro.html">The NExScI TAP Service</a></li>
 <li class="toctree-l1"><a class="reference internal" href="install.html">Installation Instructions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="configure.html">Configuration Instructions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="operations.html">Operations Issues</a></li>
@@ -92,6 +91,7 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="tap_architecture.html">Behind the Scenes: How the TAP Service Works</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tap_schema.html">Setting up Your TAP_SCHEMA Tables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="secure_data.html">Keeping Your Data Secure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="spatial_index.html">DBMS-Agnostic Spatial Indexing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="loading.html">Adding Spatial Indexing to Your Data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ADQL_translation.html">Converting ADQL to Local SQL</a></li>
@@ -108,7 +108,6 @@
             
           
         </div>
-        
       </div>
     </nav>
 
@@ -147,7 +146,7 @@
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li><a href="index.html">Docs</a> &raquo;</li>
         
       <li>spatial_index Docstrings</li>
     
@@ -170,7 +169,7 @@
             
   <div class="section" id="module-spatial_index">
 <span id="spatial-index-docstrings"></span><h1>spatial_index Docstrings<a class="headerlink" href="#module-spatial_index" title="Permalink to this headline">¶</a></h1>
-<dl class="class">
+<dl class="py class">
 <dt id="spatial_index.SpatialIndex">
 <em class="property">class </em><code class="sig-prename descclassname">spatial_index.</code><code class="sig-name descname">SpatialIndex</code><a class="headerlink" href="#spatial_index.SpatialIndex" title="Permalink to this definition">¶</a></dt>
 <dd><p>SpatialIndex class</p>
@@ -180,9 +179,9 @@ appropriate for inclusion in SQL DBMS searches.  It is assumed that the
 DBMS tables have been augmented with a spatial index (integer) column at
 some HTM or HEALPix level and (x,y,z) three-vector coordinates for each
 record.</p>
-<dl class="attribute">
+<dl class="py method">
 <dt id="spatial_index.SpatialIndex.cone_search">
-<code class="sig-name descname">cone_search</code><a class="headerlink" href="#spatial_index.SpatialIndex.cone_search" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">cone_search</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ra</span></em>, <em class="sig-param"><span class="n">dec</span></em>, <em class="sig-param"><span class="n">radius</span></em>, <em class="sig-param"><span class="n">mode</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">level</span><span class="o">=</span><span class="default_value">7</span></em>, <em class="sig-param"><span class="n">xcol</span><span class="o">=</span><span class="default_value">'x'</span></em>, <em class="sig-param"><span class="n">ycol</span><span class="o">=</span><span class="default_value">'y'</span></em>, <em class="sig-param"><span class="n">zcol</span><span class="o">=</span><span class="default_value">'z'</span></em>, <em class="sig-param"><span class="n">colname</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">encoding</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#spatial_index.SpatialIndex.cone_search" title="Permalink to this definition">¶</a></dt>
 <dd><p>cone_search() converts a cone on the sky (RA, Dec, radius) into
 a pair of SQL fragments that can be added to an SQL statement.</p>
 <dl class="field-list simple">
@@ -212,9 +211,9 @@ a pair of SQL fragments that can be added to an SQL statement.</p>
 </dl>
 </dd></dl>
 
-<dl class="attribute">
+<dl class="py method">
 <dt id="spatial_index.SpatialIndex.polygon_search">
-<code class="sig-name descname">polygon_search</code><a class="headerlink" href="#spatial_index.SpatialIndex.polygon_search" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">polygon_search</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">npoly</span></em>, <em class="sig-param"><span class="n">ra</span></em>, <em class="sig-param"><span class="n">dec</span></em>, <em class="sig-param"><span class="n">mode</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">level</span><span class="o">=</span><span class="default_value">7</span></em>, <em class="sig-param"><span class="n">xcol</span><span class="o">=</span><span class="default_value">'x'</span></em>, <em class="sig-param"><span class="n">ycol</span><span class="o">=</span><span class="default_value">'y'</span></em>, <em class="sig-param"><span class="n">zcol</span><span class="o">=</span><span class="default_value">'z'</span></em>, <em class="sig-param"><span class="n">colname</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">encoding</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#spatial_index.SpatialIndex.polygon_search" title="Permalink to this definition">¶</a></dt>
 <dd><p>polygon_search() converts a convex polygon on the sky into a pair
 of SQL fragments that can be added to an SQL statement.</p>
 <dl class="field-list simple">
@@ -268,19 +267,11 @@ of SQL fragments that can be added to an SQL statement.</p>
 
   <div role="contentinfo">
     <p>
-        
         &copy; Copyright 2020, NExScI / IPAC / Caltech
 
     </p>
   </div>
-    
-    
-    
-    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
-    
-    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
-    
-    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -291,6 +282,7 @@ of SQL fragments that can be added to an SQL statement.</p>
 
   </div>
   
+
 
   <script type="text/javascript">
       jQuery(function () {

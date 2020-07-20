@@ -1,9 +1,9 @@
 Behind the Scenes: How the TAP Service Works
 ============================================
 
-Once you get past issues dealing with databases, ADQL and the like, TAP itself is fairly straightforward.
-There are multiple paths through the processing, so that again can look complicated but once you 
-understand the basics those variants fall into place.
+Once you get past issues dealing with databases, ADQL and the like, TAP itself is fairly 
+straightforward.  There are multiple paths through the processing, so that again can look
+complicated but once you understand the basics those variants fall into place.
 
 The simplest TAP query is a "synchronous" request, where you hand the service an ADQL statement,
 it gets processed, and the result table streams back as the response.  But it is easier to 
@@ -12,7 +12,7 @@ as a special case.
 
 Asynchronous TAP Requests
 -------------------------
-The user first contacts the TAP service and hands it an ADQL query.  
+The user starts by contacting the TAP service and hands it an ADQL query.  
 This is done through a URL like::
 
     https://exoplanetarchive.ipac.caltech.edu/TAP/async?query=select+pl_name,ra,dec+from+ps
@@ -38,16 +38,14 @@ information on the query and the state of the processing::
        </uws:parameters>
     </uws:job>
 
-It returns the job ID string (here "tap_4pxj0j5c") and exits.  The job ID can be used to 
-retrieve the status and in requests to change some aspects of the status or do further
-processing.
+It returns the job ID string (here "tap_4pxj0j5c") attached to the base URL and exits.  
 
 The rest of the processing involves interacting with this job.  You can query the status
 (including retrieving the whole status structure) but the obvious next step is to actually
 start the query running.  The TAP specification requires that this be done through an 
 HTTP POST request but we support HTTP GET as well::
 
-    https://exoplanetarchive.ipac.caltech.edu/TAP/async/tap_4pxj0j5c/phase?phase=RUN
+    https://exoplanetarchive.ipac.caltech.edu/TAP/async/tap_4pxj0j5c/phase?PHASE=RUN
 
 This also returns immediately; the "phase" in the status XML is changed to "EXECUTING" 
 and a background process is started that runs the query.  When this process completes,

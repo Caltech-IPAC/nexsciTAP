@@ -1,7 +1,8 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
 <head>
   <meta charset="utf-8">
   
@@ -11,18 +12,12 @@
   
 
   
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-
-  
   
   
   
 
   
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -34,6 +29,10 @@
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
     
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Behind the Scenes: How the TAP Service Works" href="tap_architecture.html" />
@@ -51,7 +50,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home" alt="Documentation Home"> nexsciTAP
+            <a href="index.html" class="icon icon-home"> nexsciTAP
           
 
           
@@ -74,7 +73,6 @@
           
         </div>
 
-        
         <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
             
@@ -84,6 +82,7 @@
             
               <p class="caption"><span class="caption-text">Getting &quot;Up and Running&quot;</span></p>
 <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="intro.html">The NExScI TAP Service</a></li>
 <li class="toctree-l1"><a class="reference internal" href="install.html">Installation Instructions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="configure.html">Configuration Instructions</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Operations Issues</a></li>
@@ -92,6 +91,7 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="tap_architecture.html">Behind the Scenes: How the TAP Service Works</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tap_schema.html">Setting up Your TAP_SCHEMA Tables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="secure_data.html">Keeping Your Data Secure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="spatial_index.html">DBMS-Agnostic Spatial Indexing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="loading.html">Adding Spatial Indexing to Your Data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ADQL_translation.html">Converting ADQL to Local SQL</a></li>
@@ -108,7 +108,6 @@
             
           
         </div>
-        
       </div>
     </nav>
 
@@ -147,7 +146,7 @@
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li><a href="index.html">Docs</a> &raquo;</li>
         
       <li>Operations Issues</li>
     
@@ -170,18 +169,20 @@
             
   <div class="section" id="operations-issues">
 <h1>Operations Issues<a class="headerlink" href="#operations-issues" title="Permalink to this headline">¶</a></h1>
-<p>NExScI TAP requires very little babysitting.  We don’t manage the
+<p>NExScI TAP requires very little babysitting.  We don’t queue the
 the input jobs (<em>i.e.</em> they are started right away), so there is
 nothing to do there.</p>
 <p>Results do pile up in the workspace.  To properly support people
-who submit background (<em>i.e.</em> “asynchronous”) jobs, we leave results
-in the workspace for four days after the job has completed.
-NExScI TAP does not delete the files; we have a cron job that
-checks the workspace for files older than that and deletes them.
-We could formalize this as a distributed tool but it is awfully
+who submit background (<em>i.e.</em> “asynchronous”) jobs, our sites leave results
+in the workspace for four days after the job has completed (four days
+means that results for jobs that complete on Friday are still available
+on the following Monday).</p>
+<p>NExScI TAP does not delete the files; our sites have cron jobs that
+check the workspace for files older than four days and deletes them.
+We could formalize and distribute this as a formal tool but it is awfully
 simple and you may want to manage this space alongside other
-services you have working or use different rules.</p>
-<p>Contact us if you are interested in our code.</p>
+services you have working or to use different rules.</p>
+<p>Contact us if you are interested in seeing our code.</p>
 </div>
 
 
@@ -204,19 +205,11 @@ services you have working or use different rules.</p>
 
   <div role="contentinfo">
     <p>
-        
         &copy; Copyright 2020, NExScI / IPAC / Caltech
 
     </p>
   </div>
-    
-    
-    
-    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
-    
-    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
-    
-    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -227,6 +220,7 @@ services you have working or use different rules.</p>
 
   </div>
   
+
 
   <script type="text/javascript">
       jQuery(function () {
