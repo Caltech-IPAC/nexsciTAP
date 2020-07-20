@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Python Module Index &mdash; nexsciTAP 1.1.3 documentation</title>
+  <title>Notes on Data Formatting &mdash; nexsciTAP 1.1.3 documentation</title>
   
 
   
@@ -34,10 +34,7 @@
   <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
- 
-
-
+    <link rel="search" title="Search" href="search.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -87,7 +84,6 @@
 <li class="toctree-l1"><a class="reference internal" href="install.html">Installation Instructions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="configure.html">Configuration Instructions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="operations.html">Operations Issues</a></li>
-<li class="toctree-l1"><a class="reference internal" href="formatting.html">Notes on Data Formatting</a></li>
 <li class="toctree-l1"><a class="reference internal" href="clients.html">Notes on TAP Clients</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Appendices</span></p>
@@ -151,10 +147,14 @@
     
       <li><a href="index.html">Docs</a> &raquo;</li>
         
-      <li>Python Module Index</li>
+      <li>Notes on Data Formatting</li>
     
     
       <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/formatting.rst.txt" rel="nofollow"> View page source</a>
+          
         
       </li>
     
@@ -166,53 +166,35 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-
-   <h1>Python Module Index</h1>
-
-   <div class="modindex-jumpbox">
-   <a href="#cap-a"><strong>a</strong></a> | 
-   <a href="#cap-s"><strong>s</strong></a> | 
-   <a href="#cap-t"><strong>t</strong></a>
-   </div>
-
-   <table class="indextable modindextable">
-     <tr class="pcap"><td></td><td>&#160;</td><td></td></tr>
-     <tr class="cap" id="cap-a"><td></td><td>
-       <strong>a</strong></td><td></td></tr>
-     <tr>
-       <td><img src="_static/minus.png" class="toggler"
-              id="toggle-1" style="display: none" alt="-" /></td>
-       <td>
-       <code class="xref">ADQL</code></td><td>
-       <em></em></td></tr>
-     <tr class="cg-1">
-       <td></td>
-       <td>&#160;&#160;&#160;
-       <a href="adql_docs.html#module-ADQL.adql"><code class="xref">ADQL.adql</code></a></td><td>
-       <em></em></td></tr>
-     <tr class="pcap"><td></td><td>&#160;</td><td></td></tr>
-     <tr class="cap" id="cap-s"><td></td><td>
-       <strong>s</strong></td><td></td></tr>
-     <tr>
-       <td></td>
-       <td>
-       <a href="spatial_index_docs.html#module-spatial_index"><code class="xref">spatial_index</code></a></td><td>
-       <em></em></td></tr>
-     <tr class="pcap"><td></td><td>&#160;</td><td></td></tr>
-     <tr class="cap" id="cap-t"><td></td><td>
-       <strong>t</strong></td><td></td></tr>
-     <tr>
-       <td><img src="_static/minus.png" class="toggler"
-              id="toggle-2" style="display: none" alt="-" /></td>
-       <td>
-       <code class="xref">TAP</code></td><td>
-       <em></em></td></tr>
-     <tr class="cg-2">
-       <td></td>
-       <td>&#160;&#160;&#160;
-       <a href="tap_docs.html#module-TAP.tap"><code class="xref">TAP.tap</code></a></td><td>
-       <em></em></td></tr>
-   </table>
+  <div class="section" id="notes-on-data-formatting">
+<h1>Notes on Data Formatting<a class="headerlink" href="#notes-on-data-formatting" title="Permalink to this headline">¶</a></h1>
+<p>DBMSs in general do a rather poor job with data precision.  The values that are output
+are accurate but quite often what was input as “3.45” will be output as “3.4499999999999903”
+or “3.4500000000000001E00”: accurate as to value but precision information has been lost.</p>
+<p>nexsciTAP tries to compensate for this by augmenting the TAP_SCHEMA metadata with formatting
+information (<em>e.g.,</em> “f4.2” for the above) and this works well for many of the uniform
+catalogs encountered in astronomy.  However, there are two situations where it is
+insufficient.</p>
+<p>The first is where the precision of different records varies.  This is the case in, for
+instance, tables from the NASA Exoplanet Archive where the data is culled from the literature
+and where the precision in the same column for different records may be different.  This
+can be addressed at the database level by storing precision information on a cell by
+cell basis.</p>
+<p>The second arises with columns that are constructed on the fly, like “B-V as BmV” or
+“count(*) as nrec”.  We can’t know up front how best to format these, though here are
+a variety of approaches we can take.</p>
+<p>The simplest approach is to use a format guaranteed to fit, like “e22.17” for floating
+point numbers.  However, this is hard to read and takes up a lot of space.</p>
+<p>At the other extreme, we can use one form or another of a double pass through the data;
+scanning once to determine reasonable formats and then a second time to output the
+data using those formats.</p>
+<p>A compromise, which is what we implement now, scans the first N (currently 10,000) records
+(in memory) to deduce formats for any constructed columns, then outputs these and any
+subsequent records using these formats.  Quite often, the number of records is less than
+N and this is completely accurate.  We allow N to be configurable at run time.</p>
+<p>None of this is absolutely foolproof; we will try to accomodate special cases as they
+arise.</p>
+</div>
 
 
            </div>
