@@ -81,7 +81,6 @@ class Tap:
 
     debugfname = '/tmp/tap_' + str(pid) + '.debug'
 
-
     sql = ''
     servername = ''
     dbtable = ''
@@ -299,6 +298,7 @@ class Tap:
             self.id = arr[1]
 
             if(len(self.id) == 0):
+                
                 self.msg = 'Failed to find jobid for retrieving job status.'
                 self.__printError__(self.format, self.msg)
 
@@ -587,7 +587,13 @@ class Tap:
                                    self.param)
 
             except Exception as e:
-                self.__printError__(self.format, str(e))
+                if(self.tapcontext == 'async'):
+                
+                    self.phase = 'ERROR'
+                    self.__writeAsyncError__(str(e), self.statuspath,
+                                         self.statdict, self.param)
+                else: 
+                    self.__printError__(self.format, str(e))
 
             #
             # getStatus will exit when done
@@ -731,6 +737,8 @@ class Tap:
 
             if(self.tapcontext == 'async'):
 
+                self.phase = 'ERROR'
+
                 self.__writeAsyncError__(self.msg, self.statuspath,
                                          self.statdict, self.param)
             else:
@@ -808,6 +816,7 @@ class Tap:
 
             if(self.tapcontext == 'async'):
 
+                self.phase = 'ERROR'
                 self.__writeAsyncError__(str(e), self.statuspath,
                                          self.statdict, self.param)
             else:
@@ -832,8 +841,15 @@ class Tap:
 
         if len(self.dbtable) == 0:
 
-            self.msg = 'No table name found ADQL in query.'
-            self.__printError__(self.format, self.msg)
+            self.msg = 'No table name found in ADQL query.'
+            
+            if(self.tapcontext == 'async'):
+                
+                self.phase = 'ERROR'
+                self.__writeAsyncError__(self.msg, self.statuspath,
+                                         self.statdict, self.param)
+            else:
+                self.__printError__(self.format, self.msg)
 
         if self.debug:
             logging.debug('')
@@ -1271,7 +1287,13 @@ class Tap:
             soup = BeautifulSoup(data, 'lxml')
 
         except Exception as e:
-            self.__printError__('votable', str(e))
+            if(self.tapcontext == 'async'):
+                
+                self.phase = 'ERROR'
+                self.__writeAsyncError__(str(e), self.statuspath,
+                                         self.statdict, self.param)
+            else: 
+                self.__printError__('votable', str(e))
 
         format = 'votable'
 
@@ -1283,7 +1305,13 @@ class Tap:
 
         except Exception as e:
 
-            self.__printError__('votable', str(e))
+            if(self.tapcontext == 'async'):
+                
+                self.phase = 'ERROR'
+                self.__writeAsyncError__(str(e), self.statuspath,
+                                         self.statdict, self.param)
+            else: 
+                self.__printError__('votable', str(e))
 
         if self.debug:
             logging.debug('')
@@ -1304,7 +1332,13 @@ class Tap:
             try:
                 parameters = soup.find('uws:parameters')
             except Exception as e:
-                self.__printError__(format, str(e))
+                if(self.tapcontext == 'async'):
+                
+                    self.phase = 'ERROR'
+                    self.__writeAsyncError__(str(e), self.statuspath,
+                                         self.statdict, self.param)
+                else: 
+                    self.__printError__(format, str(e))
 
             if self.debug:
                 logging.debug('')
@@ -1457,7 +1491,13 @@ class Tap:
 
         if(len(resulturl) == 0):
             msg = 'resulturl not found.'
-            self.__printError__(format, msg)
+            if(self.tapcontext == 'async'):
+                
+                self.phase = 'ERROR'
+                self.__writeAsyncError__(msg, self.statuspath,
+                                         self.statdict, self.param)
+            else: 
+                self.__printError__(format, msg)
 
         #
         # Last case: 'results/result' -- return result table
@@ -1476,7 +1516,13 @@ class Tap:
             fp = open(resultpath, 'r')
         except Exception as e:
             msg = 'Failed to open result file: ' + resultpath
-            self.__printError__(format, msg)
+            if(self.tapcontext == 'async'):
+                
+                self.phase = 'ERROR'
+                self.__writeAsyncError__(msg, self.statuspath,
+                                         self.statdict, self.param)
+            else: 
+                self.__printError__(format, msg)
 
         print("HTTP/1.1 200 OK\r")
 
@@ -1500,7 +1546,13 @@ class Tap:
                 sys.stdout.flush()
 
         except Exception as e:
-            self.__printError__(format, str(e))
+            if(self.tapcontext == 'async'):
+                
+                self.phase = 'ERROR'
+                self.__writeAsyncError__(str(e), self.statuspath,
+                                         self.statdict, self.param)
+            else: 
+                self.__printError__(format, str(e))
 
         fp.close()
         sys.exit()
@@ -1566,6 +1618,11 @@ class Tap:
         #
         # Set status parameters
         #
+        
+        if self.debug:
+            logging.debug('')
+            logging.debug(f'From writeAsyncError')
+     
 
         etime = datetime.datetime.now()
         endtime = etime.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-4]
@@ -1702,6 +1759,10 @@ class Tap:
 
     def __writeStatusMsg__(self, statuspath, statdict, param, **kwargs):
 
+        if self.debug:
+            logging.debug('')
+            logging.debug(f'Enter writeStatusMsg')
+        
         #
         # { TAP status result always written in XML format
         #
@@ -1735,6 +1796,10 @@ class Tap:
             logging.debug('status file locked for write')
 
         phase = statdict['phase']
+
+        if self.debug:
+            logging.debug('')
+            logging.debug(f'phase= {phase:s}')
 
         resulturl = statdict['resulturl']
         errmsg = statdict['errmsg']
