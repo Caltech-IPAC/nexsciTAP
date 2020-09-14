@@ -36,7 +36,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Setting up Your TAP_SCHEMA Tables" href="tap_schema.html" />
-    <link rel="prev" title="Operations Issues" href="operations.html" /> 
+    <link rel="prev" title="Notes on TAP Clients" href="clients.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -86,6 +86,8 @@
 <li class="toctree-l1"><a class="reference internal" href="install.html">Installation Instructions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="configure.html">Configuration Instructions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="operations.html">Operations Issues</a></li>
+<li class="toctree-l1"><a class="reference internal" href="formatting.html">Notes on Data Formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="clients.html">Notes on TAP Clients</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Appendices</span></p>
 <ul class="current">
@@ -181,7 +183,12 @@ complicated but once you understand the basics those variants fall into place.</
 <p>The simplest TAP query is a “synchronous” request, where you hand the service an ADQL statement,
 it gets processed, and the result table streams back as the response.  But it is easier to
 understand the processing by examining an “asynchronous” request, then seeing the synchronous
-as a special case.</p>
+as a special case.  Use synchronous queries if you know the query time will be short.  If not
+(or if you don’t know for sure) use asynchronous queries.</p>
+<p>This information is for completeness; most users will probably use either synchronous request
+or a TAP client library that hides all this from the end user.  Users who want to build their
+own client and have queries the run long enough to preclude synchronous querying will need to
+understand what follows.</p>
 <div class="section" id="asynchronous-tap-requests">
 <h2>Asynchronous TAP Requests<a class="headerlink" href="#asynchronous-tap-requests" title="Permalink to this headline">¶</a></h2>
 <p>The user starts by contacting the TAP service and hands it an ADQL query.
@@ -210,7 +217,10 @@ information on the query and the state of the processing:</p>
 <span class="o">&lt;/</span><span class="n">uws</span><span class="p">:</span><span class="n">job</span><span class="o">&gt;</span>
 </pre></div>
 </div>
-<p>It returns the job ID string (here “tap_4pxj0j5c”) attached to the base URL and exits.</p>
+<p>It returns the job ID string (here “tap_4pxj0j5c”) attached to the base URL and exits.
+Technically, the status (and final data) could be retrieved by anyone but since the ID
+is a random string and active for a short time (see Operations Issues) this
+obfuscation provides adequate security.</p>
 <p>The rest of the processing involves interacting with this job.  You can query the status
 (including retrieving the whole status structure) but the obvious next step is to actually
 start the query running.  The TAP specification requires that this be done through an
@@ -298,7 +308,7 @@ none of these is (so far) perfect so be sure to test you use case thoroughly.</p
         <a href="tap_schema.html" class="btn btn-neutral float-right" title="Setting up Your TAP_SCHEMA Tables" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="operations.html" class="btn btn-neutral float-left" title="Operations Issues" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="clients.html" class="btn btn-neutral float-left" title="Notes on TAP Clients" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

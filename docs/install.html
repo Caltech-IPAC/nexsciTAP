@@ -91,6 +91,8 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="configure.html">Configuration Instructions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="operations.html">Operations Issues</a></li>
+<li class="toctree-l1"><a class="reference internal" href="formatting.html">Notes on Data Formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="clients.html">Notes on TAP Clients</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Appendices</span></p>
 <ul>
@@ -188,9 +190,11 @@ try to run the code.</p>
 <div class="section" id="quickstart">
 <h2>Quickstart<a class="headerlink" href="#quickstart" title="Permalink to this headline">¶</a></h2>
 <p>To just run instances of the NExScI TAP service, it is not necessary to
-download the source or build anything.</p>
-<p>In fact, if you are using a web server (like Apache or NGINX) that supports
-CGI programs, you can just do the following:</p>
+download the source or build anything.  Just install the TAP Python package
+and create an “nph-tap.py” executable like the one shown below or the
+equivalent for your specific web server.</p>
+<p>If you are using a web server like Apache or NGINX that supports CGI programs,
+you can just do the following:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">nexsciTAP</span>
 </pre></div>
 </div>
@@ -212,7 +216,7 @@ information, including:</p>
 <li><p>How to connect to your DBMS, and</p></li>
 <li><p>how you have set up your spatial indexing (if you have).</p></li>
 </ul>
-<p>This is covered in the next section.</p>
+<p>This is covered in the Configuration Instructions.</p>
 </div>
 <div class="section" id="not-so-quick-start">
 <h2>Not-so-Quick Start<a class="headerlink" href="#not-so-quick-start" title="Permalink to this headline">¶</a></h2>

@@ -8,11 +8,6 @@ If you have tables without sky coordinates, there is not much point in worrying 
 spatial indexing.  Even if you have coordinates but no need to search spatially, you
 might as well not bother.  
 
-For a small table, a spatial search could be done with just the (x,y,z) columns or even
-with just (RA,Dec) (or other coordinates).  We haven't implemented this variant since 
-once you start augmenting your table with these additional columns, you might as well go all
-the way.
-
 If you want to start with a table that doesn't have the spatial index column set, you
 are free to do so; just don't try to include CONTAINS() constraints in any queries.  
 You can add the spatial capabilities later (though it will require reloading the tables).
@@ -28,7 +23,7 @@ three-vector of the point and are calculated simply as::
    y = cos(RA) * cos(Dec)
    z = sin(Dec)
 
-It is best to maintain theses as full double precision numbers.
+It is best to maintain these as full double precision numbers.
 
 The fourth is the spatial index value (an integer).  If you need to generate this, use
 our SpatialIndex package.  If you are working in Python, you already have this as it
