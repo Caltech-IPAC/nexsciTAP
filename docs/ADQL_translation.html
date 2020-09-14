@@ -86,6 +86,8 @@
 <li class="toctree-l1"><a class="reference internal" href="install.html">Installation Instructions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="configure.html">Configuration Instructions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="operations.html">Operations Issues</a></li>
+<li class="toctree-l1"><a class="reference internal" href="formatting.html">Notes on Data Formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="clients.html">Notes on TAP Clients</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Appendices</span></p>
 <ul class="current">
@@ -223,7 +225,9 @@ approach.  Since the bulk of any ADQL query is going to match the local
 DBMS SQL just fine, we decided to pre-process the ADQL into local SQL
 before giving it to the engine.</p>
 <p>We use Oracle internally (because of a Caltech site license), so that was
-our first implementation.</p>
+our first implementation.  We also occasionally use SQLite3, so that was
+the second.  We plan to implement PostgreSQL next and then MySQL but can
+adjust the schedule in response to input from the community.</p>
 <p>We will start with the following ADQL:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">select</span> <span class="n">TOP</span> <span class="mi">100</span> <span class="n">ra</span><span class="p">,</span> <span class="n">dec</span>
 <span class="kn">from</span> <span class="nn">iraspsc</span>
@@ -426,9 +430,8 @@ extend this capability.</p>
 <ul class="simple">
 <li><p><strong>INTERSECTS</strong> Test whether two geometric objects intersect.  Specifically, whether a
 geometric object stored in the database intersects with a region defined by the user.
-This is a very useful capability be requires R-Tree indexing to implement correctly.
-We will address this in future with DBMSs that have R-Trees built in but can’t with
-the generic tesselation spatial index we have here.</p></li>
+This is a very useful capability but requires R-Tree indexing to implement correctly.
+We will address this in the future, probably usind DBMSs that have R-Trees built-in.</p></li>
 <li><p><strong>AREA, CENTROID</strong>  Calculate the area/centroid of a geometric object. Most useful if
 applied to geometric objects in the database.  Less so (as here) where the user would
 be creating a region definition themselves and could easily do these calculations on
