@@ -17,10 +17,12 @@ try to run the code.
 Quickstart
 ----------
 To just run instances of the NExScI TAP service, it is not necessary to
-download the source or build anything.
+download the source or build anything.  Just install the TAP Python package
+and create an "nph-tap.py" executable like the one shown below or the 
+equivalent for your specific web server.
 
-In fact, if you are using a web server (like Apache or NGINX) that supports 
-CGI programs, you can just do the following::
+If you are using a web server like Apache or NGINX that supports CGI programs,
+you can just do the following::
 
     pip install nexsciTAP
 
@@ -45,7 +47,7 @@ information, including:
 
 - how you have set up your spatial indexing (if you have).
 
-This is covered in the next section.  
+This is covered in the Configuration Instructions.
 
 
 Not-so-Quick Start

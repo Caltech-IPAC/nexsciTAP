@@ -86,6 +86,8 @@
 <li class="toctree-l1"><a class="reference internal" href="install.html">Installation Instructions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="configure.html">Configuration Instructions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="operations.html">Operations Issues</a></li>
+<li class="toctree-l1"><a class="reference internal" href="formatting.html">Notes on Data Formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="clients.html">Notes on TAP Clients</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Appendices</span></p>
 <ul class="current">
@@ -189,10 +191,11 @@ though none of it is particularly difficult.</p>
 <p>NExScI TAP was designed from the start with multiple DBMS support
 in mind.  Python PEP 249 defines a generic interface for talking to
 databases and it has been implemented for most systems.  We have so
-far only fully integrated the Oracle packages (cx_Oracle) as that is
-what we use operationally but we have investigated several others
-and plan to incorporate them as time permits (or hopefully as others
-do it for us).</p>
+far only fully integrated the Oracle packages (cx_Oracle) and SQLite3
+as we use those operationally here but we have investigated several
+others (starting with PostgreSQL and MySQL and plan to incorporate
+them as time permits.  We are open to suggestion with regard to other
+DBMSs and to overall priorities.</p>
 <div class="section" id="python-database-api-db-api-2-0-pep-249">
 <h3>Python Database API (DB-API) 2.0 (PEP 249)<a class="headerlink" href="#python-database-api-db-api-2-0-pep-249" title="Permalink to this headline">¶</a></h3>
 <p>The API defines a straightforward interface to databases in general.
@@ -253,7 +256,7 @@ tables in it are generally meant to support chaining queries together
 across databases, though there is no such constraint on how they are
 used.</p>
 <p>There are two situations where uploaded tables could be particularly
-useful.  If the uploaded table contains extended inforamation on records
+useful.  If the uploaded table contains extended information on records
 in a archive table record (and the “ID” of that record), then a simple
 join of the two would produce an augmented catalog.</p>
 <p>Perhaps the most alluring possibility involves positional cross-comparison
@@ -262,7 +265,7 @@ complicated process (the nearest positional match between two tables
 is frequently not the best match).</p>
 <p>NExScI TAP does not currently support UPLOAD, though it is a fairly
 straightforward thing to add.  To date, none of the projects we support
-have express a need for the above.</p>
+have expressed a need for the above.</p>
 </div>
 <div class="section" id="dealing-with-proprietary-data">
 <h2>Dealing with Proprietary Data<a class="headerlink" href="#dealing-with-proprietary-data" title="Permalink to this headline">¶</a></h2>
@@ -284,26 +287,26 @@ code we do have if your needs are similar.</p>
 </div>
 <div class="section" id="dealing-with-extended-objects-images-in-particular">
 <h2>Dealing with Extended Objects (Images in Particular)<a class="headerlink" href="#dealing-with-extended-objects-images-in-particular" title="Permalink to this headline">¶</a></h2>
-<p>resselation-based spatial indexing works great for point-like data like
+<p>Tesselation-based spatial indexing works great for point-like data like
 astronomical catalogs and can even be used with small extended objects.
 For instance, if you have metadata for images that are all small you
 can index the image center coordinates and then pad the queries by the
 maximum size of the images.</p>
 <p>This falls apart for truly extended objects (image sets where some of
-the images are ten degrees across; region specifications like constellation
-outlines; and so on).  For this kind of data there are more effective
-approaches, most notably R-Trees, which work by creating a heirarchy of
-object clusters.  Building the tree is a laborious process since it
-involves intense rethinking of how best to split, group, and reorganize
-things so that the most effective organization emerges.</p>
-<p>The objects and the heirarchy of clusters are defined by their bounding
+the images are ten degrees across and region specifications like
+constellation outlines).  For this kind of data there are more effective
+approaches, most notably R-Trees, which work by creating a hierarchy of
+object clusters.  Building the tree involves reviewing the whole structure
+every time a new object is added.  This is very slow but results in an
+extremely efficient search framework.</p>
+<p>The objects and the tree of clusters are defined by their bounding
 boxes and at all levels it is perfectly OK for these boxes to overlap;
 we are just trying to get to a state where we can quickly exclude large
 subsets from consideration.</p>
 <p>Unlike the tesselation approach, where you can leverage the basic
-DBMS B-Tree indexing, doing this right requires a different internal
-indexing approach.  Most DBMSs now support some form of this but often
-at an extra cost and pretty much alway in a way that requires additional
+DBMS B-Tree indexing,  R-Trees require a different internal indexing
+structure.  Most DBMSs now support some form of this but often
+at an extra cost and pretty much always in a way that requires additional
 database software installation and configuration.</p>
 <p>If you are interested in just spatial searching of image metadata and
 don’t need relational constraints (or are willing to apply these as
@@ -313,8 +316,7 @@ file-based data.</p>
 <p>If you truly want to fold R-Tree processing into the DBMS framework,
 the best idea is to adopt a DBMS where this has been done well
 (<em>e.g.</em> PostgreSQL) and update NExScI TAP to translate ADQL to the
-PostgreSQL-based formalism.  We haven’t had time to explore this
-fully but plan to unless someone else does it first.</p>
+PostgreSQL-based formalism.</p>
 </div>
 </div>
 
