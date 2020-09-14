@@ -90,6 +90,8 @@
 <li class="toctree-l1"><a class="reference internal" href="install.html">Installation Instructions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="configure.html">Configuration Instructions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="operations.html">Operations Issues</a></li>
+<li class="toctree-l1"><a class="reference internal" href="formatting.html">Notes on Data Formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="clients.html">Notes on TAP Clients</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Appendices</span></p>
 <ul>
@@ -173,6 +175,13 @@
             
   <div class="section" id="the-nexsci-tap-service">
 <h1>The NExScI TAP Service<a class="headerlink" href="#the-nexsci-tap-service" title="Permalink to this headline">¶</a></h1>
+<p>The primary expected audience for this document are services providers, usually those
+with existing relational DBMSs containing tables of astronomical data.  A secondary
+audience would be end users of the service as we explain the details of connecting
+to the service and submitting queries.  For example, the URL</p>
+<p><a class="reference external" href="https://exoplanetarchive.ipac.caltech.edu/TAP/sync?query=select+pl_name,avg(ra),avg(dec)+from+PS+group+by+pl_name">https://exoplanetarchive.ipac.caltech.edu/TAP/sync?query=select+pl_name,avg(ra),avg(dec)+from+PS+group+by+pl_name</a></p>
+<p>is a complete synchronous TAP query that returns a list of all known exoplanets and
+their coordinates.</p>
 <div class="section" id="what-is-nexsci-tap">
 <h2>What is NExScI TAP?<a class="headerlink" href="#what-is-nexsci-tap" title="Permalink to this headline">¶</a></h2>
 <p>Tabular data in astronomy (and other sciences) is commonly housed in relational
@@ -188,7 +197,10 @@ or, for slow queries, in background), and how to retrieve results when they are
 ready.</p>
 <p>The NExScI TAP service is a Python implementation of the protocol using open-source
 and extensible code.  It is easy to install and configure and easy to extend to
-other DBMSs.</p>
+other DBMSs.  NExScI TAP uses Python DB-API 2.0 to connect to DBMS servers.
+Currently connections to Oracle and SQLite3 have been tested with PostgresSQL and
+MySQL planned in the near future.  If you have a particular DBMS you are interested
+in, please contact us.</p>
 <p>Because queries against spatial regions on the sky are so common in astronomy,
 ADQL extends SQL with standard spatial constraint functions.  In order to support
 these extensions, NExScI TAP includes a formalism for fast spatially-indexed
@@ -198,10 +210,10 @@ searches which doesn’t require modification of the underlying DBMS.</p>
 <h2>Structure of this Documentation<a class="headerlink" href="#structure-of-this-documentation" title="Permalink to this headline">¶</a></h2>
 <p>NExScI TAP is aimed at operations of all scales, from a single table that a researcher
 wishes to share to the largest mission archives.</p>
-<p>In order to get these archives on-line quickly, this documentation focuses initially
-on installation and configuration, then overviews TAP operations and the structure
-of the service, and finally delves into the details of the spatial indexing and the
-translation of ADQL into the local DBMS SQL.</p>
+<p>This documentation focuses initially on installation and configuration, then overviews
+TAP operations.  There are several appendices covering the structure of the service,
+and delving into the details of the spatial indexing and the translation of ADQL into
+the local DBMS SQL.</p>
 <p>For those who prefer to understand how things work before they start running them,
 most of the appendices have been written to make sense as stand-alone documents.</p>
 </div>

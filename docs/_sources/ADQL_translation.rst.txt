@@ -54,7 +54,9 @@ DBMS SQL just fine, we decided to pre-process the ADQL into local SQL
 before giving it to the engine.
 
 We use Oracle internally (because of a Caltech site license), so that was
-our first implementation.  
+our first implementation.  We also occasionally use SQLite3, so that was 
+the second.  We plan to implement PostgreSQL next and then MySQL but can
+adjust the schedule in response to input from the community.
 
 We will start with the following ADQL::
 
@@ -263,9 +265,8 @@ There are a few ADQL geometry functions we have not implemented.  Here is a comp
 
 - **INTERSECTS** Test whether two geometric objects intersect.  Specifically, whether a
   geometric object stored in the database intersects with a region defined by the user.
-  This is a very useful capability be requires R-Tree indexing to implement correctly.
-  We will address this in future with DBMSs that have R-Trees built in but can't with 
-  the generic tesselation spatial index we have here.
+  This is a very useful capability but requires R-Tree indexing to implement correctly.
+  We will address this in the future, probably usind DBMSs that have R-Trees built-in.
 
 - **AREA, CENTROID**  Calculate the area/centroid of a geometric object. Most useful if
   applied to geometric objects in the database.  Less so (as here) where the user would
