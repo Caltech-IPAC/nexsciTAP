@@ -146,7 +146,6 @@ class Tap:
             self.debug = 1
 
         if(self.debug):
-
             logging.basicConfig(filename=self.debugfname,
                                 format='%(levelname)-8s %(relativeCreated)d>  '
                                 '%(filename)s %(lineno)d  '
@@ -660,11 +659,14 @@ class Tap:
 
                 parameter = parameters.find(id='maxrec')
                 self.maxrecstr = parameter.string
-
+ 
                 self.param['maxrec'] = int(parameter.string)
+                self.maxrec = int(parameter.string)
+                
                 if self.debug:
                     logging.debug('')
                     logging.debug(f'      maxrecstr = {self.param["maxrec"]:d}')
+                    logging.debug(f'      self.maxrec = {self.maxrec:d}')
 
                 parameter = parameters.find(id ='lang')
                 self.param['lang'] = parameter.string
@@ -948,7 +950,6 @@ class Tap:
 
             propfilter = None
             try:
-
                 propfilter = propFilter(connectInfo=self.config \
                                                         .connectInfo,
                                         query=self.query,
