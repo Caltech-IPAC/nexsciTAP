@@ -653,9 +653,33 @@ class Tap:
 
                 parameter = parameters.find(id='format')
                 self.param['format'] = parameter.string
+                self.format = parameter.string.lower()
+                
                 if self.debug:
                     logging.debug('')
-                    logging.debug(f'      format = {self.param["format"]:s}')
+                    logging.debug(f'      format = {self.format:s}')
+
+#
+#    rename resulttbl for async PENDING-->RUN case
+#
+                if(self.format == 'votable'):
+                    self.resulttbl = 'result.xml'
+                elif(self.format == 'ipac'):
+                    self.resulttbl = 'result.tbl'
+                elif(self.format == 'csv'):
+                    self.resulttbl = 'result.csv'
+                elif(self.format == 'tsv'):
+                    self.resulttbl = 'result.tsv'
+
+                self.resultpath = self.userWorkdir + '/' + self.resulttbl
+                self.resulturl = self.httpurl + self.workurl + '/TAP/' + \
+                    self.workspace + '/' + self.resulttbl
+
+                if self.debug:
+                    logging.debug('')
+                    logging.debug(f'resultpath  = {self.resultpath:s}')
+                    logging.debug(f'resulturl   = {self.resulturl:s}')
+
 
                 parameter = parameters.find(id='maxrec')
                 self.maxrecstr = parameter.string
@@ -665,7 +689,6 @@ class Tap:
                 
                 if self.debug:
                     logging.debug('')
-                    logging.debug(f'      maxrecstr = {self.param["maxrec"]:d}')
                     logging.debug(f'      self.maxrec = {self.maxrec:d}')
 
                 parameter = parameters.find(id ='lang')
