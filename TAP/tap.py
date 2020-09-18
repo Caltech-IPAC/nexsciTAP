@@ -1211,12 +1211,11 @@ class Tap:
             print("\r")
 
             print('<?xml version="1.0" encoding="UTF-8"?>')
-            print('<uws:job xmlns:uws="http://www.ivoa.net/xml/UWS/v1.0'
+            print('<uws:job xmlns:uws="http://www.ivoa.net/xml/UWS/v1.0"'
                   ' xmlns:xlink="http://www.w3.org/1999/xlink"'
                   ' xmlns:xs="http://www.w3.org/2001/XMLSchema"'
                   ' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"'
-                  ' xsi:schemaLocation="http://www.ivoa.net/xml/UWS/v1.0'
-                  ' http://www.ivoa.net.xml/UWS/v1.0">')
+                  ' xsi:schemaLocation="http://www.ivoa.net/xml/UWS/v1.0">')
 
             if((key == 'errorSummary')
                     or (key == 'errmsg')
@@ -1834,8 +1833,7 @@ class Tap:
                  '   xmlns:xlink="http://www.w3.org/1999/xlink"'
                  '   xmlns:xs="http://www.w3.org/2001/XMLSchema"'
                  '   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"'
-                 '   xsi:schemaLocation="http://www.ivoa.net/xml/UWS/v1.0'
-                 ' http://www.ivoa.net.xml/UWS/v1.0">\n')
+                 '   xsi:schemaLocation="http://www.ivoa.net/xml/UWS/v1.0">\n')
 
         fp.write(f"    <uws:jobId>{statdict['jobid']:s}</uws:jobId>\n")
         fp.write(f"    <uws:runId>{statdict['process_id']:d}</uws:runId>\n")
