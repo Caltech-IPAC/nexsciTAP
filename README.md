@@ -2,7 +2,7 @@
 
 ##### [Documentation](https://caltech-ipac.github.io/nexsciTAP)
 
-## NASA ExoplaNExScI Python Table Access Protocol (TAP) Server   Version 1.0
+## NASA Exoplanet Science Institute (NExScI) Python Table Access Protocol (TAP) Server   Version 1.0
 
 The TAP (Table Access Protocol) is a standard recommended by the International Virtual Observatory Alliance (http://www.ivoa.net).  It defines a web service for searching tables in relational databases using a dialect of SQL called ADQL (Astronomical Data Query Language) (http://www.ivoa.net/documents/latest/ADQL.html).  ADQL includes functions that support spatial constraints (<i>e.g.,</i> all records with a degree on the sky of specified coordinates). 
 
