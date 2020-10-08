@@ -54,3 +54,8 @@ the local DBMS SQL.
 For those who prefer to understand how things work before they start running them,
 most of the appendices have been written to make sense as stand-alone documents.
 
+|
+
+*The NASA Exoplanet Science Institute is operated by the California Institute of Technology,
+under contract with the National Aeronautics and Space Administration under the
+Exoplanet Exploration Program.*
