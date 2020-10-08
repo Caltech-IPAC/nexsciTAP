@@ -18,9 +18,30 @@ library for accessing TAP services that is maintained at the ESAC Space Data Cen
 (ESDC: http://www.cosmos.esa.int/web/esdc/) . In synchronous mode, the package imposes a
 hard-coded limit on the return of 2000 records.
 
-(Jupyter notebook to access KOA data)
+Jupyter notebooks to access KOA data:
 
-(web version of Jupyter  notebook to access KOA data)
+TAP+/asynchronous (https://github.com/Caltech-IPAC/nexsciTAP/blob/develop/Jupyter/Using%20nexsciTAP%20with%20TAP+%20to%20perform%20asynchronous%20queries%20on%20KOA%20data.ipynb)
+
+HTML (https://github.com/Caltech-IPAC/nexsciTAP/blob/develop/Jupyter/Using%20nexsciTAP%20with%20TAP+%20to%20perform%20asynchronous%20queries%20on%20KOA%20data.html)
+
+-
+
+TAP+/synchronous (https://github.com/Caltech-IPAC/nexsciTAP/blob/develop/Jupyter/Using%20nexsciTAP%20with%20TAP+%20to%20perform%20synchronous%20queries%20on%20KOA%20data.ipynb)
+
+HTML (https://github.com/Caltech-IPAC/nexsciTAP/blob/develop/Jupyter/Using%20nexsciTAP%20with%20TAP+%20to%20perform%20synchronous%20queries%20on%20KOA%20data.html)
+
+-
+
+PyVO/asynchronous (https://github.com/Caltech-IPAC/nexsciTAP/blob/develop/Jupyter/Using%20nexsciTAP%20with%20PyVO%20to%20perform%20asynchronous%20queries%20on%20KOA%20data.ipynb)
+
+HTML (https://github.com/Caltech-IPAC/nexsciTAP/blob/develop/Jupyter/Using%20nexsciTAP%20with%20PyVO%20to%20perform%20asynchronous%20queries%20on%20KOA%20data.html)
+
+-
+
+PyVO/synchronous (https://github.com/Caltech-IPAC/nexsciTAP/blob/develop/Jupyter/Using%20nexsciTAP%20with%20PyVO%20to%20perform%20synchronous%20queries%20on%20KOA%20data.ipynb)
+
+HTML (https://github.com/Caltech-IPAC/nexsciTAP/blob/develop/Jupyter/Using%20nexsciTAP%20with%20PyVO%20to%20perform%20synchronous%20queries%20on%20KOA%20data.html)
+
 
 **PyVO**. PyVO (https://github.com/astropy/pyvo) is a Python package that provides access 
 to remote data and VO-compliant services.

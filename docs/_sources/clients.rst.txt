@@ -6,18 +6,42 @@ many users will prefer to use a small set of widely used clients.  We describe h
 interaction with three widely used clients: TAPPlus (or TAP+), PyVO and TOPCAT.  All three 
 support sychronous and asychronous interaction with nexsciTAP. This page presents Jupyter 
 notebooks describing this interaction to search for public data housed at the Keck Observatory 
-Archive (KOA; https://koa.ipac.caltech.edu) (protected data at KOA are currently inaccessible 
-through through these clients, as they do not support security cookies required to access 
-private  data at KOA).
+Archive (KOA; https://koa.ipac.caltech.edu), though any compliant TAP server should work
+equally well.
+
+**Note:** Protected (user-proprietary) data at KOA are currently inaccessible through 
+through these clients, as they do not support the security cookies required to access 
+private data at KOA).
 
 **TAPPlus (TAP+)**. A part of the Python Astroquery package, TAPPlus is a general Python
 library for accessing TAP services that is maintained at the ESAC Space Data Centre
 (ESDC: http://www.cosmos.esa.int/web/esdc/) . In synchronous mode, the package imposes a
 hard-coded limit on the return of 2000 records.
 
-(Jupyter notebook to access KOA data)
+Jupyter notebooks to access KOA data:
 
-(web version of Jupyter  notebook to access KOA data)
+TAP+/asynchronous (https://github.com/Caltech-IPAC/nexsciTAP/blob/develop/Jupyter/Using%20nexsciTAP%20with%20TAP+%20to%20perform%20asynchronous%20queries%20on%20KOA%20data.ipynb)
+
+HTML (https://github.com/Caltech-IPAC/nexsciTAP/blob/develop/Jupyter/Using%20nexsciTAP%20with%20TAP+%20to%20perform%20asynchronous%20queries%20on%20KOA%20data.html)
+
+-
+
+TAP+/synchronous (https://github.com/Caltech-IPAC/nexsciTAP/blob/develop/Jupyter/Using%20nexsciTAP%20with%20TAP+%20to%20perform%20synchronous%20queries%20on%20KOA%20data.ipynb)
+
+HTML (https://github.com/Caltech-IPAC/nexsciTAP/blob/develop/Jupyter/Using%20nexsciTAP%20with%20TAP+%20to%20perform%20synchronous%20queries%20on%20KOA%20data.html)
+
+-
+
+PyVO/asynchronous (https://github.com/Caltech-IPAC/nexsciTAP/blob/develop/Jupyter/Using%20nexsciTAP%20with%20PyVO%20to%20perform%20asynchronous%20queries%20on%20KOA%20data.ipynb)
+
+HTML (https://github.com/Caltech-IPAC/nexsciTAP/blob/develop/Jupyter/Using%20nexsciTAP%20with%20PyVO%20to%20perform%20asynchronous%20queries%20on%20KOA%20data.html)
+
+-
+
+PyVO/synchronous (https://github.com/Caltech-IPAC/nexsciTAP/blob/develop/Jupyter/Using%20nexsciTAP%20with%20PyVO%20to%20perform%20synchronous%20queries%20on%20KOA%20data.ipynb)
+
+HTML (https://github.com/Caltech-IPAC/nexsciTAP/blob/develop/Jupyter/Using%20nexsciTAP%20with%20PyVO%20to%20perform%20synchronous%20queries%20on%20KOA%20data.html)
+
 
 **PyVO**. PyVO (https://github.com/astropy/pyvo) is a Python package that provides access 
 to remote data and VO-compliant services.
