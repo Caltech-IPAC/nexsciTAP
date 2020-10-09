@@ -86,6 +86,8 @@
 <li class="toctree-l1"><a class="reference internal" href="install.html">Installation Instructions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="configure.html">Configuration Instructions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="operations.html">Operations Issues</a></li>
+<li class="toctree-l1"><a class="reference internal" href="formatting.html">Notes on Data Formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="clients.html">Notes on TAP Clients</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Appendices</span></p>
 <ul class="current">
@@ -199,7 +201,11 @@ take longer than “scanning” just the data records.</p>
 <p>There are a number of practical consequences of this approach.  Some columns have values
 that are distributed in ways that make indexing ineffective.  Index too many columns and
 you waste too much time deciding on the right index.  Indices on columns no one ever
-constrains are pointless.</p>
+constrains are of no use.</p>
+<p>We should note that this is not to say that indices on the two elements of a coordinate
+are useless. Even without the region-based spatial indexing described here something as
+simple as the either/or RA/Dec indexing will speed up queries.  Furthermore, there are
+times when a single constraint is actually what is needed (<em>e.g.,</em> “WHERE glat &gt; 80”).</p>
 </div>
 <div class="section" id="composite-indices">
 <h2>Composite Indices<a class="headerlink" href="#composite-indices" title="Permalink to this headline">¶</a></h2>
@@ -224,7 +230,7 @@ close together numerically have a strong tendency to be close together on the sk
 <p>This is accomplished using a Z-ordered curve (<a class="reference external" href="https://en.wikipedia.org/wiki/Z-order_curve">https://en.wikipedia.org/wiki/Z-order_curve</a>).
 There are different “tesselations” of the sky (our library supports two) but the
 choice has little effect on query speed.  More important is how “deep” you go in
-the heirarchical subdivision though even this is a secondary effect.</p>
+the hierarchical subdivision though even this is a secondary effect.</p>
 <p>Basically, for each record you identify a cell ID and save this in the database
 record.   All coordinates inside the same cell will get the same ID.  The ID column is
 indexed using the DBMS built-in B-Tree functionality.</p>
@@ -280,11 +286,12 @@ for the original use but doesn’t matter for database indexing.</p>
 <div class="section" id="optimal-tesselation">
 <h2>Optimal Tesselation<a class="headerlink" href="#optimal-tesselation" title="Permalink to this headline">¶</a></h2>
 <p>There is no best tesselation and the “best” tesselation depth depends on the
-set of queries that are most commonly sent to your DBMS.  Level 20 depth (as
-we used above) results in ~arcsecond cells and level 7 is around half a degree.
-In test we ran of the full range of cell sizes and a with cone searches on
-the sky ranging from arcsecond to a few degrees, uniformly distributed
-in log(radius), the optimum was somewhere in the middle (around level 14).</p>
+size of the regions that are most commonly searched (and to a much lesser degree
+to the data density).  Level 20 depth (as we used above) results in ~arcsecond
+cells and level 7 is around half a degree.  In test we ran of the full range of
+cell sizes and a with cone searches on the sky ranging from arcsecond to a few
+degrees, uniformly distributed in log(radius), the optimum was somewhere in the
+middle (around level 14).</p>
 <p>See the next section for information on software tools to help populate the
 x, y, z and spatial-index columns.</p>
 </div>

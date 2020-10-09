@@ -8,7 +8,14 @@ complicated but once you understand the basics those variants fall into place.
 The simplest TAP query is a "synchronous" request, where you hand the service an ADQL statement,
 it gets processed, and the result table streams back as the response.  But it is easier to 
 understand the processing by examining an "asynchronous" request, then seeing the synchronous 
-as a special case.
+as a special case.  Use synchronous queries if you know the query time will be short.  If not
+(or if you don't know for sure) use asynchronous queries.
+
+This information is for completeness; most users will probably use either synchronous request
+or a TAP client library that hides all this from the end user.  Users who want to build their
+own client and have queries the run long enough to preclude synchronous querying will need to
+understand what follows.
+
 
 Asynchronous TAP Requests
 -------------------------
@@ -39,6 +46,9 @@ information on the query and the state of the processing::
     </uws:job>
 
 It returns the job ID string (here "tap_4pxj0j5c") attached to the base URL and exits.  
+Technically, the status (and final data) could be retrieved by anyone but since the ID 
+is a random string and active for a short time (see Operations Issues) this 
+obfuscation provides adequate security.
 
 The rest of the processing involves interacting with this job.  You can query the status
 (including retrieving the whole status structure) but the obvious next step is to actually

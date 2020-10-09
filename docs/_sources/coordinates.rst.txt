@@ -5,7 +5,12 @@ The ADQL specification (or more accurately the Space-Time Coordinate
 Metadata (STC) specification) enumerates over forty coordinate systems,
 including variant frames of reference.  We limit ourselves here to
 a more basic set (ICRS, FK4, FK5, Galactic and Ecliptic), essentially
-the values supported by packages like Astropy.
+the systems supported by packages like Astropy.
+
+The transformations involve simple coordinate system rotations where the
+Euler angles are defined fundementally by observation (*e.g.,* the FK5 
+catalog) and take into account precession, nutation, and the differences
+between Julian and Besselian systems.
 
 If the coordinate system is left as a blank string in functions like
 POINT() ane POLYGON(), we default to 'ICRS'.

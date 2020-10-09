@@ -86,6 +86,8 @@
 <li class="toctree-l1"><a class="reference internal" href="install.html">Installation Instructions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="configure.html">Configuration Instructions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="operations.html">Operations Issues</a></li>
+<li class="toctree-l1"><a class="reference internal" href="formatting.html">Notes on Data Formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="clients.html">Notes on TAP Clients</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Appendices</span></p>
 <ul class="current">
@@ -173,7 +175,11 @@
 Metadata (STC) specification) enumerates over forty coordinate systems,
 including variant frames of reference.  We limit ourselves here to
 a more basic set (ICRS, FK4, FK5, Galactic and Ecliptic), essentially
-the values supported by packages like Astropy.</p>
+the systems supported by packages like Astropy.</p>
+<p>The transformations involve simple coordinate system rotations where the
+Euler angles are defined fundementally by observation (<em>e.g.,</em> the FK5
+catalog) and take into account precession, nutation, and the differences
+between Julian and Besselian systems.</p>
 <p>If the coordinate system is left as a blank string in functions like
 POINT() ane POLYGON(), we default to ‘ICRS’.</p>
 <p>Moreover, since our main purpose is spatial searching, we will consider

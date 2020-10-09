@@ -27,7 +27,12 @@ This technology is referred to as a "B+-Tree".
 There are a number of practical consequences of this approach.  Some columns have values
 that are distributed in ways that make indexing ineffective.  Index too many columns and
 you waste too much time deciding on the right index.  Indices on columns no one ever 
-constrains are pointless.
+constrains are of no use.
+
+We should note that this is not to say that indices on the two elements of a coordinate
+are useless. Even without the region-based spatial indexing described here something as
+simple as the either/or RA/Dec indexing will speed up queries.  Furthermore, there are 
+times when a single constraint is actually what is needed (*e.g.,* "WHERE glat > 80").
 
 
 Composite Indices
@@ -56,7 +61,7 @@ close together numerically have a strong tendency to be close together on the sk
 This is accomplished using a Z-ordered curve (https://en.wikipedia.org/wiki/Z-order_curve).
 There are different "tesselations" of the sky (our library supports two) but the
 choice has little effect on query speed.  More important is how "deep" you go in
-the heirarchical subdivision though even this is a secondary effect.
+the hierarchical subdivision though even this is a secondary effect.
 
 Basically, for each record you identify a cell ID and save this in the database 
 record.   All coordinates inside the same cell will get the same ID.  The ID column is 
@@ -97,6 +102,8 @@ So the DBMS does all the work.  This query may look long-winded but it is no pro
 for the DBMS and quite fast. 
 
 
+
+
 HTM and HPX
 -----------
 As we said, the choice of tessselation scheme doesn't matter too much.  In fact,
@@ -120,11 +127,12 @@ for the original use but doesn't matter for database indexing.
 Optimal Tesselation
 -------------------
 There is no best tesselation and the "best" tesselation depth depends on the 
-set of queries that are most commonly sent to your DBMS.  Level 20 depth (as
-we used above) results in ~arcsecond cells and level 7 is around half a degree.
-In test we ran of the full range of cell sizes and a with cone searches on
-the sky ranging from arcsecond to a few degrees, uniformly distributed 
-in log(radius), the optimum was somewhere in the middle (around level 14).
+size of the regions that are most commonly searched (and to a much lesser degree
+to the data density).  Level 20 depth (as we used above) results in ~arcsecond
+cells and level 7 is around half a degree.  In test we ran of the full range of
+cell sizes and a with cone searches on the sky ranging from arcsecond to a few
+degrees, uniformly distributed in log(radius), the optimum was somewhere in the 
+middle (around level 14).
 
 See the next section for information on software tools to help populate the
 x, y, z and spatial-index columns.

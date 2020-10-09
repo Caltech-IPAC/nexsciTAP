@@ -12,9 +12,9 @@ means that results for jobs that complete on Friday are still available
 on the following Monday).  
 
 NExScI TAP does not delete the files; our sites have cron jobs that
-check the workspace for files older than four days and deletes them.
-We could formalize and distribute this as a formal tool but it is awfully
-simple and you may want to manage this space alongside other 
-services you have working or to use different rules.
+check the workspace for files older than four days and delete them.
+We could formalize and distribute this as a formal tool but you may 
+want to manage this space alongside other services you have working
+or to use different rules.
 
 Contact us if you are interested in seeing our code.

@@ -9,10 +9,11 @@ Support for Different DBMSs
 NExScI TAP was designed from the start with multiple DBMS support
 in mind.  Python PEP 249 defines a generic interface for talking to
 databases and it has been implemented for most systems.  We have so
-far only fully integrated the Oracle packages (cx_Oracle) as that is
-what we use operationally but we have investigated several others
-and plan to incorporate them as time permits (or hopefully as others
-do it for us).
+far only fully integrated the Oracle packages (cx_Oracle) and SQLite3
+as we use those operationally here but we have investigated several
+others (starting with PostgreSQL and MySQL and plan to incorporate
+them as time permits.  We are open to suggestion with regard to other
+DBMSs and to overall priorities.
 
 
 Python Database API (DB-API) 2.0 (PEP 249)
@@ -74,7 +75,7 @@ across databases, though there is no such constraint on how they are
 used.
 
 There are two situations where uploaded tables could be particularly
-useful.  If the uploaded table contains extended inforamation on records
+useful.  If the uploaded table contains extended information on records
 in a archive table record (and the "ID" of that record), then a simple
 join of the two would produce an augmented catalog.
 
@@ -85,7 +86,7 @@ is frequently not the best match).
 
 NExScI TAP does not currently support UPLOAD, though it is a fairly
 straightforward thing to add.  To date, none of the projects we support
-have express a need for the above.
+have expressed a need for the above.
 
 
 Dealing with Proprietary Data
@@ -111,29 +112,29 @@ code we do have if your needs are similar.
 
 Dealing with Extended Objects (Images in Particular)
 ----------------------------------------------------
-resselation-based spatial indexing works great for point-like data like 
+Tesselation-based spatial indexing works great for point-like data like 
 astronomical catalogs and can even be used with small extended objects.
 For instance, if you have metadata for images that are all small you
 can index the image center coordinates and then pad the queries by the
 maximum size of the images.
 
 This falls apart for truly extended objects (image sets where some of
-the images are ten degrees across; region specifications like constellation
-outlines; and so on).  For this kind of data there are more effective 
-approaches, most notably R-Trees, which work by creating a heirarchy of 
-object clusters.  Building the tree is a laborious process since it 
-involves intense rethinking of how best to split, group, and reorganize
-things so that the most effective organization emerges.  
+the images are ten degrees across and region specifications like
+constellation outlines).  For this kind of data there are more effective 
+approaches, most notably R-Trees, which work by creating a hierarchy of 
+object clusters.  Building the tree involves reviewing the whole structure
+every time a new object is added.  This is very slow but results in an
+extremely efficient search framework.
 
-The objects and the heirarchy of clusters are defined by their bounding
+The objects and the tree of clusters are defined by their bounding
 boxes and at all levels it is perfectly OK for these boxes to overlap;
 we are just trying to get to a state where we can quickly exclude large
 subsets from consideration.
 
 Unlike the tesselation approach, where you can leverage the basic 
-DBMS B-Tree indexing, doing this right requires a different internal
-indexing approach.  Most DBMSs now support some form of this but often
-at an extra cost and pretty much alway in a way that requires additional
+DBMS B-Tree indexing,  R-Trees require a different internal indexing
+structure.  Most DBMSs now support some form of this but often
+at an extra cost and pretty much always in a way that requires additional
 database software installation and configuration.
 
 If you are interested in just spatial searching of image metadata and
@@ -145,5 +146,4 @@ file-based data.
 If you truly want to fold R-Tree processing into the DBMS framework,
 the best idea is to adopt a DBMS where this has been done well 
 (*e.g.* PostgreSQL) and update NExScI TAP to translate ADQL to the
-PostgreSQL-based formalism.  We haven't had time to explore this
-fully but plan to unless someone else does it first.
+PostgreSQL-based formalism.  

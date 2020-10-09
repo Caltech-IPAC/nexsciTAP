@@ -86,6 +86,8 @@
 <li class="toctree-l1"><a class="reference internal" href="install.html">Installation Instructions</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Configuration Instructions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="operations.html">Operations Issues</a></li>
+<li class="toctree-l1"><a class="reference internal" href="formatting.html">Notes on Data Formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="clients.html">Notes on TAP Clients</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Appendices</span></p>
 <ul>
@@ -185,7 +187,11 @@ format and has (optionally) section labels (in square brackets).  It can be
 hierarchical, though we don’t need or use that complexity.</p>
 <p>We will illustrate our TAP.conf file through a complete example.  Note that a
 number of these parameters can be defaulted, though it is generally a good idea
-to be explicit for clarity:</p>
+to be explicit for clarity.  Be very careful with this file and its permissions;
+it contains the database password for the TAP user.  Risk can be minimized by
+allowing this user limited access (<em>e.g.,</em> read-only to just the TAP-related tables).
+Still, the file itself should also be read-only access and just from an admin
+account.:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">webserver</span><span class="p">]</span>
 <span class="n">DBMS</span><span class="o">=</span><span class="n">oracle</span>
 <span class="c1"># DBMS=sqlite3</span>
@@ -225,17 +231,20 @@ to be explicit for clarity:</p>
 <p>In order, here is what each parameter means, starting with the ones describing
 the machine and service configuration:</p>
 <ul class="simple">
-<li><p><strong>DBMS</strong> This TAP server can support a range of DBMSs.  This parameter specifies the
-DBMS currently in use and also selects which of the parameter blocks (below) will be
-used to implement the connection.  Here we have selected “oracle” but also show an
-example (inactive) of an SQLite3 connection.</p></li>
+<li><p><strong>DBMS</strong> This TAP server potentially supports a wide range of DBMSs (though currently
+just  “oracle” and “sqlite3” are implemented.  This parameter specifies the DBMS
+currently in use and also selects which of the parameter blocks (below) will be used
+to implement the connection.  Here we have selected “oracle” but also show an example
+(inactive) of an SQLite3 connection.</p></li>
 <li><p><strong>TAP_WORKDIR</strong> This is a the absolute path to the disk space NExScI TAP is supposed
 to use as working space.  It will create a “TAP” subdirectory here and then a collection
 of temporary, uniquely-named session subdirectories.</p></li>
 <li><p><strong>TAP_WORKURL</strong> The above disk space needs to be URL-accessible (and you have to
 arrange with your web server to make it so).  This is the base URL to the same space.</p></li>
 <li><p><strong>HTTP_URL</strong> A TAP session can involve multiple HTTP connections for various bits
-of information.  So the machine address needs to be folded in in several places.</p></li>
+of information.  So we need the machine address to construct the path to the
+job status and to the returned data (as well as being part of the original request
+submission).</p></li>
 <li><p><strong>HTTP_PORT</strong> And the port number as well (often the standard 80).</p></li>
 <li><p><strong>CGI_PGM</strong> Similarly, we need to know how to address the NExScI TAP service
 executable.  By default, this would be something like “/cgi-bin/TAP/nph-tap.py” but
@@ -252,7 +261,7 @@ as configured in Oracle.</p></li>
 cx_Oracle Python package initialization.  cx_Oracle is conformant with the Python DB
 API 2.0 spec.  Other databases will have different detailed connection parameters.</p></li>
 </ul>
-<p>For SQLite3 you need to point as the database files (SQLite3 works using files rather
+<p>For SQLite3 you need to point to the database files (SQLite3 works using files rather
 than a daemon process).  Since the TAP standard insists on having the TAP_SCHEMA tables
 in a different schema (in SQLite3 a different file), we have a second parameter
 for that:</p>
@@ -266,8 +275,8 @@ understanding.  Here we will be terse:</p>
 <ul class="simple">
 <li><p><strong>ADQL_MODE</strong> We support two sky tesselations for our spatial indexing. Here we
 are using HTM (Heirarchical Triangular Mesh) as opposed to HPX (HEALPix).</p></li>
-<li><p><strong>ADQL_LEVEL</strong> Any tesselation recurses arbitrarily deeply.  The level specify
-how deep this is and correspond to a smallest “cell” size (here HTM 20 cells are
+<li><p><strong>ADQL_LEVEL</strong> Any tesselation recurses arbitrarily deeply.  The level specifies
+how deep this is and corresponds to a smallest “cell” size (here HTM 20 cells are
 about 0.3 arcseconds on a side).</p></li>
 <li><p><strong>ADQL_COLNAME</strong> For our custom spatial indexing to work, tables need to include
 the index value column explicitly.  The obvious name here would be “htm20” (it is
@@ -276,7 +285,8 @@ for us) but you may have some reason to use another name.</p></li>
 Since tesselations are based on recursive decomposition of spatial cells into
 four, sometimes (and mostly for debugging) it is nice to have database values
 be base 4 numbers.  But this increases the number of digits by a fair bit and normally
-regular base 10 numbers are easier to store.</p></li>
+regular base 10 numbers are easier to store.  Supported values are therefore
+“BASE10” and “BASE4”.</p></li>
 <li><p><strong>ADQL_XCOL</strong> The spatial indexing cell numbers allow very quick subsetting but
 the results are only approximate (<em>i.e.</em> some of the records in a “matching” cell
 are outside the exact geometry defined; like a cone on the sky).  Including the
