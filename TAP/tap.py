@@ -35,7 +35,7 @@ class Tap:
     This class is the main program to process the TAP query submitted by
     a web client, it performs the following functionality:
 
-    1.  extract input parameters,
+    1.  extract input parameters;
 
     2.  read parameters from TAP configuration file(TAP.ini), the path
         of the config file is specified by the environment variable
@@ -43,9 +43,10 @@ class Tap:
 
         'TAP.ini' contains web server info, database server info,
         spatial index setting, and special column names for filtering
-        the proprietary data.
+        the proprietary data;
 
-    3.  convert ADQL query to ORACLE query,
+    3.  convert ADQL query to local DBMS query (currently Oracle or SQLite3,
+        with others to follow); and
 
     4.  retrieve metadata from database, applies proprietary filter if
         it is specified by the project.

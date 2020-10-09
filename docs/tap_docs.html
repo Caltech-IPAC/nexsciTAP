@@ -85,6 +85,8 @@
 <li class="toctree-l1"><a class="reference internal" href="install.html">Installation Instructions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="configure.html">Configuration Instructions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="operations.html">Operations Issues</a></li>
+<li class="toctree-l1"><a class="reference internal" href="formatting.html">Notes on Data Formatting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="clients.html">Notes on TAP Clients</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Appendices</span></p>
 <ul>
@@ -171,15 +173,16 @@
 <dl class="py class">
 <dt id="TAP.tap.Tap">
 <em class="property">class </em><code class="sig-prename descclassname">TAP.tap.</code><code class="sig-name descname">Tap</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#TAP.tap.Tap" title="Permalink to this definition">¶</a></dt>
-<dd><p>This class is the main program to process the TAP query submitted by a
-web client, it performs the following functionality:</p>
+<dd><p>This class is the main program to process the TAP query submitted by
+a web client, it performs the following functionality:</p>
 <ol class="arabic">
 <li><p>extract input parameters,</p></li>
-<li><p>read parameters from TAP configuration file(TAP.ini), the path of the
-config file is specified by the environment variable ‘TAP_CONF’,</p>
-<p>‘TAP.ini’ contains web server info, database server info, spatial
-index setting, and special column names for filtering the proprietary
-data.</p>
+<li><p>read parameters from TAP configuration file(TAP.ini), the path
+of the config file is specified by the environment variable
+‘TAP_CONF’,</p>
+<p>‘TAP.ini’ contains web server info, database server info,
+spatial index setting, and special column names for filtering
+the proprietary data.</p>
 </li>
 <li><p>convert ADQL query to ORACLE query,</p></li>
 <li><p>retrieve metadata from database, applies proprietary filter if

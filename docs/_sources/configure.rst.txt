@@ -20,7 +20,11 @@ hierarchical, though we don't need or use that complexity.
 
 We will illustrate our TAP.conf file through a complete example.  Note that a 
 number of these parameters can be defaulted, though it is generally a good idea
-to be explicit for clarity::
+to be explicit for clarity.  Be very careful with this file and its permissions;
+it contains the database password for the TAP user.  Risk can be minimized by
+allowing this user limited access (*e.g.,* read-only to just the TAP-related tables).
+Still, the file itself should also be read-only access and just from an admin 
+account.::
 
    [webserver]
    DBMS=oracle
@@ -61,10 +65,11 @@ to be explicit for clarity::
 In order, here is what each parameter means, starting with the ones describing
 the machine and service configuration:
 
-- **DBMS** This TAP server can support a range of DBMSs.  This parameter specifies the
-  DBMS currently in use and also selects which of the parameter blocks (below) will be
-  used to implement the connection.  Here we have selected "oracle" but also show an
-  example (inactive) of an SQLite3 connection.  
+- **DBMS** This TAP server potentially supports a wide range of DBMSs (though currently 
+  just  "oracle" and "sqlite3" are implemented.  This parameter specifies the DBMS 
+  currently in use and also selects which of the parameter blocks (below) will be used 
+  to implement the connection.  Here we have selected "oracle" but also show an example 
+  (inactive) of an SQLite3 connection.  
 
 - **TAP_WORKDIR** This is a the absolute path to the disk space NExScI TAP is supposed
   to use as working space.  It will create a "TAP" subdirectory here and then a collection
@@ -74,7 +79,9 @@ the machine and service configuration:
   arrange with your web server to make it so).  This is the base URL to the same space.
 
 - **HTTP_URL** A TAP session can involve multiple HTTP connections for various bits
-  of information.  So the machine address needs to be folded in in several places.
+  of information.  So we need the machine address to construct the path to the 
+  job status and to the returned data (as well as being part of the original request
+  submission).
 
 - **HTTP_PORT** And the port number as well (often the standard 80).
 
@@ -96,7 +103,7 @@ well-known quantities you can get from your DBA:
   cx_Oracle Python package initialization.  cx_Oracle is conformant with the Python DB
   API 2.0 spec.  Other databases will have different detailed connection parameters.
 
-For SQLite3 you need to point as the database files (SQLite3 works using files rather
+For SQLite3 you need to point to the database files (SQLite3 works using files rather
 than a daemon process).  Since the TAP standard insists on having the TAP_SCHEMA tables
 in a different schema (in SQLite3 a different file), we have a second parameter
 for that:
@@ -114,8 +121,8 @@ understanding.  Here we will be terse:
 - **ADQL_MODE** We support two sky tesselations for our spatial indexing. Here we
   are using HTM (Heirarchical Triangular Mesh) as opposed to HPX (HEALPix).
 
-- **ADQL_LEVEL** Any tesselation recurses arbitrarily deeply.  The level specify
-  how deep this is and correspond to a smallest "cell" size (here HTM 20 cells are
+- **ADQL_LEVEL** Any tesselation recurses arbitrarily deeply.  The level specifies
+  how deep this is and corresponds to a smallest "cell" size (here HTM 20 cells are
   about 0.3 arcseconds on a side).
 
 - **ADQL_COLNAME** For our custom spatial indexing to work, tables need to include
@@ -126,7 +133,8 @@ understanding.  Here we will be terse:
   Since tesselations are based on recursive decomposition of spatial cells into 
   four, sometimes (and mostly for debugging) it is nice to have database values
   be base 4 numbers.  But this increases the number of digits by a fair bit and normally
-  regular base 10 numbers are easier to store.
+  regular base 10 numbers are easier to store.  Supported values are therefore 
+  "BASE10" and "BASE4".
 
 - **ADQL_XCOL** The spatial indexing cell numbers allow very quick subsetting but
   the results are only approximate (*i.e.* some of the records in a "matching" cell
