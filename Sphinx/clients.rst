@@ -20,27 +20,29 @@ hard-coded limit on the return of 2000 records.
 
 Jupyter notebooks to access KOA data:
 
-TAP+/asynchronous (https://github.com/Caltech-IPAC/nexsciTAP/blob/master/Jupyter/Using%20nexsciTAP%20with%20TAP+%20to%20perform%20asynchronous%20queries%20on%20KOA%20data.ipynb)
 
-HTML (https://github.com/Caltech-IPAC/nexsciTAP/blob/master/Jupyter/Using%20nexsciTAP%20with%20TAP+%20to%20perform%20asynchronous%20queries%20on%20KOA%20data.html)
+PyVO/asynchronous (https://github.com/Caltech-IPAC/nexsciTAP/blob/master/Jupyter/PyVO%20Asynchronous%20queries%20with%20nexsciTAP.ipynb)
 
--
-
-TAP+/synchronous (https://github.com/Caltech-IPAC/nexsciTAP/blob/master/Jupyter/Using%20nexsciTAP%20with%20TAP+%20to%20perform%20synchronous%20queries%20on%20KOA%20data.ipynb)
-
-HTML (https://github.com/Caltech-IPAC/nexsciTAP/blob/master/Jupyter/Using%20nexsciTAP%20with%20TAP+%20to%20perform%20synchronous%20queries%20on%20KOA%20data.html)
+HTML              (https://github.com/Caltech-IPAC/nexsciTAP/blob/master/Jupyter/PyVO%20Asynchronous%20queries%20with%20nexsciTAP.html)
 
 -
 
-PyVO/asynchronous (https://github.com/Caltech-IPAC/nexsciTAP/blob/master/Jupyter/Using%20nexsciTAP%20with%20PyVO%20to%20perform%20asynchronous%20queries%20on%20KOA%20data.ipynb)
+PyVO/synchronous  (https://github.com/Caltech-IPAC/nexsciTAP/blob/master/Jupyter/PyVO%20Synchronous%20queries%20with%20nexsciTAP.ipynb)
 
-HTML (https://github.com/Caltech-IPAC/nexsciTAP/blob/master/Jupyter/Using%20nexsciTAP%20with%20PyVO%20to%20perform%20asynchronous%20queries%20on%20KOA%20data.html)
+HTML              (https://github.com/Caltech-IPAC/nexsciTAP/blob/master/Jupyter/PyVO%20Synchronous%20queries%20with%20nexsciTAP.html)
 
 -
 
-PyVO/synchronous (https://github.com/Caltech-IPAC/nexsciTAP/blob/master/Jupyter/Using%20nexsciTAP%20with%20PyVO%20to%20perform%20synchronous%20queries%20on%20KOA%20data.ipynb)
+TAP+/asynchronous (https://github.com/Caltech-IPAC/nexsciTAP/blob/master/Jupyter/TAP%2B%20Asynchronous%20queries%20with%20nexsciTAP.ipynb)
 
-HTML (https://github.com/Caltech-IPAC/nexsciTAP/blob/master/Jupyter/Using%20nexsciTAP%20with%20PyVO%20to%20perform%20synchronous%20queries%20on%20KOA%20data.html)
+HTML              (https://github.com/Caltech-IPAC/nexsciTAP/blob/master/Jupyter/TAP%2B%20Asynchronous%20queries%20with%20nexsciTAP.html)
+
+-
+
+TAP+/synchronous  (https://github.com/Caltech-IPAC/nexsciTAP/blob/master/Jupyter/TAP%2B%20synchronous%20queries%20with%20nexsciTAP.ipynb)
+
+HTML              (https://github.com/Caltech-IPAC/nexsciTAP/blob/master/Jupyter/TAP%2B%20synchronous%20queries%20with%20nexsciTAP.html)
+
 
 
 **PyVO**. PyVO (https://github.com/astropy/pyvo) is a Python package that provides access 
