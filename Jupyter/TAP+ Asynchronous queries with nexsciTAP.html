@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8" />
-<title>Using nexsciTAP with TAP+ to perform synchronous queries on KOA data</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
+<title>TAP+ Asynchronous queries with nexsciTAP</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
 
 <style type="text/css">
@@ -11775,35 +11775,26 @@ div#notebook {
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h1><font color="#880000"> Using the nexsciTAP Server with the TAP+ Client to Access Data From KOA In Synchronous Mode</h1>
+<h1><font color="#880000"> Using the nexsciTAP Server with the TAP+ Client to Access Data From KOA In Asynchronous Mode</h1>
 <h2><font color="#880000"> The nexsciTAP server</h2>
 <p>The NASA Exoplanet Science Institute (NExScI) (visit <a href="https://nexsci.caltech.edu">https://nexsci.caltech.edu</a>) has developed a Python-based server to implement an API that complies with the Virtual Observatory (VO) Table Access Protocol(TAP) version 1.1 (September 2019) (<a href="http://ivoa.net/documents/TAP/20190927/index.html">http://ivoa.net/documents/TAP/20190927/index.html</a>), a standard recommended by the International Virtual Observatory alliance (IVOA) (<a href="http://ivoa.net">http://ivoa.net</a>).</p>
 <p>The TAP API enables a rich variety of searches against tabular data, includung cone, box or all-sky searches, temporal searches, combinations of spatial searches and temporal searches, searches against instrumental attributes and program attributes.</p>
 <p>This tutorial supports demonstrates how to use the TAP+ client to perform synchronous TAP-based queries for public raw science and calibation data acquired with the HIRES instrument; these data are hosted at the Keck Observatory Archive  (KOA; <a href="https://koa.ipac.caltech.edu">https://koa.ipac.caltech.edu</a>).</p>
-<h4 id="-Requirements-"><font color="#880000"> Requirements </font><a class="anchor-link" href="#-Requirements-">&#182;</a></h4><p>TAP+ was developed at the ESAC Space Data Centre (ESDC: <a href="http://www.cosmos.esa.int/web/esdc/">http://www.cosmos.esa.int/web/esdc/</a>) and can be installed from PyPI as part of the astroquery package:</p>
-<p>$ pip  install   --upgrade   astroquery</p>
-<p>The tutorial requires Python 3.6 (or above), plus the table read and write functions from Astropy.  We have tested with Astropy 4.0.1, but any version should work.  We recommend using the Ananconda Python distribution.</p>
-<h4 id="-A-note-on-output-records-"><font color="#880000"> A note on output records </font><a class="anchor-link" href="#-A-note-on-output-records-">&#182;</a></h4><h4 id="The-number-of-records-returned-here-may-differ-from-those-returned-here-because-new-data-are-released-daily.-In-synchronous-mode,-the-TAP+-client-returns-the-first-2,000-records-returned.">The number of records returned here may differ from those returned here because new data are released daily. In synchronous mode, the TAP+ client returns the first 2,000 records returned.<a class="anchor-link" href="#The-number-of-records-returned-here-may-differ-from-those-returned-here-because-new-data-are-released-daily.-In-synchronous-mode,-the-TAP+-client-returns-the-first-2,000-records-returned.">&#182;</a></h4><h4 id="Version-1.0-(October,-2020)">Version 1.0 (October, 2020)<a class="anchor-link" href="#Version-1.0-(October,-2020)">&#182;</a></h4>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="Set-up">Set up<a class="anchor-link" href="#Set-up">&#182;</a></h3>
+<h4 id="-Requirements-"><font color="#880000"> Requirements </font><a class="anchor-link" href="#-Requirements-">&#182;</a></h4><p>TAP+ was developed at trge ESAC Space Data Centre (ESDC: <a href="http://www.cosmos.esa.int/web/esdc/">http://www.cosmos.esa.int/web/esdc/</a>) and can be installed from PyPI as part of the astroquery package:</p>
+<p>$ pip install --upgrade astroquery</p>
+<p>The tutorial requires Python 3.6 (or above), plus the table read and write functions from Astropy. We have tested with Astropy 4.0.1, but any version should work. We recommend using the Ananconda Python distribution.</p>
+<h4 id="-A-note-on-output-records-"><font color="#880000"> A note on output records </font><a class="anchor-link" href="#-A-note-on-output-records-">&#182;</a></h4><h4 id="The-number-of-records-returned-here-may-differ-from-those-returned-here-because-new-data-are-released-daily.">The number of records returned here may differ from those returned here because new data are released daily.<a class="anchor-link" href="#The-number-of-records-returned-here-may-differ-from-those-returned-here-because-new-data-are-released-daily.">&#182;</a></h4><h4 id="Version-1.0---(October,-2020)">Version 1.0   (October, 2020)<a class="anchor-link" href="#Version-1.0---(October,-2020)">&#182;</a></h4>
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[9]:</div>
+<div class="prompt input_prompt">In&nbsp;[1]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">astroquery.utils.tap.core</span> <span class="k">import</span> <span class="n">TapPlus</span>
-
-<span class="n">koa</span> <span class="o">=</span> <span class="n">TapPlus</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="s2">&quot;http://vmkoatest.ipac.caltech.edu/TAP&quot;</span><span class="p">)</span>
+<span class="n">koa</span> <span class="o">=</span> <span class="n">TapPlus</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="s2">&quot;https://koa.ipac.caltech.edu/TAP&quot;</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -11821,9 +11812,9 @@ div#notebook {
 
 <div class="output_subarea output_stream output_stdout output_text">
 <pre>Created TAP+ (v1.2.1) - Connection:
-	Host: vmkoatest.ipac.caltech.edu
-	Use HTTPS: False
-	Port: 80
+	Host: koa.ipac.caltech.edu
+	Use HTTPS: True
+	Port: 443
 	SSL Port: 443
 </pre>
 </div>
@@ -11837,19 +11828,20 @@ div#notebook {
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="Search-by-date">Search by date<a class="anchor-link" href="#Search-by-date">&#182;</a></h3>
+<h2 id="Search-by-date">Search by date<a class="anchor-link" href="#Search-by-date">&#182;</a></h2>
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[35]:</div>
+<div class="prompt input_prompt">In&nbsp;[2]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">sql</span> <span class="o">=</span> <span class="s2">&quot;select koaid, filehand from koa_hires where koaid like &#39;</span><span class="si">%20040824%</span><span class="s2">&#39; &quot;</span>
-<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">launch_job</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
+<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">launch_job_async</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
 <span class="n">r</span> <span class="o">=</span> <span class="n">job</span><span class="o">.</span><span class="n">get_results</span><span class="p">()</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">job</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -11866,7 +11858,8 @@ div#notebook {
 
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>        koaid                                filehand                      
+<pre>INFO: Query finished. [astroquery.utils.tap.core]
+        koaid                                filehand                      
 ---------------------- ----------------------------------------------------
 HI.20040824.08204.fits /koadata1/HIRES/20040824/lev0/HI.20040824.08204.fits
 HI.20040824.08544.fits /koadata1/HIRES/20040824/lev0/HI.20040824.08544.fits
@@ -11891,6 +11884,16 @@ HI.20040824.55131.fits /koadata1/HIRES/20040824/lev0/HI.20040824.55131.fits
 HI.20040824.55177.fits /koadata1/HIRES/20040824/lev0/HI.20040824.55177.fits
 HI.20040824.55224.fits /koadata1/HIRES/20040824/lev0/HI.20040824.55224.fits
 Length = 105 rows
+&lt;Table length=105&gt;
+  name   dtype 
+-------- ------
+   koaid object
+filehand object
+Jobid: tap_ndrjlr2v
+Phase: COMPLETED
+Owner: None
+Output file: async_20201008133630.vot
+Results: None
 </pre>
 </div>
 </div>
@@ -11909,17 +11912,17 @@ Length = 105 rows
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[36]:</div>
+<div class="prompt input_prompt">In&nbsp;[3]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">launch_job</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">dump_to_file</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">output_file</span><span class="o">=</span><span class="s1">&#39;KoaTapDate1.tbl&#39;</span><span class="p">,</span> \
-                     <span class="n">output_format</span><span class="o">=</span><span class="s1">&#39;ipac&#39;</span><span class="p">)</span>
-<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">launch_job</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">dump_to_file</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">output_file</span><span class="o">=</span><span class="s1">&#39;KoaTapDate2.vot&#39;</span><span class="p">,</span> \
-                     <span class="n">output_format</span><span class="o">=</span><span class="s1">&#39;votable&#39;</span><span class="p">)</span>
-<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">launch_job</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">dump_to_file</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">output_file</span><span class="o">=</span><span class="s1">&#39;KoaTapDate3.csv&#39;</span><span class="p">,</span> \
-                     <span class="n">output_format</span><span class="o">=</span><span class="s1">&#39;csv&#39;</span><span class="p">)</span>
-<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">launch_job</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">dump_to_file</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">output_file</span><span class="o">=</span><span class="s1">&#39;KoaTapDate4.tsv&#39;</span><span class="p">,</span> \
-                     <span class="n">output_format</span><span class="o">=</span><span class="s1">&#39;tsv&#39;</span><span class="p">)</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">launch_job_async</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">dump_to_file</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">output_file</span><span class="o">=</span><span class="s1">&#39;KoaTapDate.tbl&#39;</span><span class="p">,</span> \
+                           <span class="n">output_format</span><span class="o">=</span><span class="s1">&#39;ipac&#39;</span><span class="p">)</span>
+<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">launch_job_async</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">dump_to_file</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">output_file</span><span class="o">=</span><span class="s1">&#39;KoaTapDate2.vot&#39;</span><span class="p">,</span> 
+                           <span class="n">output_format</span><span class="o">=</span><span class="s1">&#39;votable&#39;</span><span class="p">)</span> 
+<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">launch_job_async</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">dump_to_file</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">output_file</span><span class="o">=</span><span class="s1">&#39;KoaTapDate3.csv&#39;</span><span class="p">,</span> \
+                           <span class="n">output_format</span><span class="o">=</span><span class="s1">&#39;csv&#39;</span><span class="p">)</span>
+<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">launch_job_async</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">dump_to_file</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">output_file</span><span class="o">=</span><span class="s1">&#39;KoaTapDate4.tsv&#39;</span><span class="p">,</span> \
+                           <span class="n">output_format</span><span class="o">=</span><span class="s1">&#39;tsv&#39;</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -11931,22 +11934,23 @@ Length = 105 rows
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Select-all-keywords-for-data-acquired-on-UT-date-20040824">Select all keywords for data acquired on UT date 20040824<a class="anchor-link" href="#Select-all-keywords-for-data-acquired-on-UT-date-20040824">&#182;</a></h2>
+<h2 id="Select-all-keywords-for-data-acquired-on-20040824">Select all keywords for data acquired on 20040824<a class="anchor-link" href="#Select-all-keywords-for-data-acquired-on-20040824">&#182;</a></h2>
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[24]:</div>
+<div class="prompt input_prompt">In&nbsp;[4]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">sql</span> <span class="o">=</span> <span class="s2">&quot;select * from koa_hires where koaid like &#39;</span><span class="si">%20040824%</span><span class="s2">&#39;&quot;</span>
-<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">launch_job</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
+<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">launch_job_async</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
 <span class="n">r</span> <span class="o">=</span> <span class="n">job</span><span class="o">.</span><span class="n">get_results</span><span class="p">()</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">job</span><span class="p">)</span>
 
-<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">launch_job</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">dump_to_file</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">output_file</span><span class="o">=</span><span class="s1">&#39;table_ascii.tbl&#39;</span><span class="p">,</span> \
-                     <span class="n">output_format</span><span class="o">=</span><span class="s1">&#39;ipac&#39;</span><span class="p">)</span>
+<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">launch_job_async</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">dump_to_file</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">output_file</span><span class="o">=</span><span class="s1">&#39;AllFields.tbl&#39;</span><span class="p">,</span> \
+                           <span class="n">output_format</span><span class="o">=</span><span class="s1">&#39;ipac&#39;</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -11963,7 +11967,8 @@ Length = 105 rows
 
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre> el  elaptime equinox eramode ...      z        spt_ind      ofname    
+<pre>INFO: Query finished. [astroquery.utils.tap.core]
+ el  elaptime equinox eramode ...      z        spt_ind      ofname    
 ---- -------- ------- ------- ... ------------ --------- --------------
 45.0        1     0.0 B, G, R ... 0.7068576891 203233131 hires2300.fits
 45.0        1     0.0 B, G, R ... 0.7068576891 203233131 hires2301.fits
@@ -11988,6 +11993,397 @@ Length = 105 rows
 0.01        1  2000.0 B, G, R ... 0.0001813223 200021201 hires2403.fits
 0.01        1  2000.0 B, G, R ... 0.0001813223 200021201 hires2404.fits
 Length = 105 rows
+&lt;Table length=105&gt;
+   name     dtype  n_bad
+---------- ------- -----
+        el float64     0
+  elaptime   int32     0
+   equinox float64     0
+   eramode  object     0
+  erasecnt   int32     0
+  erasline  object     0
+  exm0dovf   int32     0
+  exm0dsum   int32     0
+  exm0fwmp   int32     0
+  exm0lovf   int32     0
+  exm0lsum   int32     0
+  exm0midp   int32     0
+   exm0mod  object     0
+  exm0ssum   int32     0
+   exm0sta  object     0
+  exm0targ   int32     0
+  exm0tovf   int32     0
+  exposure   int32   105
+   exptime float64     0
+    extend  object     0
+   fil1cal  object     0
+   fil1con  object     0
+  fil1name  object     0
+   fil1pos   int32     0
+   fil1raw   int32     0
+   fil2cal  object     0
+   fil2con  object     0
+  fil2name  object     0
+   fil2pos   int32     0
+   fil2raw   int32     0
+  flushmod  object     0
+     frame  object     0
+   frameno   int32     0
+  guidfwhm float64    56
+  guidtime  object     0
+        ha  object     0
+   hatclos  object     0
+    hatcon  object     0
+   hatopen  object     0
+  im01md01 float64     0
+  im01md02 float64     0
+  im01md03 float64     0
+  im01md04 float64   105
+  im01md05 float64   105
+  im01md06 float64   105
+  im01mn01 float64     0
+  im01mn02 float64     0
+  im01mn03 float64     0
+  im01mn04 float64   105
+  im01mn05 float64   105
+  im01mn06 float64   105
+  im01sd01 float64     0
+  im01sd02 float64     0
+  im01sd03 float64     0
+  im01sd04 float64   105
+  im01sd05 float64   105
+  im01sd06 float64   105
+  imagetyp  object     0
+    imtype  object     0
+  instrume  object     0
+  inststat   int32     0
+    iodcon  object     0
+     iodin  object     0
+    iodout  object     0
+  irot2ang float64     0
+  irot2cal  object     0
+   irotcal  object     0
+   irotcon  object     0
+  irotcvop  object     0
+    irotin  object     0
+   irotout  object     0
+  keepprep  object     0
+  lampcat1  object     0
+  lampcat2  object     0
+  lampdeut  object     0
+   lamplsr  object     0
+  lampname  object     0
+  lampqtz2  object     0
+   lfilcal  object     0
+   lfilcon  object     0
+  lfilname  object     0
+   lfilpos   int32     0
+   lfilraw   int32     0
+    lights  object     0
+   lmirrin  object     0
+  lmirrout  object     0
+   lselcal  object     0
+   lselcon  object     0
+  lselname  object     0
+   lselraw   int32     0
+       mjd float64     0
+   mosmode  object     0
+     naxis   int32     0
+   npixsat   int32     0
+   nsubint   int32     0
+   numamps   int32   105
+   nvidinp   int32     0
+        oa  object     0
+    object  object     0
+  observer  object     0
+    obsnum   int32   105
+   obstype  object     0
+    outdir  object     0
+   outfile  object     0
+  ovrflush   int32     0
+      pane  object     0
+     pane1  object     0
+    pane10  object     0
+    pane11  object     0
+    pane12  object     0
+    pane13  object     0
+    pane14  object     0
+    pane15  object     0
+    pane16  object     0
+     pane2  object     0
+     pane3  object     0
+     pane4  object     0
+     pane5  object     0
+     pane6  object     0
+     pane7  object     0
+     pane8  object     0
+     pane9  object     0
+  panefits  object     0
+  panelist  object     0
+  panerror  object     0
+    parang float64     0
+  pexpelap   int32     0
+  pexptime   int32     0
+  pmt0mpow  object     0
+   pmt0ovl  object     0
+  pmt0tpow  object     0
+  postline   int32     0
+   postpix   int32     0
+    precol   int32     0
+  preflush   int32     0
+   preline   int32     0
+    prerow   int32     0
+    progid  object     0
+  proginst  object     0
+    progpi  object     0
+  progtitl  object     0
+  prop0sta  object     0
+  pt01md01 float64     0
+  pt01md02 float64     0
+     koaid  object     0
+  propint1   int32     0
+  propint2   int32     0
+  propint3   int32     0
+   propmin   int32     0
+    abfreq   int32     0
+   acpower  object     0
+   airmass float64     0
+  airpress float64     0
+   amplist  object     0
+   ampmode  object     0
+  amppsize  object     0
+   antiblm  object     0
+  arcfocus float64    95
+    arcres float64    95
+  autoshut  object     0
+        az float64     0
+  bccvclos  object     0
+  bccvopen  object     0
+   binning  object     0
+    bitpix   int32     0
+    bscale float64     0
+     bzero float64     0
+  c1cvclos  object     0
+  c1cvopen  object     0
+  c2cvclos  object     0
+  c2cvopen  object     0
+  cacvclos  object     0
+  cacvopen  object     0
+    cafcal  object     0
+    cafcon  object     0
+   cafname  object     0
+   cafocus float64     0
+    cafraw   int32     0
+    camcon  object     0
+   catcur1 float64     0
+   catcur2 float64     0
+     caton  object     0
+   ccdgain  object     0
+   ccdgn01 float64     0
+   ccdgn02 float64     0
+   ccdgn03 float64     0
+   ccdgn04 float64   105
+   ccdgn05 float64   105
+   ccdgn06 float64   105
+  ccdpsize  object     0
+   ccdrn01 float64     0
+   ccdrn02 float64     0
+   ccdrn03 float64     0
+   ccdrn04 float64   105
+   ccdrn05 float64   105
+   ccdrn06 float64   105
+  ccdspeed  object     0
+    ccdsum  object     0
+  checksum  object     0
+    cofcal  object     0
+    cofcon  object     0
+   cofname  object     0
+   cofocus float64     0
+    cofraw   int32     0
+  collblue  object     0
+  collbrak  object     0
+   collcon  object     0
+   collred  object     0
+  coolflow  object     0
+  darkclos  object     0
+  darkopen  object     0
+  darktime float64     0
+   datasum  object     0
+   date_ut  object     0
+  date_beg  object     0
+  date_end  object     0
+  date_obs  object     0
+  datlevel   int32     0
+   dcsstat  object     0
+   dec2000 float64     0
+   deckcal  object     0
+   deckcon  object     0
+   deckloc float64     0
+  deckname  object     0
+   deckraw   int32     0
+  detcnfid   int32     0
+  detector  object     0
+  detlsize  object     0
+  dispscal float64     0
+  domestat  object     0
+      door  object     0
+  dqa_date  object     0
+  dqa_vers  object     0
+   dwrn2lv float64     0
+   echangl float64     0
+    echcal  object     0
+    echcon  object     0
+   echname  object     0
+    echpix float64     0
+    echraw   int32     0
+  ecovclos  object     0
+  ecovopen  object     0
+  pt01md03 float64     0
+  pt01md04 float64   105
+  pt01md05 float64   105
+  pt01md06 float64   105
+  pt01mn01 float64     0
+  pt01mn02 float64     0
+  pt01mn03 float64     0
+  pt01mn04 float64   105
+  pt01mn05 float64   105
+  pt01mn06 float64   105
+  pt01sd01 float64     0
+  pt01sd02 float64     0
+  pt01sd03 float64     0
+  pt01sd04 float64   105
+  pt01sd05 float64   105
+  pt01sd06 float64   105
+   pwrblok float64   105
+  pwrblok1 float64     0
+  pwrblok2 float64     0
+  pwrblok3 float64     0
+    ra2000 float64     0
+  rccvclos  object     0
+  rccvopen  object     0
+    relhum float64     0
+   resn2lv float64     0
+    roqual  object     0
+   rotdest float64     0
+   rotmode  object     0
+   rotposn float64     0
+   rowshft   int32     0
+  semester  object     0
+  shbloptm float64     0
+  shclocnt   int32     0
+  shlatclo float64     0
+  shopncnt   int32     0
+  sig2nois float64     0
+    simple  object     0
+     skypa float64     0
+   slitcal  object     0
+   slitcon  object     0
+   slitlen float64     0
+  slitname  object     0
+   slitraw   int32     0
+   slitwid float64     0
+  slitwidt float64     0
+  spatscal float64     0
+   specres float64     0
+        st  object     0
+    subexp  object     0
+  targname  object     0
+  telescop  object     0
+  telfocus float64     0
+  tempcool float64     0
+   tempdet float64     0
+  tempdet1 float64     0
+  tempdet2 float64     0
+  tempdet3 float64     0
+    tempin float64     0
+  tempiod1 float64     0
+  tempiod2 float64     0
+  templamp float64     0
+   tempout float64     0
+   tempset float64     0
+    temptv float64     0
+     ttime   int32     0
+    tvacal  object     0
+    tvacon  object     0
+   tvaname  object     0
+    tvaraw   int32     0
+   tvf1cal  object     0
+   tvf1con  object     0
+  tvf1name  object     0
+   tvf1pos   int32     0
+   tvf1raw   int32     0
+   tvf2cal  object     0
+   tvf2con  object     0
+  tvf2name  object     0
+   tvf2pos   int32     0
+   tvf2raw   int32     0
+    tvfcal  object     0
+    tvfcon  object     0
+   tvfname  object     0
+   tvfocus float64     0
+    tvfraw   int32     0
+      tvon  object     0
+     upson  object     0
+        ut  object     0
+  utb15ven  object     0
+  utb30ven  object     0
+   utbm15v float64     0
+   utbp15v float64     0
+   utbp30v float64     0
+    utbp5v float64     0
+   utbtemp float64     0
+    ut_end  object     0
+  vidinact   int32     0
+  vidinbeg   int32     0
+  vidinend   int32     0
+   vidoff1   int32     0
+   vidoff2   int32     0
+   vidoff3   int32     0
+   vidoff4   int32     0
+   vidoff5   int32     0
+   vidoff6   int32     0
+  waveblue float64     0
+  wavecntr float64     0
+   wavered float64     0
+    window  object     0
+  wxdomhum float64     0
+  wxdomtmp float64     0
+    wxdwpt float64     0
+  wxouthum float64     0
+  wxouttmp float64     0
+   wxpress float64     0
+    wxtime  object     0
+   wxwndir float64     0
+   wxwndsp float64     0
+  xcovclos  object     0
+  xcovopen  object     0
+    xdangl float64     0
+     xdcal  object     0
+     xdcon  object     0
+  xddeltad float64     0
+  xdispers  object     0
+    xdname  object     0
+     xdpix float64     0
+     xdraw   int32     0
+  xdsigmai float64     0
+     xflip   int32   105
+     yflip   int32   105
+       cra  object     0
+      cdec  object     0
+      ha_d float64     0
+utdatetime  object     0
+  filehand  object     0
+     semid  object     0
+         x float64     0
+         y float64     0
+         z float64     0
+   spt_ind   int32     0
+    ofname  object     0
+Jobid: tap_7_p8wi9v
+Phase: COMPLETED
+Owner: None
+Output file: async_20201008133723.vot
+Results: None
 </pre>
 </div>
 </div>
@@ -12000,24 +12396,22 @@ Length = 105 rows
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="Select-columns-acquired-on-UT-Date-20040824-and-order-by-signal-to-noise-(sig2nois)">Select columns acquired on UT Date 20040824 and order by signal-to-noise (sig2nois)<a class="anchor-link" href="#Select-columns-acquired-on-UT-Date-20040824-and-order-by-signal-to-noise-(sig2nois)">&#182;</a></h3>
+<h2 id="Select-columns-acquired-on-UT-Date-20040824-and-order-by-signal-to-noise-(sig2nois)">Select columns acquired on UT Date 20040824 and order by signal-to-noise (sig2nois)<a class="anchor-link" href="#Select-columns-acquired-on-UT-Date-20040824-and-order-by-signal-to-noise-(sig2nois)">&#182;</a></h2>
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[25]:</div>
+<div class="prompt input_prompt">In&nbsp;[5]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">sql</span> <span class="o">=</span> <span class="s2">&quot;select koaid, filehand, sig2nois from koa_hires </span><span class="se">\</span>
 <span class="s2">    where koaid like &#39;</span><span class="si">%20040824%</span><span class="s2">&#39;order by sig2nois&quot;</span>
-
-<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">launch_job</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
+<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">launch_job_async</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">dump_to_file</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">output_file</span><span class="o">=</span><span class="s1">&#39;orderbysig2nois.tbl&#39;</span><span class="p">,</span> <span class="n">output_format</span><span class="o">=</span><span class="s1">&#39;ipac&#39;</span><span class="p">)</span>
 <span class="n">r</span> <span class="o">=</span> <span class="n">job</span><span class="o">.</span><span class="n">get_results</span><span class="p">()</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
-
-<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">launch_job</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">dump_to_file</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">output_file</span><span class="o">=</span><span class="s1">&#39;orderbysig2nois.tbl&#39;</span><span class="p">,</span> \
-                     <span class="n">output_format</span><span class="o">=</span><span class="s1">&#39;ipac&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n\n</span><span class="s1">&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">job</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -12059,6 +12453,21 @@ HI.20040824.08591.fits ...     11.0
 HI.20040824.08204.fits ...     11.0
 HI.20040824.08685.fits ...     15.0
 Length = 105 rows
+
+
+
+&lt;Table length=105&gt;
+  name    dtype 
+-------- -------
+   koaid   str22
+filehand   str52
+sig2nois float64
+Jobid: tap_uj469jtr
+Phase: COMPLETED
+
+Owner: None
+Output file: orderbysig2nois.tbl
+Results: None
 </pre>
 </div>
 </div>
@@ -12077,18 +12486,17 @@ Length = 105 rows
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[27]:</div>
+<div class="prompt input_prompt">In&nbsp;[6]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">sql</span> <span class="o">=</span> <span class="s2">&quot;select top 20 koaid, filehand, frameno from koa_hires where koaid like &#39;</span><span class="si">%20040824%</span><span class="s2">&#39;&quot;</span>
-<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">launch_job</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">dump_to_file</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">output_file</span><span class="o">=</span><span class="s1">&#39;KoaTapTestFiniteRecors.tbl&#39;</span><span class="p">,</span> <span class="n">output_format</span><span class="o">=</span><span class="s1">&#39;ipac&#39;</span><span class="p">)</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">sql</span><span class="o">=</span><span class="s2">&quot;select top 20 koaid, filehand, frameno from koa_hires </span><span class="se">\</span>
+<span class="s2">    where koaid like &#39;</span><span class="si">%20040824%</span><span class="s2">&#39;&quot;</span>
 
-<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">launch_job</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
+<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">launch_job_async</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">dump_to_file</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">output_file</span><span class="o">=</span><span class="s1">&#39;top20.tbl&#39;</span><span class="p">,</span> <span class="n">output_format</span><span class="o">=</span><span class="s1">&#39;ipac&#39;</span><span class="p">)</span>
 <span class="n">r</span> <span class="o">=</span> <span class="n">job</span><span class="o">.</span><span class="n">get_results</span><span class="p">()</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
-
-<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">launch_job</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">dump_to_file</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">output_file</span><span class="o">=</span><span class="s1">&#39;top20.tbl&#39;</span><span class="p">,</span> \
-                     <span class="n">output_format</span><span class="o">=</span><span class="s1">&#39;ipac&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n\n</span><span class="s1">&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">job</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -12127,6 +12535,21 @@ HI.20040824.54301.fits ...    2387
 HI.20040824.54347.fits ...    2388
 HI.20040824.54488.fits ...    2391
 HI.20040824.54896.fits ...    2397
+
+
+
+&lt;Table length=20&gt;
+  name   dtype
+-------- -----
+   koaid str22
+filehand str52
+ frameno int64
+Jobid: tap_3bfc2x4n
+Phase: COMPLETED
+
+Owner: None
+Output file: top20.tbl
+Results: None
 </pre>
 </div>
 </div>
@@ -12145,7 +12568,7 @@ HI.20040824.54896.fits ...    2397
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[28]:</div>
+<div class="prompt input_prompt">In&nbsp;[7]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">sql</span><span class="o">=</span><span class="s2">&quot;select koaid, filehand from koa_hires </span><span class="se">\</span>
@@ -12153,12 +12576,12 @@ HI.20040824.54896.fits ...    2397
 <span class="s2">    &#39;yyyy-mm-dd HH24:MI:SS&#39;) and </span><span class="se">\</span>
 <span class="s2">     utdatetime &lt;= to_date(&#39;2009-01-05 23:59:59&#39;, &#39;yyyy-mm-dd HH24:MI:SS&#39;))&quot;</span>
 
-<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">launch_job</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
+
+<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">launch_job_async</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">dump_to_file</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">output_file</span><span class="o">=</span><span class="s1">&#39;DateRange.tbl&#39;</span><span class="p">,</span> <span class="n">output_format</span><span class="o">=</span><span class="s1">&#39;ipac&#39;</span><span class="p">)</span>
 <span class="n">r</span> <span class="o">=</span> <span class="n">job</span><span class="o">.</span><span class="n">get_results</span><span class="p">()</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
-
-<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">launch_job</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">dump_to_file</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">output_file</span><span class="o">=</span><span class="s1">&#39;date_range.tbl&#39;</span><span class="p">,</span> \
-                     <span class="n">output_format</span><span class="o">=</span><span class="s1">&#39;ipac&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n\n</span><span class="s1">&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">job</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -12200,6 +12623,20 @@ HI.20090105.10908.fits /koadata4/HIRES/20090105/lev0/HI.20090105.10908.fits
 HI.20090105.10954.fits /koadata4/HIRES/20090105/lev0/HI.20090105.10954.fits
 HI.20090105.11000.fits /koadata4/HIRES/20090105/lev0/HI.20090105.11000.fits
 Length = 61 rows
+
+
+
+&lt;Table length=61&gt;
+  name   dtype
+-------- -----
+   koaid str22
+filehand str52
+Jobid: tap_t9_ohxv1
+Phase: COMPLETED
+
+Owner: None
+Output file: DateRange.tbl
+Results: None
 </pre>
 </div>
 </div>
@@ -12218,63 +12655,21 @@ Length = 61 rows
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[29]:</div>
+<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">sql</span><span class="o">=</span><span class="s2">&quot;select koaid, filehand, progid, iodin, imagetyp from </span><span class="se">\</span>
-<span class="s2">      koa.koa_hires_v7 where progid = &#39;C307&#39;&quot;</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">sql</span><span class="o">=</span> <span class="p">(</span><span class="s2">&quot;select koaid, filehand, progid, iodin, imagetyp </span><span class="se">\</span>
+<span class="s2">      from koa_hires where (progid = &#39;C307&#39;) &quot;</span><span class="p">)</span>
 
-<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">launch_job</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
+<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">launch_job_async</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">dump_to_file</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">output_file</span><span class="o">=</span><span class="s1">&#39;ProgramID.tbl&#39;</span><span class="p">,</span> <span class="n">output_format</span><span class="o">=</span><span class="s1">&#39;ipac&#39;</span><span class="p">)</span>
+
 <span class="n">r</span> <span class="o">=</span> <span class="n">job</span><span class="o">.</span><span class="n">get_results</span><span class="p">()</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
-
-<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">launch_job</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">dump_to_file</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">output_file</span><span class="o">=</span><span class="s1">&#39;progID.txt&#39;</span><span class="p">,</span> \
-                     <span class="n">output_format</span><span class="o">=</span><span class="s1">&#39;ipac&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n\n</span><span class="s1">&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">job</span><span class="p">)</span>
 </pre></div>
 
 </div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area">
-
-<div class="prompt"></div>
-
-
-<div class="output_subarea output_stream output_stdout output_text">
-<pre>        koaid          ... imagetyp
----------------------- ... --------
-HI.20180331.02525.fits ...    focus
-HI.20180331.03342.fits ...    focus
-HI.20180331.03598.fits ...    focus
-HI.20180331.03786.fits ...    focus
-HI.20180331.03943.fits ...    focus
-HI.20180331.04060.fits ...    focus
-HI.20180331.04218.fits ...    focus
-HI.20180331.04338.fits ...    focus
-HI.20180331.04502.fits ...  arclamp
-HI.20180331.04578.fits ...  arclamp
-                   ... ...      ...
-HI.20180801.44904.fits ...   object
-HI.20180801.45058.fits ...   object
-HI.20180801.45222.fits ...   object
-HI.20180801.45356.fits ...   object
-HI.20180801.45644.fits ...   object
-HI.20180801.45867.fits ...   object
-HI.20180801.45945.fits ...   object
-HI.20180801.46157.fits ... flatlamp
-HI.20180801.46246.fits ... flatlamp
-HI.20180801.46399.fits ...  arclamp
-HI.20180801.46463.fits ...  arclamp
-Length = 538 rows
-</pre>
-</div>
-</div>
-
 </div>
 </div>
 
@@ -12289,19 +12684,19 @@ Length = 538 rows
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[30]:</div>
+<div class="prompt input_prompt">In&nbsp;[13]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">sql</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;select koaid, filehand, ra2000, dec2000 from koa_hires where </span><span class="se">\</span>
 <span class="s2">    contains(point(&#39;icrs&#39;, ra2000, dec2000), </span><span class="se">\</span>
 <span class="s2">    circle(&#39;icrs&#39;,262.0,17.0,1.0)) = 1&quot;</span><span class="p">)</span>
 
-<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">launch_job</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
+<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">launch_job_async</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">dump_to_file</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">output_file</span><span class="o">=</span><span class="s1">&#39;ConeSearch.tbl&#39;</span><span class="p">,</span> <span class="n">output_format</span><span class="o">=</span><span class="s1">&#39;ipac&#39;</span><span class="p">)</span>
+
 <span class="n">r</span> <span class="o">=</span> <span class="n">job</span><span class="o">.</span><span class="n">get_results</span><span class="p">()</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
-
-<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">launch_job</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">dump_to_file</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">output_file</span><span class="o">=</span><span class="s1">&#39;Spatial_cone.txt&#39;</span><span class="p">,</span> \
-                     <span class="n">output_format</span><span class="o">=</span><span class="s1">&#39;ipac&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n\n</span><span class="s1">&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">job</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -12343,6 +12738,22 @@ HI.20160126.56113.fits ...   16.8245
 HI.20160714.38961.fits ...  16.82319
 HI.20180702.37596.fits ...  16.82131
 Length = 42 rows
+
+
+
+&lt;Table length=42&gt;
+  name    dtype 
+-------- -------
+   koaid   str22
+filehand   str53
+  ra2000 float64
+ dec2000 float64
+Jobid: tap_u30kseqo
+Phase: COMPLETED
+
+Owner: None
+Output file: ConeSearch.tbl
+Results: None
 </pre>
 </div>
 </div>
@@ -12361,18 +12772,19 @@ Length = 42 rows
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[31]:</div>
+<div class="prompt input_prompt">In&nbsp;[15]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">sql</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;select koaid, filehand, ra2000, dec2000 from koa_hires where </span><span class="se">\</span>
 <span class="s2">     contains(point(&#39;icrs&#39;, ra2000, dec2000), </span><span class="se">\</span>
 <span class="s2">     box(&#39;icrs&#39;,262.0,17.0,2.0,120)) = 1&quot;</span><span class="p">)</span>
 
-<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">launch_job</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
+<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">launch_job_async</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">dump_to_file</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">output_file</span><span class="o">=</span><span class="s1">&#39;Spat_Box.tbl&#39;</span><span class="p">,</span> \
+                           <span class="n">output_format</span><span class="o">=</span><span class="s1">&#39;ipac&#39;</span><span class="p">)</span>
 <span class="n">r</span> <span class="o">=</span> <span class="n">job</span><span class="o">.</span><span class="n">get_results</span><span class="p">()</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
-
-<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">launch_job</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">dump_to_file</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">output_file</span><span class="o">=</span><span class="s1">&#39;SpatBox.txt&#39;</span><span class="p">,</span> <span class="n">output_format</span><span class="o">=</span><span class="s1">&#39;ipac&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n\n</span><span class="s1">&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">job</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -12414,6 +12826,22 @@ HI.20180929.18460.fits ...   52.79053
 HI.20190125.58818.fits ...   47.40228
 HI.20190125.58982.fits ...   34.27144
 Length = 994 rows
+
+
+
+&lt;Table length=994&gt;
+  name    dtype 
+-------- -------
+   koaid   str22
+filehand   str53
+  ra2000 float64
+ dec2000 float64
+Jobid: tap_5z3g8o9a
+Phase: COMPLETED
+
+Owner: None
+Output file: Spat_Box.tbl
+Results: None
 </pre>
 </div>
 </div>
@@ -12432,19 +12860,17 @@ Length = 994 rows
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[32]:</div>
+<div class="prompt input_prompt">In&nbsp;[16]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">sql</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;select koaid, filehand, ra2000, dec2000 from koa.koa_hires_v7 where </span><span class="se">\</span>
 <span class="s2">    contains(point(&#39;icrs&#39;, ra2000, dec2000), </span><span class="se">\</span>
 <span class="s2">    polygon(&#39;icrs&#39;,209.80225,53.34894,209.80225,55.34894,211.80225,54.34894)) = 1&quot;</span><span class="p">)</span>
 
-<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">launch_job</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
+<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">launch_job_async</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">dump_to_file</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">output_file</span><span class="o">=</span><span class="s1">&#39;Spat_Poly.tbl&#39;</span><span class="p">,</span> \
+                           <span class="n">output_format</span><span class="o">=</span><span class="s1">&#39;ipac&#39;</span><span class="p">)</span>
 <span class="n">r</span> <span class="o">=</span> <span class="n">job</span><span class="o">.</span><span class="n">get_results</span><span class="p">()</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
-
-<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">launch_job</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">dump_to_file</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">output_file</span><span class="o">=</span><span class="s1">&#39;SpatPoly.txt&#39;</span><span class="p">,</span> \
-                       <span class="n">output_format</span><span class="o">=</span><span class="s1">&#39;ipac&#39;</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -12504,16 +12930,19 @@ Length = 28 rows
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[33]:</div>
+<div class="prompt input_prompt">In&nbsp;[17]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">sql</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;select count(*) from koa_hires where </span><span class="se">\</span>
 <span class="s2">    (utdatetime &gt;= to_date(&#39;2009-01-01 00:00:00&#39;, &#39;yyyy-mm-dd HH24:MI:SS&#39;) and </span><span class="se">\</span>
 <span class="s2">     utdatetime &lt;= to_date(&#39;2009-01-05 23:59:59&#39;, &#39;yyyy-mm-dd HH24:MI:SS&#39;))&quot;</span>  <span class="p">)</span>
 
-<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">launch_job</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
+<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">launch_job_async</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">dump_to_file</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">output_file</span><span class="o">=</span><span class="s1">&#39;Count_daterange.tbl&#39;</span><span class="p">,</span> \
+                           <span class="n">output_format</span><span class="o">=</span><span class="s1">&#39;ipac&#39;</span><span class="p">)</span>
 <span class="n">r</span> <span class="o">=</span> <span class="n">job</span><span class="o">.</span><span class="n">get_results</span><span class="p">()</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n\n</span><span class="s1">&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">job</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -12533,6 +12962,19 @@ Length = 28 rows
 <pre>count(*)
 --------
       61
+
+
+
+&lt;Table length=1&gt;
+  name   dtype
+-------- -----
+count(*) int64
+Jobid: tap_47okd29h
+Phase: COMPLETED
+
+Owner: None
+Output file: Count_daterange.tbl
+Results: None
 </pre>
 </div>
 </div>
@@ -12551,14 +12993,17 @@ Length = 28 rows
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[34]:</div>
+<div class="prompt input_prompt">In&nbsp;[2]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">sql</span><span class="o">=</span><span class="s2">&quot;select count(*) as total from koa_hires&quot;</span>
 
-<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">launch_job</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
+<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">launch_job_async</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">dump_to_file</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">output_file</span><span class="o">=</span><span class="s1">&#39;Count_table.tbl&#39;</span><span class="p">,</span> \
+                           <span class="n">output_format</span><span class="o">=</span><span class="s1">&#39;ipac&#39;</span><span class="p">)</span>
 <span class="n">r</span> <span class="o">=</span> <span class="n">job</span><span class="o">.</span><span class="n">get_results</span><span class="p">()</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n\n</span><span class="s1">&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">job</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -12575,9 +13020,22 @@ Length = 28 rows
 
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>total
------
- 2000
+<pre>total 
+------
+408901
+
+
+
+&lt;Table length=1&gt;
+ name dtype
+----- -----
+total int64
+Jobid: tap_uzwt_qq_
+Phase: COMPLETED
+
+Owner: None
+Output file: Count_table.tbl
+Results: None
 </pre>
 </div>
 </div>
@@ -12590,7 +13048,7 @@ Length = 28 rows
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="Note:--There-are-408,492-records-that-satisfy-this-query,-but-TAP+-only-returns-the-first-2,000">Note:  There are 408,492 records that satisfy this query, but TAP+ only returns the first 2,000<a class="anchor-link" href="#Note:--There-are-408,492-records-that-satisfy-this-query,-but-TAP+-only-returns-the-first-2,000">&#182;</a></h3>
+<h4 id="Note-that-in-asynchronous-mode,-TAP+-returns-all-records.">Note that in asynchronous mode, TAP+ returns all records.<a class="anchor-link" href="#Note-that-in-asynchronous-mode,-TAP+-returns-all-records.">&#182;</a></h4>
 </div>
 </div>
 </div>
@@ -12601,7 +13059,7 @@ Length = 28 rows
 <hr>
 <p><font color="#480000">Visit KOA at <a href="https://koa.ipac.caltech.edu">https://koa.ipac.caltech.edu</a>.</p>
 <p><font color="#480000"> The Keck Observatory Archive (KOA) is a collaboration between the NASA Exoplanet Science Institute (NExScI) and the W. M. Keck Observatory (WMKO). NExScI is sponsored by NASA's Exoplanet Exploration Program, and operated by the California Institute of Technology in coordination with the Jet Propulsion Laboratory (JPL).</p>
-<p><font color="#480000"> Need help? Submit your questions to the KOA Help Desk at <a href="https://koa.ipac.caltech.edu/cgi-bin/Helpdesk/nph-genTicketForm?projname=KOA">https://koa.ipac.caltech.edu/cgi-bin/Helpdesk/nph-genTicketForm?projname=KOA</a></p>
+<p><font color="#480000"> Need help? Submit your questions to the KOA Help Desk at <a href="https://koa.ipac.caltech.edu/cgi-bin/Helpdesk/nph-genTicketForm?projname=KO">https://koa.ipac.caltech.edu/cgi-bin/Helpdesk/nph-genTicketForm?projname=KO</a></p>
 
 </div>
 </div>
