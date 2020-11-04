@@ -147,7 +147,6 @@ class Tap:
             self.debug = 1
 
         if(self.debug):
-
             logging.basicConfig(filename=self.debugfname,
                                 format='%(levelname)-8s %(relativeCreated)d>  '
                                 '%(filename)s %(lineno)d  '
@@ -655,17 +654,43 @@ class Tap:
 
                 parameter = parameters.find(id='format')
                 self.param['format'] = parameter.string
+                self.format = parameter.string.lower()
+                
                 if self.debug:
                     logging.debug('')
-                    logging.debug(f'      format = {self.param["format"]:s}')
+                    logging.debug(f'      format = {self.format:s}')
+
+#
+#    rename resulttbl for async PENDING-->RUN case
+#
+                if(self.format == 'votable'):
+                    self.resulttbl = 'result.xml'
+                elif(self.format == 'ipac'):
+                    self.resulttbl = 'result.tbl'
+                elif(self.format == 'csv'):
+                    self.resulttbl = 'result.csv'
+                elif(self.format == 'tsv'):
+                    self.resulttbl = 'result.tsv'
+
+                self.resultpath = self.userWorkdir + '/' + self.resulttbl
+                self.resulturl = self.httpurl + self.workurl + '/TAP/' + \
+                    self.workspace + '/' + self.resulttbl
+
+                if self.debug:
+                    logging.debug('')
+                    logging.debug(f'resultpath  = {self.resultpath:s}')
+                    logging.debug(f'resulturl   = {self.resulturl:s}')
+
 
                 parameter = parameters.find(id='maxrec')
                 self.maxrecstr = parameter.string
-
+ 
                 self.param['maxrec'] = int(parameter.string)
+                self.maxrec = int(parameter.string)
+                
                 if self.debug:
                     logging.debug('')
-                    logging.debug(f'      maxrecstr = {self.param["maxrec"]:d}')
+                    logging.debug(f'      self.maxrec = {self.maxrec:d}')
 
                 parameter = parameters.find(id ='lang')
                 self.param['lang'] = parameter.string
@@ -949,7 +974,6 @@ class Tap:
 
             propfilter = None
             try:
-
                 propfilter = propFilter(connectInfo=self.config \
                                                         .connectInfo,
                                         query=self.query,
@@ -1188,12 +1212,11 @@ class Tap:
             print("\r")
 
             print('<?xml version="1.0" encoding="UTF-8"?>')
-            print('<uws:job xmlns:uws="http://www.ivoa.net/xml/UWS/v1.0'
+            print('<uws:job xmlns:uws="http://www.ivoa.net/xml/UWS/v1.0"'
                   ' xmlns:xlink="http://www.w3.org/1999/xlink"'
                   ' xmlns:xs="http://www.w3.org/2001/XMLSchema"'
                   ' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"'
-                  ' xsi:schemaLocation="http://www.ivoa.net/xml/UWS/v1.0'
-                  ' http://www.ivoa.net.xml/UWS/v1.0">')
+                  ' xsi:schemaLocation="http://www.ivoa.net/xml/UWS/v1.0">')
 
             if((key == 'errorSummary')
                     or (key == 'errmsg')
@@ -1811,8 +1834,7 @@ class Tap:
                  '   xmlns:xlink="http://www.w3.org/1999/xlink"'
                  '   xmlns:xs="http://www.w3.org/2001/XMLSchema"'
                  '   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"'
-                 '   xsi:schemaLocation="http://www.ivoa.net/xml/UWS/v1.0'
-                 ' http://www.ivoa.net.xml/UWS/v1.0">\n')
+                 '   xsi:schemaLocation="http://www.ivoa.net/xml/UWS/v1.0">\n')
 
         fp.write(f"    <uws:jobId>{statdict['jobid']:s}</uws:jobId>\n")
         fp.write(f"    <uws:runId>{statdict['process_id']:d}</uws:runId>\n")
