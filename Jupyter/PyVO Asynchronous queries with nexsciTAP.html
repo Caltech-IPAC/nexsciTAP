@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8" />
-<title>Using nexsciTAP with PyVO to perform synchronous queries on KOA data</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
+<title>PyVO Asynchronous queries with nexsciTAP</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
 
 <style type="text/css">
@@ -11775,7 +11775,16 @@ div#notebook {
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h1 id="Test-Notebook-For-PyVO-Client-Testing-with-synchronous-calls-to-KOA-TAP-Server-v1.0">Test Notebook For PyVO Client Testing with synchronous calls to KOA TAP Server v1.0<a class="anchor-link" href="#Test-Notebook-For-PyVO-Client-Testing-with-synchronous-calls-to-KOA-TAP-Server-v1.0">&#182;</a></h1><h2 id="Created-by-Bruce-Berriman,-April-7-2020">Created by Bruce Berriman, April 7 2020<a class="anchor-link" href="#Created-by-Bruce-Berriman,-April-7-2020">&#182;</a></h2>
+<h1><font color="#880000"> Using the nexsciTAP Server with the PyVO Client to Access Data From KOA In Asynchronous Mode</h1>
+<h2><font color="#880000"> The nexsciTAP server</h2>
+<p>The NASA Exoplanet Science Institute (NExScI) (visit <a href="https://nexsci.caltech.edu">https://nexsci.caltech.edu</a>) has developed a Python-based server to implement an API that complies with the Virtual Observatory (VO) Table Access Protocol(TAP) version 1.1 (September 2019) (<a href="http://ivoa.net/documents/TAP/20190927/index.html">http://ivoa.net/documents/TAP/20190927/index.html</a>), a standard recommended by the International Virtual Observatory alliance (IVOA) (<a href="http://ivoa.net">http://ivoa.net</a>).</p>
+<p>The TAP API enables a rich variety of searches against tabular data, includung cone, box or all-sky searches, temporal searches, combinations of spatial searches and temporal searches, searches against instrumental attributes and program attributes.</p>
+<p>This tutorial supports demonstrates how to use the PyVO client to perform asynchronous TAP-based queries for public raw science and calibation data acquired with the HIRES instrument; these data are hosted at the Keck Observatory Archive  (KOA; <a href="https://koa.ipac.caltech.edu">https://koa.ipac.caltech.edu</a>).</p>
+<h4 id="-Requirements-"><font color="#880000"> Requirements </font><a class="anchor-link" href="#-Requirements-">&#182;</a></h4><p>This tutorial uses PyVO version 1.1.1, and can be installed from PyPI:</p>
+<p>$ pip  install   --upgrade   PyVO</p>
+<p>The tutorial requires Python 3.6 (or above), plus the table read and write functions from Astropy.  We have tested with Astropy 4.0.1, but any version should work.  We recommend using the Ananconda Python distribution.</p>
+<h4 id="-A-note-on-output-records-"><font color="#880000"> A note on output records </font><a class="anchor-link" href="#-A-note-on-output-records-">&#182;</a></h4><p>The number of records returned here may differ from those returned here because new data are released daily.</p>
+<h4 id="Version-1.0-(October,-2020)">Version 1.0 (October, 2020)<a class="anchor-link" href="#Version-1.0-(October,-2020)">&#182;</a></h4>
 </div>
 </div>
 </div>
@@ -11783,7 +11792,7 @@ div#notebook {
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="Set-up">Set up<a class="anchor-link" href="#Set-up">&#182;</a></h3><h4 id="Install-PyVO-via--$pip-install-PyVO">Install PyVO via  $pip install PyVO<a class="anchor-link" href="#Install-PyVO-via--$pip-install-PyVO">&#182;</a></h4><h4 id="The-SQL-embedded-in-the-URLs-has-been-decoded-with-http://www.asiteaboutnothing.net/c_decode-url.html">The SQL embedded in the URLs has been decoded with <a href="http://www.asiteaboutnothing.net/c_decode-url.html">http://www.asiteaboutnothing.net/c_decode-url.html</a><a class="anchor-link" href="#The-SQL-embedded-in-the-URLs-has-been-decoded-with-http://www.asiteaboutnothing.net/c_decode-url.html">&#182;</a></h4>
+<h3 id="Set-up">Set up<a class="anchor-link" href="#Set-up">&#182;</a></h3>
 </div>
 </div>
 </div>
@@ -11793,32 +11802,11 @@ div#notebook {
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">pyvo.dal</span> <span class="k">import</span> <span class="n">tap</span> 
-</pre></div>
+<span class="n">koa</span> <span class="o">=</span> <span class="n">tap</span><span class="o">.</span><span class="n">TAPService</span><span class="p">(</span><span class="s2">&quot;https://koa.ipac.caltech.edu/TAP&quot;</span><span class="p">)</span>
 
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[2]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">koa</span> <span class="o">=</span> <span class="n">tap</span><span class="o">.</span><span class="n">TAPService</span><span class="p">(</span><span class="s1">&#39;http://vmkoatest.ipac.caltech.edu/TAP&#39;</span><span class="p">)</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[3]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># import time</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">time</span>
 </pre></div>
 
 </div>
@@ -11830,30 +11818,37 @@ div#notebook {
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="Test-1--output_format_1">Test 1- output_format_1<a class="anchor-link" href="#Test-1--output_format_1">&#182;</a></h3>
+<h3 id="Query-by-date">Query by date<a class="anchor-link" href="#Query-by-date">&#182;</a></h3>
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[63]:</div>
+<div class="prompt input_prompt">In&nbsp;[2]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">sql</span> <span class="o">=</span> <span class="s2">&quot;select koaid, filehand from koa_hires where koaid like &#39;</span><span class="si">%20040824%</span><span class="s2">&#39; &quot;</span>
-</pre></div>
 
-</div>
-</div>
-</div>
 
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[64]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">results_output_format_1</span><span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">run_sync</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">results_output_format_1</span><span class="p">)</span>
+<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">submit_job</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;url:    &#39;</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">url</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;job_id: &#39;</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">job_id</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;phase:  &#39;</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">phase</span><span class="p">)</span>
+
+<span class="n">job</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+
+<span class="k">while</span> <span class="n">job</span><span class="o">.</span><span class="n">phase</span> <span class="o">==</span> <span class="s1">&#39;EXECUTING&#39;</span><span class="p">:</span>
+    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;phase:  &#39;</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">phase</span><span class="p">)</span>
+
+<span class="n">resultsAS</span> <span class="o">=</span> <span class="n">job</span><span class="o">.</span><span class="n">fetch_result</span><span class="p">()</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">resultsAS</span><span class="p">)</span>
+
+<span class="c1"># write output file</span>
+<span class="n">table</span><span class="o">=</span><span class="n">resultsAS</span><span class="o">.</span><span class="n">to_table</span><span class="p">()</span>
+<span class="n">table</span><span class="o">.</span><span class="n">write</span> <span class="p">(</span><span class="s1">&#39;./table_select_AS20040824.vot&#39;</span><span class="p">,</span><span class="nb">format</span><span class="o">=</span><span class="s1">&#39;votable&#39;</span><span class="p">,</span><span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -11870,7 +11865,11 @@ div#notebook {
 
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>&lt;Table length=105&gt;
+<pre>url:     https://koa.ipac.caltech.edu:443//TAP/async/tap_wxvzd2x_
+job_id:  tap_wxvzd2x_
+phase:   PENDING
+phase:   COMPLETED
+&lt;Table length=105&gt;
         koaid                                filehand                      
         object                                object                       
 ---------------------- ----------------------------------------------------
@@ -11907,108 +11906,23 @@ HI.20040824.55224.fits /koadata1/HIRES/20040824/lev0/HI.20040824.55224.fits
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Test--2---different-output-formats">Test  2 - different output formats<a class="anchor-link" href="#Test--2---different-output-formats">&#182;</a></h2><h4 id="PyVO-may-not-be-able-accept-formats-other-than-voformat,-so-we-will-test-that-we-can-convert-the-VOTable-to-other-formats.">PyVO may not be able accept formats other than voformat, so we will test that we can convert the VOTable to other formats.<a class="anchor-link" href="#PyVO-may-not-be-able-accept-formats-other-than-voformat,-so-we-will-test-that-we-can-convert-the-VOTable-to-other-formats.">&#182;</a></h4>
+<h4 id="PyVO-by-default-returns-results-in-VOTable-format.-Write--to-IPAC-ASCII-and-CSV-format-for-storage.">PyVO by default returns results in VOTable format. Write  to IPAC ASCII and CSV format for storage.<a class="anchor-link" href="#PyVO-by-default-returns-results-in-VOTable-format.-Write--to-IPAC-ASCII-and-CSV-format-for-storage.">&#182;</a></h4>
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[68]:</div>
+<div class="prompt input_prompt">In&nbsp;[3]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1">##repeat frst test</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># IPAC ASCII</span>
+<span class="n">table</span><span class="o">=</span><span class="n">resultsAS</span><span class="o">.</span><span class="n">to_table</span><span class="p">()</span>
+<span class="n">table</span><span class="o">.</span><span class="n">write</span> <span class="p">(</span><span class="s1">&#39;./table_ipacasciiAS_20040824.tbl&#39;</span><span class="p">,</span><span class="nb">format</span><span class="o">=</span><span class="s1">&#39;ascii.ipac&#39;</span><span class="p">,</span> \
+             <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
-<span class="n">sql</span> <span class="o">=</span> <span class="s2">&quot;select koaid, filehand from koa_hires where koaid like &#39;</span><span class="si">%20040824%</span><span class="s2">&#39; &quot;</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[69]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1">##results</span>
-<span class="n">results</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">run_sync</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">,</span> <span class="n">results</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area">
-
-<div class="prompt output_prompt">Out[69]:</div>
-
-
-
-
-<div class="output_text output_subarea output_execute_result">
-<pre>(&lt;function print&gt;, &lt;Table length=105&gt;
-         koaid                                filehand                      
-         object                                object                       
- ---------------------- ----------------------------------------------------
- HI.20040824.08204.fits /koadata1/HIRES/20040824/lev0/HI.20040824.08204.fits
- HI.20040824.08544.fits /koadata1/HIRES/20040824/lev0/HI.20040824.08544.fits
- HI.20040824.08591.fits /koadata1/HIRES/20040824/lev0/HI.20040824.08591.fits
- HI.20040824.08638.fits /koadata1/HIRES/20040824/lev0/HI.20040824.08638.fits
- HI.20040824.08685.fits /koadata1/HIRES/20040824/lev0/HI.20040824.08685.fits
- HI.20040824.08732.fits /koadata1/HIRES/20040824/lev0/HI.20040824.08732.fits
- HI.20040824.08779.fits /koadata1/HIRES/20040824/lev0/HI.20040824.08779.fits
- HI.20040824.08826.fits /koadata1/HIRES/20040824/lev0/HI.20040824.08826.fits
- HI.20040824.08873.fits /koadata1/HIRES/20040824/lev0/HI.20040824.08873.fits
- HI.20040824.08919.fits /koadata1/HIRES/20040824/lev0/HI.20040824.08919.fits
-                    ...                                                  ...
- HI.20040824.54803.fits /koadata1/HIRES/20040824/lev0/HI.20040824.54803.fits
- HI.20040824.54849.fits /koadata1/HIRES/20040824/lev0/HI.20040824.54849.fits
- HI.20040824.54896.fits /koadata1/HIRES/20040824/lev0/HI.20040824.54896.fits
- HI.20040824.54944.fits /koadata1/HIRES/20040824/lev0/HI.20040824.54944.fits
- HI.20040824.54990.fits /koadata1/HIRES/20040824/lev0/HI.20040824.54990.fits
- HI.20040824.55037.fits /koadata1/HIRES/20040824/lev0/HI.20040824.55037.fits
- HI.20040824.55084.fits /koadata1/HIRES/20040824/lev0/HI.20040824.55084.fits
- HI.20040824.55131.fits /koadata1/HIRES/20040824/lev0/HI.20040824.55131.fits
- HI.20040824.55177.fits /koadata1/HIRES/20040824/lev0/HI.20040824.55177.fits
- HI.20040824.55224.fits /koadata1/HIRES/20040824/lev0/HI.20040824.55224.fits)</pre>
-</div>
-
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[70]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># write results to an ascii table</span>
-<span class="n">table</span><span class="o">=</span><span class="n">results</span><span class="o">.</span><span class="n">to_table</span><span class="p">()</span>
-<span class="n">table</span><span class="o">.</span><span class="n">write</span> <span class="p">(</span><span class="s1">&#39;./table_ipacascii.tbl&#39;</span><span class="p">,</span><span class="nb">format</span><span class="o">=</span><span class="s1">&#39;ascii.ipac&#39;</span><span class="p">,</span><span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[71]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1">#  write results to CSV file</span>
-<span class="n">results</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">run_sync</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
-<span class="n">table</span><span class="o">=</span><span class="n">results</span><span class="o">.</span><span class="n">to_table</span><span class="p">()</span>
-<span class="n">table</span><span class="o">.</span><span class="n">write</span> <span class="p">(</span><span class="s1">&#39;./table_csv.tbl&#39;</span><span class="p">,</span><span class="nb">format</span><span class="o">=</span><span class="s1">&#39;csv&#39;</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="c1"># CSV</span>
+<span class="n">table_csv</span><span class="o">=</span><span class="n">resultsAS</span><span class="o">.</span><span class="n">to_table</span><span class="p">()</span>
+<span class="n">table</span><span class="o">.</span><span class="n">write</span> <span class="p">(</span><span class="s1">&#39;./table_csvAS_20040824.csv&#39;</span><span class="p">,</span><span class="nb">format</span><span class="o">=</span><span class="s1">&#39;csv&#39;</span><span class="p">,</span><span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -12020,270 +11934,37 @@ HI.20040824.55224.fits /koadata1/HIRES/20040824/lev0/HI.20040824.55224.fits
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="PASS">PASS<a class="anchor-link" href="#PASS">&#182;</a></h3>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="Test--3:--Select-all-keywords">Test  3:  Select all keywords<a class="anchor-link" href="#Test--3:--Select-all-keywords">&#182;</a></h3>
+<h3 id="Select-all-keywords-for-data-acquired-on-UT-Date">Select all keywords for data acquired on UT Date<a class="anchor-link" href="#Select-all-keywords-for-data-acquired-on-UT-Date">&#182;</a></h3>
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[72]:</div>
+<div class="prompt input_prompt">In&nbsp;[4]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">sql</span> <span class="o">=</span> <span class="s2">&quot;select * from koa_hires where koaid like &#39;</span><span class="si">%20040824%</span><span class="s2">&#39; &quot;</span>
-</pre></div>
+<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">submit_job</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
 
-</div>
-</div>
-</div>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;url:    &#39;</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">url</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;job_id: &#39;</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">job_id</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;phase:  &#39;</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">phase</span><span class="p">)</span>
 
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[73]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">results</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">run_sync</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">,</span> <span class="n">results</span>
-</pre></div>
+<span class="n">job</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
 
-</div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area">
-
-<div class="prompt output_prompt">Out[73]:</div>
-
-
-
-
-<div class="output_text output_subarea output_execute_result">
-<pre>(&lt;function print&gt;, &lt;Table length=105&gt;
-    el   elaptime equinox eramode ...      z        spt_ind      ofname    
- float64  int32   float64  object ...   float64      int32       object    
- ------- -------- ------- ------- ... ------------ --------- --------------
-    45.0        1     0.0 B, G, R ... 0.7068576891 203233131 hires2300.fits
-    45.0        1     0.0 B, G, R ... 0.7068576891 203233131 hires2301.fits
-    45.0        1     0.0 B, G, R ... 0.7068576891 203233131 hires2302.fits
-    45.0        1     0.0 B, G, R ... 0.7068576891 203233131 hires2303.fits
-    45.0        1     0.0 B, G, R ... 0.7068576891 203233131 hires2304.fits
-    45.0        1     0.0 B, G, R ... 0.7068576891 203233131 hires2305.fits
-    45.0        1     0.0 B, G, R ... 0.7068576891 203233131 hires2306.fits
-    45.0        1     0.0 B, G, R ... 0.7068576891 203233131 hires2307.fits
-    45.0        1     0.0 B, G, R ... 0.7068576891 203233131 hires2308.fits
-    45.0        1     0.0 B, G, R ... 0.7068576891 203233131 hires2309.fits
-     ...      ...     ...     ... ...          ...       ...            ...
-    0.01        1  2000.0 B, G, R ... 0.0001813223 200021201 hires2395.fits
-    0.01        1  2000.0 B, G, R ... 0.0001813223 200021201 hires2396.fits
-    0.01        1  2000.0 B, G, R ... 0.0001813223 200021201 hires2397.fits
-    0.01        1  2000.0 B, G, R ... 0.0001813223 200021201 hires2398.fits
-    0.01        1  2000.0 B, G, R ... 0.0001813223 200021201 hires2399.fits
-    0.01        1  2000.0 B, G, R ... 0.0001813223 200021201 hires2400.fits
-    0.01        1  2000.0 B, G, R ... 0.0001813223 200021201 hires2401.fits
-    0.01        1  2000.0 B, G, R ... 0.0001813223 200021201 hires2402.fits
-    0.01        1  2000.0 B, G, R ... 0.0001813223 200021201 hires2403.fits
-    0.01        1  2000.0 B, G, R ... 0.0001813223 200021201 hires2404.fits)</pre>
-</div>
-
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[74]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1">## write output file</span>
-<span class="n">table_selectall</span><span class="o">=</span><span class="n">results</span><span class="o">.</span><span class="n">to_table</span><span class="p">()</span>
-<span class="n">table_selectall</span><span class="o">.</span><span class="n">write</span> <span class="p">(</span><span class="s1">&#39;./table_selectall.tbl&#39;</span><span class="p">,</span><span class="nb">format</span><span class="o">=</span><span class="s1">&#39;votable&#39;</span><span class="p">,</span><span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="Pass">Pass<a class="anchor-link" href="#Pass">&#182;</a></h3>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="Test-4:-Select_2----select-filehandle-keyword">Test 4: Select_2  - select filehandle keyword<a class="anchor-link" href="#Test-4:-Select_2----select-filehandle-keyword">&#182;</a></h3>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[75]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">sql</span> <span class="o">=</span> <span class="s2">&quot;select filehand from koa_hires where koaid like &#39;</span><span class="si">%20040824%</span><span class="s2">&#39; &quot;</span>
-<span class="n">results</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">run_sync</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">,</span> <span class="n">results</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area">
-
-<div class="prompt output_prompt">Out[75]:</div>
-
-
-
-
-<div class="output_text output_subarea output_execute_result">
-<pre>(&lt;function print&gt;, &lt;Table length=105&gt;
-                       filehand                      
-                        object                       
- ----------------------------------------------------
- /koadata1/HIRES/20040824/lev0/HI.20040824.08204.fits
- /koadata1/HIRES/20040824/lev0/HI.20040824.08544.fits
- /koadata1/HIRES/20040824/lev0/HI.20040824.08591.fits
- /koadata1/HIRES/20040824/lev0/HI.20040824.08638.fits
- /koadata1/HIRES/20040824/lev0/HI.20040824.08685.fits
- /koadata1/HIRES/20040824/lev0/HI.20040824.08732.fits
- /koadata1/HIRES/20040824/lev0/HI.20040824.08779.fits
- /koadata1/HIRES/20040824/lev0/HI.20040824.08826.fits
- /koadata1/HIRES/20040824/lev0/HI.20040824.08873.fits
- /koadata1/HIRES/20040824/lev0/HI.20040824.08919.fits
-                                                  ...
- /koadata1/HIRES/20040824/lev0/HI.20040824.54803.fits
- /koadata1/HIRES/20040824/lev0/HI.20040824.54849.fits
- /koadata1/HIRES/20040824/lev0/HI.20040824.54896.fits
- /koadata1/HIRES/20040824/lev0/HI.20040824.54944.fits
- /koadata1/HIRES/20040824/lev0/HI.20040824.54990.fits
- /koadata1/HIRES/20040824/lev0/HI.20040824.55037.fits
- /koadata1/HIRES/20040824/lev0/HI.20040824.55084.fits
- /koadata1/HIRES/20040824/lev0/HI.20040824.55131.fits
- /koadata1/HIRES/20040824/lev0/HI.20040824.55177.fits
- /koadata1/HIRES/20040824/lev0/HI.20040824.55224.fits)</pre>
-</div>
-
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[76]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># write output file</span>
-<span class="n">table_selectfilehand</span><span class="o">=</span><span class="n">results</span><span class="o">.</span><span class="n">to_table</span><span class="p">()</span>
-<span class="n">table</span><span class="o">.</span><span class="n">write</span> <span class="p">(</span><span class="s1">&#39;./table_selectfilehand.tbl&#39;</span><span class="p">,</span><span class="nb">format</span><span class="o">=</span><span class="s1">&#39;votable&#39;</span><span class="p">,</span><span class="n">overwrite</span><span class="o">=</span><span class="s1">&#39;True&#39;</span><span class="p">)</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="PASS">PASS<a class="anchor-link" href="#PASS">&#182;</a></h3>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="Test-5:-Select-keyword-that-does-not-exist">Test 5: Select keyword that does not exist<a class="anchor-link" href="#Test-5:-Select-keyword-that-does-not-exist">&#182;</a></h3><h4 id="select%20DOESNOTEXIST%20from%20koa.koa_hires_v7%20where%20koaid%20like%20%27%2520040824%25%27&amp;format=ipac">select%20DOESNOTEXIST%20from%20koa.koa_hires_v7%20where%20koaid%20like%20%27%2520040824%25%27&amp;format=ipac<a class="anchor-link" href="#select%20DOESNOTEXIST%20from%20koa.koa_hires_v7%20where%20koaid%20like%20%27%2520040824%25%27&amp;format=ipac">&#182;</a></h4>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[77]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">sql</span> <span class="o">=</span> <span class="s2">&quot;select DOESNOTEXIST from koa_hires where koaid like &#39;</span><span class="si">%20040824%</span><span class="s2">&#39; &quot;</span>
-
-<span class="k">try</span><span class="p">:</span>
-    <span class="n">results</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">run_sync</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
-    <span class="n">table</span>   <span class="o">=</span> <span class="n">results</span><span class="o">.</span><span class="n">to_table</span><span class="p">()</span>
-    <span class="n">table</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;./select_DOES.tbl&#39;</span><span class="p">,</span><span class="nb">format</span><span class="o">=</span><span class="s1">&#39;ascii.ipac&#39;</span><span class="p">,</span><span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">while</span> <span class="n">job</span><span class="o">.</span><span class="n">phase</span> <span class="o">==</span> <span class="s1">&#39;EXECUTING&#39;</span><span class="p">:</span>
+    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
     
-<span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-    <span class="k">with</span> <span class="nb">open</span> <span class="p">(</span><span class="s1">&#39;./select_DOES.tbl&#39;</span><span class="p">,</span> <span class="s1">&#39;w+&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fp</span><span class="p">:</span>
-      <span class="n">fp</span><span class="o">.</span><span class="n">write</span> <span class="p">(</span><span class="n">f</span><span class="s1">&#39;Error: {str(e):s}&#39;</span><span class="p">)</span>
-      <span class="n">fp</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
-    
-</pre></div>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;phase:  &#39;</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">phase</span><span class="p">)</span>
 
-</div>
-</div>
-</div>
+<span class="n">resultsALL</span><span class="o">=</span> <span class="n">job</span><span class="o">.</span><span class="n">fetch_result</span><span class="p">()</span>
 
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h4 id="PASS-Returns-correct-error-message">PASS Returns correct error message<a class="anchor-link" href="#PASS-Returns-correct-error-message">&#182;</a></h4>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="Test-6:-select-KOAID-twice">Test 6: select KOAID twice<a class="anchor-link" href="#Test-6:-select-KOAID-twice">&#182;</a></h3>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[78]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">sql</span> <span class="o">=</span> <span class="s2">&quot;select koaid, koaid from koa_hires where koaid like &#39;</span><span class="si">%20040824%</span><span class="s2">&#39; &quot;</span>
-<span class="n">results</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">run_sync</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
-</pre></div>
+<span class="nb">print</span><span class="p">(</span><span class="n">resultsALL</span><span class="p">)</span>
 
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[80]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="nb">print</span> <span class="p">(</span><span class="n">results</span><span class="p">)</span>
+<span class="c1"># write output file in VTtable format</span>
+<span class="n">table_selectall</span><span class="o">=</span><span class="n">resultsALL</span><span class="o">.</span><span class="n">to_table</span><span class="p">()</span>
+<span class="n">table_selectall</span><span class="o">.</span><span class="n">write</span> <span class="p">(</span><span class="s1">&#39;./table_select_asynchALL.vot&#39;</span><span class="p">,</span> \
+                        <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;votable&#39;</span><span class="p">,</span><span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -12300,31 +11981,35 @@ HI.20040824.55224.fits /koadata1/HIRES/20040824/lev0/HI.20040824.55224.fits
 
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>&lt;Table length=105&gt;
-        koaid                  koaid2        
-        object                 object        
----------------------- ----------------------
-HI.20040824.08204.fits HI.20040824.08204.fits
-HI.20040824.08544.fits HI.20040824.08544.fits
-HI.20040824.08591.fits HI.20040824.08591.fits
-HI.20040824.08638.fits HI.20040824.08638.fits
-HI.20040824.08685.fits HI.20040824.08685.fits
-HI.20040824.08732.fits HI.20040824.08732.fits
-HI.20040824.08779.fits HI.20040824.08779.fits
-HI.20040824.08826.fits HI.20040824.08826.fits
-HI.20040824.08873.fits HI.20040824.08873.fits
-HI.20040824.08919.fits HI.20040824.08919.fits
-                   ...                    ...
-HI.20040824.54803.fits HI.20040824.54803.fits
-HI.20040824.54849.fits HI.20040824.54849.fits
-HI.20040824.54896.fits HI.20040824.54896.fits
-HI.20040824.54944.fits HI.20040824.54944.fits
-HI.20040824.54990.fits HI.20040824.54990.fits
-HI.20040824.55037.fits HI.20040824.55037.fits
-HI.20040824.55084.fits HI.20040824.55084.fits
-HI.20040824.55131.fits HI.20040824.55131.fits
-HI.20040824.55177.fits HI.20040824.55177.fits
-HI.20040824.55224.fits HI.20040824.55224.fits
+<pre>url:     https://koa.ipac.caltech.edu:443//TAP/async/tap_dtopm_um
+job_id:  tap_dtopm_um
+phase:   PENDING
+phase:   COMPLETED
+&lt;Table length=105&gt;
+   el   elaptime equinox eramode ...      z        spt_ind      ofname    
+float64  int32   float64  object ...   float64      int32       object    
+------- -------- ------- ------- ... ------------ --------- --------------
+   45.0        1     0.0 B, G, R ... 0.7068576891 203233131 hires2300.fits
+   45.0        1     0.0 B, G, R ... 0.7068576891 203233131 hires2301.fits
+   45.0        1     0.0 B, G, R ... 0.7068576891 203233131 hires2302.fits
+   45.0        1     0.0 B, G, R ... 0.7068576891 203233131 hires2303.fits
+   45.0        1     0.0 B, G, R ... 0.7068576891 203233131 hires2304.fits
+   45.0        1     0.0 B, G, R ... 0.7068576891 203233131 hires2305.fits
+   45.0        1     0.0 B, G, R ... 0.7068576891 203233131 hires2306.fits
+   45.0        1     0.0 B, G, R ... 0.7068576891 203233131 hires2307.fits
+   45.0        1     0.0 B, G, R ... 0.7068576891 203233131 hires2308.fits
+   45.0        1     0.0 B, G, R ... 0.7068576891 203233131 hires2309.fits
+    ...      ...     ...     ... ...          ...       ...            ...
+   0.01        1  2000.0 B, G, R ... 0.0001813223 200021201 hires2395.fits
+   0.01        1  2000.0 B, G, R ... 0.0001813223 200021201 hires2396.fits
+   0.01        1  2000.0 B, G, R ... 0.0001813223 200021201 hires2397.fits
+   0.01        1  2000.0 B, G, R ... 0.0001813223 200021201 hires2398.fits
+   0.01        1  2000.0 B, G, R ... 0.0001813223 200021201 hires2399.fits
+   0.01        1  2000.0 B, G, R ... 0.0001813223 200021201 hires2400.fits
+   0.01        1  2000.0 B, G, R ... 0.0001813223 200021201 hires2401.fits
+   0.01        1  2000.0 B, G, R ... 0.0001813223 200021201 hires2402.fits
+   0.01        1  2000.0 B, G, R ... 0.0001813223 200021201 hires2403.fits
+   0.01        1  2000.0 B, G, R ... 0.0001813223 200021201 hires2404.fits
 </pre>
 </div>
 </div>
@@ -12333,188 +12018,41 @@ HI.20040824.55224.fits HI.20040824.55224.fits
 </div>
 
 </div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[20]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1">## write to output file</span>
-<span class="n">table_2koaid</span><span class="o">=</span><span class="n">results</span><span class="o">.</span><span class="n">to_table</span><span class="p">()</span>
-<span class="n">table</span><span class="o">.</span><span class="n">write</span> <span class="p">(</span><span class="s1">&#39;./table_2koaid.tbl&#39;</span><span class="p">,</span><span class="nb">format</span><span class="o">=</span><span class="s1">&#39;votable&#39;</span><span class="p">,</span><span class="n">overwrite</span><span class="o">=</span><span class="s1">&#39;True&#39;</span><span class="p">)</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
 <div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h4 id="PASS---but-renames-2nd-KOAID">PASS - but renames 2nd KOAID<a class="anchor-link" href="#PASS---but-renames-2nd-KOAID">&#182;</a></h4>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="Test-6:-select-order-by-sig2nois">Test 6: select order by sig2nois<a class="anchor-link" href="#Test-6:-select-order-by-sig2nois">&#182;</a></h3>
+<h3 id="Select-columns-on-UT-date-and-order-by-signal-to-noise-(sig2nois)">Select columns on UT date and order by signal-to-noise (sig2nois)<a class="anchor-link" href="#Select-columns-on-UT-date-and-order-by-signal-to-noise-(sig2nois)">&#182;</a></h3>
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[81]:</div>
+<div class="prompt input_prompt">In&nbsp;[5]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">sql</span> <span class="o">=</span> <span class="s2">&quot;select koaid, koaid from koa_hires where koaid like &#39;</span><span class="si">%20040824%</span><span class="s2">&#39; order by sig2nois &quot;</span>
-<span class="n">results</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">run_sync</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
-</pre></div>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">sql</span> <span class="o">=</span> <span class="s2">&quot;select koaid, filehand, sig2nois from koa_hires </span><span class="se">\</span>
+<span class="s2">      where koaid like &#39;</span><span class="si">%20040824%</span><span class="s2">&#39;order by sig2nois&quot;</span>
 
-</div>
-</div>
-</div>
+<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">submit_job</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;url:    &#39;</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">url</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;job_id: &#39;</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">job_id</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;phase:  &#39;</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">phase</span><span class="p">)</span>
 
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[82]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1">## write output file</span>
-<span class="n">table_test6_orderbysig2nois</span><span class="o">=</span><span class="n">results</span><span class="o">.</span><span class="n">to_table</span><span class="p">()</span>
-<span class="n">table</span><span class="o">.</span><span class="n">write</span> <span class="p">(</span><span class="s1">&#39;./table_test6_orderbysig2nois.tbl&#39;</span><span class="p">,</span><span class="nb">format</span><span class="o">=</span><span class="s1">&#39;votable&#39;</span><span class="p">,</span><span class="n">overwrite</span><span class="o">=</span><span class="s1">&#39;True&#39;</span><span class="p">)</span>
-</pre></div>
+<span class="n">job</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
 
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[83]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">sql</span> <span class="o">=</span> <span class="s2">&quot;select koaid, filehand, sig2nois from koa_hires where koaid like &#39;</span><span class="si">%20040824%</span><span class="s2">&#39;order by sig2nois  &quot;</span>
-<span class="n">results</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">run_sync</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">,</span><span class="n">results</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area">
-
-<div class="prompt output_prompt">Out[83]:</div>
-
-
-
-
-<div class="output_text output_subarea output_execute_result">
-<pre>(&lt;function print&gt;, &lt;Table length=105&gt;
-         koaid          ... sig2nois
-         object         ... float64 
- ---------------------- ... --------
- HI.20040824.09677.fits ...      2.0
- HI.20040824.09724.fits ...      2.0
- HI.20040824.54001.fits ...      2.0
- HI.20040824.53947.fits ...      2.0
- HI.20040824.45942.fits ...      2.0
- HI.20040824.44695.fits ...      2.0
- HI.20040824.44395.fits ...      2.0
- HI.20040824.44343.fits ...      2.0
- HI.20040824.43054.fits ...      2.0
- HI.20040824.41806.fits ...      2.0
-                    ... ...      ...
- HI.20040824.09011.fits ...     11.0
- HI.20040824.08965.fits ...     11.0
- HI.20040824.08873.fits ...     11.0
- HI.20040824.09105.fits ...     11.0
- HI.20040824.08779.fits ...     11.0
- HI.20040824.08732.fits ...     11.0
- HI.20040824.08826.fits ...     11.0
- HI.20040824.08591.fits ...     11.0
- HI.20040824.08204.fits ...     11.0
- HI.20040824.08685.fits ...     15.0)</pre>
-</div>
-
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="PASS">PASS<a class="anchor-link" href="#PASS">&#182;</a></h3>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="Test-7:-order-by-DOESNOTEXIST">Test 7: order by DOESNOTEXIST<a class="anchor-link" href="#Test-7:-order-by-DOESNOTEXIST">&#182;</a></h3><h4 id="select%20koaid,%20filehand,%20sig2nois%20from%20koa.koa_hires_v7%20where%20koaid%20like%20%27%2520040824%25%27%20order%20by%20DOESNOTEXIST&amp;format=ipac">select%20koaid,%20filehand,%20sig2nois%20from%20koa.koa_hires_v7%20where%20koaid%20like%20%27%2520040824%25%27%20order%20by%20DOESNOTEXIST&amp;format=ipac<a class="anchor-link" href="#select%20koaid,%20filehand,%20sig2nois%20from%20koa.koa_hires_v7%20where%20koaid%20like%20%27%2520040824%25%27%20order%20by%20DOESNOTEXIST&amp;format=ipac">&#182;</a></h4>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[84]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">sql</span> <span class="o">=</span> <span class="s2">&quot;select koaid, filehand, sig2nois from koa_hires where koaid like &#39;</span><span class="si">%20040824%</span><span class="s2">&#39;order by DOESNOTEXIST  &quot;</span>
-
-<span class="k">try</span><span class="p">:</span>
-    <span class="n">results</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">run_sync</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
-    <span class="n">table</span>   <span class="o">=</span> <span class="n">results</span><span class="o">.</span><span class="n">to_table</span><span class="p">()</span>
-    <span class="n">table</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;./select_orderdoesnot.tbl&#39;</span><span class="p">,</span><span class="nb">format</span><span class="o">=</span><span class="s1">&#39;ascii.ipac&#39;</span><span class="p">,</span><span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">while</span> <span class="n">job</span><span class="o">.</span><span class="n">phase</span> <span class="o">==</span> <span class="s1">&#39;EXECUTING&#39;</span><span class="p">:</span>
+    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
     
-<span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-    <span class="k">with</span> <span class="nb">open</span> <span class="p">(</span><span class="s1">&#39;./select_orderbydoesnot.tbl&#39;</span><span class="p">,</span> <span class="s1">&#39;w+&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fp</span><span class="p">:</span>
-      <span class="n">fp</span><span class="o">.</span><span class="n">write</span> <span class="p">(</span><span class="n">f</span><span class="s1">&#39;Error: {str(e):s}&#39;</span><span class="p">)</span>
-      <span class="n">fp</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
-</pre></div>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;phase:  &#39;</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">phase</span><span class="p">)</span>
 
-</div>
-</div>
-</div>
+<span class="n">resultsASK</span> <span class="o">=</span> <span class="n">job</span><span class="o">.</span><span class="n">fetch_result</span><span class="p">()</span>
 
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="PASS-returns-error-condtion">PASS returns error condtion<a class="anchor-link" href="#PASS-returns-error-condtion">&#182;</a></h3>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="Test-8:-set-max-records-=3">Test 8: set max records =3<a class="anchor-link" href="#Test-8:-set-max-records-=3">&#182;</a></h3>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[85]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">sql</span><span class="o">=</span><span class="s2">&quot;select koaid, filehand, frameno from koa_hires where koaid like &#39;</span><span class="si">%20040824%</span><span class="s2">&#39;&quot;</span>
-<span class="n">results</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">run_sync</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">maxrec</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">,</span> <span class="n">results</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">resultsASK</span><span class="p">)</span>
+
+<span class="c1">## write output file</span>
+<span class="n">table</span><span class="o">=</span><span class="n">resultsASK</span><span class="o">.</span><span class="n">to_table</span><span class="p">()</span>
+<span class="n">table</span><span class="o">.</span><span class="n">write</span> <span class="p">(</span><span class="s1">&#39;./table_asynch_orderbysig2nois.vot&#39;</span><span class="p">,</span><span class="nb">format</span><span class="o">=</span><span class="s1">&#39;votable&#39;</span><span class="p">,</span><span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -12527,37 +12065,43 @@ HI.20040824.55224.fits HI.20040824.55224.fits
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[85]:</div>
+<div class="prompt"></div>
 
 
-
-
-<div class="output_text output_subarea output_execute_result">
-<pre>(&lt;function print&gt;, &lt;Table length=3&gt;
-         koaid          ... frameno
-         object         ...  int32 
- ---------------------- ... -------
- HI.20040824.08204.fits ...    2300
- HI.20040824.08544.fits ...    2301
- HI.20040824.08591.fits ...    2302)</pre>
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>url:     https://koa.ipac.caltech.edu:443//TAP/async/tap_lh2qgvyh
+job_id:  tap_lh2qgvyh
+phase:   PENDING
+phase:   COMPLETED
+&lt;Table length=105&gt;
+        koaid          ... sig2nois
+        object         ... float64 
+---------------------- ... --------
+HI.20040824.09677.fits ...      2.0
+HI.20040824.09724.fits ...      2.0
+HI.20040824.54001.fits ...      2.0
+HI.20040824.53947.fits ...      2.0
+HI.20040824.45942.fits ...      2.0
+HI.20040824.44695.fits ...      2.0
+HI.20040824.44395.fits ...      2.0
+HI.20040824.44343.fits ...      2.0
+HI.20040824.43054.fits ...      2.0
+HI.20040824.41806.fits ...      2.0
+                   ... ...      ...
+HI.20040824.09011.fits ...     11.0
+HI.20040824.08965.fits ...     11.0
+HI.20040824.08873.fits ...     11.0
+HI.20040824.09105.fits ...     11.0
+HI.20040824.08779.fits ...     11.0
+HI.20040824.08732.fits ...     11.0
+HI.20040824.08826.fits ...     11.0
+HI.20040824.08591.fits ...     11.0
+HI.20040824.08204.fits ...     11.0
+HI.20040824.08685.fits ...     15.0
+</pre>
+</div>
 </div>
 
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[86]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">table</span> <span class="o">=</span> <span class="n">results</span><span class="o">.</span><span class="n">to_table</span><span class="p">()</span>
-<span class="n">table</span><span class="o">.</span><span class="n">write</span> <span class="p">(</span><span class="s1">&#39;./maxrec_3.tbl&#39;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;ascii.ipac&#39;</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</pre></div>
-
-</div>
 </div>
 </div>
 
@@ -12566,62 +12110,36 @@ HI.20040824.55224.fits HI.20040824.55224.fits
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="PASS">PASS<a class="anchor-link" href="#PASS">&#182;</a></h3>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="Test-9:-set-max-records-=--does-not-exist">Test 9: set max records =  does not exist<a class="anchor-link" href="#Test-9:-set-max-records-=--does-not-exist">&#182;</a></h3>
+<h3 id="Select-maximum-number-of-records-to-return-from-a-query">Select maximum number of records to return from a query<a class="anchor-link" href="#Select-maximum-number-of-records-to-return-from-a-query">&#182;</a></h3>
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[91]:</div>
+<div class="prompt input_prompt">In&nbsp;[6]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">sql</span><span class="o">=</span><span class="s2">&quot;select koaid, filehand, frameno from koa_hires where koaid like &#39;</span><span class="si">%20040824%</span><span class="s2">&#39;&quot;</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">sql</span> <span class="o">=</span> <span class="s2">&quot;select koaid, filehand, frameno from koa_hires where koaid like &#39;</span><span class="si">%20040824%</span><span class="s2">&#39;&quot;</span>
+<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">submit_job</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span><span class="n">maxrec</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
 
-<span class="k">try</span><span class="p">:</span>
-    <span class="n">results</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">run_sync</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">maxrec</span><span class="o">=</span><span class="n">DOESNOTEXIST</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">,</span> <span class="n">results</span>
-<span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">,</span> <span class="p">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)}</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;url:    &#39;</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">url</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;job_id: &#39;</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">job_id</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;phase:  &#39;</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">phase</span><span class="p">)</span>
+
+<span class="n">job</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+
+<span class="k">while</span> <span class="n">job</span><span class="o">.</span><span class="n">phase</span> <span class="o">==</span> <span class="s1">&#39;EXECUTING&#39;</span><span class="p">:</span>
+    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
     
-</pre></div>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;phase:  &#39;</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">phase</span><span class="p">)</span>
 
-</div>
-</div>
-</div>
+<span class="n">resultsASK20</span> <span class="o">=</span> <span class="n">job</span><span class="o">.</span><span class="n">fetch_result</span><span class="p">(</span> <span class="p">)</span>
 
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="PASS">PASS<a class="anchor-link" href="#PASS">&#182;</a></h3>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="Test-10---where_1--(date-range)">Test 10 - where_1  (date range)<a class="anchor-link" href="#Test-10---where_1--(date-range)">&#182;</a></h3><h4 id="select%20koaid,%20filehand%20from%20koa.koa_hires_v7%20where%20(utdatetime%20%3E=%20to_date(%272009-01-01%2000:00:00%27,%20%27yyyy-mm-dd%20HH24:MI:SS%27)%20and%20utdatetime%20%3C=%20to_date(%272009-01-05%2023:59:59%27,%20%27yyyy-mm-dd%20HH24:MI:SS%27))%20&amp;format=ipac">select%20koaid,%20filehand%20from%20koa.koa_hires_v7%20where%20(utdatetime%20%3E=%20to_date(%272009-01-01%2000:00:00%27,%20%27yyyy-mm-dd%20HH24:MI:SS%27)%20and%20utdatetime%20%3C=%20to_date(%272009-01-05%2023:59:59%27,%20%27yyyy-mm-dd%20HH24:MI:SS%27))%20&amp;format=ipac<a class="anchor-link" href="#select%20koaid,%20filehand%20from%20koa.koa_hires_v7%20where%20(utdatetime%20%3E=%20to_date(%272009-01-01%2000:00:00%27,%20%27yyyy-mm-dd%20HH24:MI:SS%27)%20and%20utdatetime%20%3C=%20to_date(%272009-01-05%2023:59:59%27,%20%27yyyy-mm-dd%20HH24:MI:SS%27))%20&amp;format=ipac">&#182;</a></h4>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[92]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">sql</span><span class="o">=</span><span class="s2">&quot;select koaid, filehand from koa_hires where (utdatetime &gt;= to_date(&#39;2009-01-01 00:00:00&#39;, &#39;yyyy-mm-dd HH24:MI:SS&#39;) and utdatetime &lt;= to_date(&#39;2009-01-05 23:59:59&#39;, &#39;yyyy-mm-dd HH24:MI:SS&#39;))&quot;</span>
-<span class="n">results</span>  <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">run_sync</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">,</span> <span class="n">results</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">resultsASK20</span><span class="p">)</span>
+
+<span class="c1">## write output file</span>
+<span class="n">table</span><span class="o">=</span><span class="n">resultsASK20</span><span class="o">.</span><span class="n">to_table</span><span class="p">()</span>
+<span class="n">table</span><span class="o">.</span><span class="n">write</span> <span class="p">(</span><span class="s1">&#39;./table_asynch_max20.vot&#39;</span><span class="p">,</span><span class="nb">format</span><span class="o">=</span><span class="s1">&#39;votable&#39;</span><span class="p">,</span><span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -12634,85 +12152,83 @@ HI.20040824.55224.fits HI.20040824.55224.fits
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[92]:</div>
+<div class="prompt"></div>
 
 
-
-
-<div class="output_text output_subarea output_execute_result">
-<pre>(&lt;function print&gt;, &lt;Table length=61&gt;
-         koaid                                filehand                      
-         object                                object                       
- ---------------------- ----------------------------------------------------
- HI.20090101.09133.fits /koadata4/HIRES/20090101/lev0/HI.20090101.09133.fits
- HI.20090101.09658.fits /koadata4/HIRES/20090101/lev0/HI.20090101.09658.fits
- HI.20090101.09784.fits /koadata4/HIRES/20090101/lev0/HI.20090101.09784.fits
- HI.20090104.02004.fits /koadata4/HIRES/20090104/lev0/HI.20090104.02004.fits
- HI.20090104.02222.fits /koadata4/HIRES/20090104/lev0/HI.20090104.02222.fits
- HI.20090104.02477.fits /koadata4/HIRES/20090104/lev0/HI.20090104.02477.fits
- HI.20090105.04559.fits /koadata4/HIRES/20090105/lev0/HI.20090105.04559.fits
- HI.20090105.05148.fits /koadata4/HIRES/20090105/lev0/HI.20090105.05148.fits
- HI.20090105.06188.fits /koadata4/HIRES/20090105/lev0/HI.20090105.06188.fits
- HI.20090105.08445.fits /koadata4/HIRES/20090105/lev0/HI.20090105.08445.fits
-                    ...                                                  ...
- HI.20090105.10587.fits /koadata4/HIRES/20090105/lev0/HI.20090105.10587.fits
- HI.20090105.10632.fits /koadata4/HIRES/20090105/lev0/HI.20090105.10632.fits
- HI.20090105.10678.fits /koadata4/HIRES/20090105/lev0/HI.20090105.10678.fits
- HI.20090105.10724.fits /koadata4/HIRES/20090105/lev0/HI.20090105.10724.fits
- HI.20090105.10770.fits /koadata4/HIRES/20090105/lev0/HI.20090105.10770.fits
- HI.20090105.10816.fits /koadata4/HIRES/20090105/lev0/HI.20090105.10816.fits
- HI.20090105.10862.fits /koadata4/HIRES/20090105/lev0/HI.20090105.10862.fits
- HI.20090105.10908.fits /koadata4/HIRES/20090105/lev0/HI.20090105.10908.fits
- HI.20090105.10954.fits /koadata4/HIRES/20090105/lev0/HI.20090105.10954.fits
- HI.20090105.11000.fits /koadata4/HIRES/20090105/lev0/HI.20090105.11000.fits)</pre>
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>url:     https://koa.ipac.caltech.edu:443//TAP/async/tap_o2gxxd90
+job_id:  tap_o2gxxd90
+phase:   PENDING
+phase:   COMPLETED
+&lt;Table length=105&gt;
+        koaid          ... frameno
+        object         ...  int32 
+---------------------- ... -------
+HI.20040824.08204.fits ...    2300
+HI.20040824.08544.fits ...    2301
+HI.20040824.08591.fits ...    2302
+HI.20040824.08638.fits ...    2303
+HI.20040824.08685.fits ...    2304
+HI.20040824.08732.fits ...    2305
+HI.20040824.08779.fits ...    2306
+HI.20040824.08826.fits ...    2307
+HI.20040824.08873.fits ...    2308
+HI.20040824.08919.fits ...    2309
+                   ... ...     ...
+HI.20040824.54803.fits ...    2395
+HI.20040824.54849.fits ...    2396
+HI.20040824.54896.fits ...    2397
+HI.20040824.54944.fits ...    2398
+HI.20040824.54990.fits ...    2399
+HI.20040824.55037.fits ...    2400
+HI.20040824.55084.fits ...    2401
+HI.20040824.55131.fits ...    2402
+HI.20040824.55177.fits ...    2403
+HI.20040824.55224.fits ...    2404
+</pre>
+</div>
 </div>
 
 </div>
-
-</div>
 </div>
 
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h3 id="Query-records-by-time-range">Query records by time range<a class="anchor-link" href="#Query-records-by-time-range">&#182;</a></h3>
+</div>
+</div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[93]:</div>
+<div class="prompt input_prompt">In&nbsp;[7]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span>  
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">sql</span><span class="o">=</span><span class="s2">&quot;select koaid, filehand from koa_hires </span><span class="se">\</span>
+<span class="s2">   where (utdatetime &gt;= to_date(&#39;2009-01-01 00:00:00&#39;, &#39;yyyy-mm-dd HH24:MI:SS&#39;) </span><span class="se">\</span>
+<span class="s2">   and utdatetime &lt;= to_date(&#39;2009-01-05 23:59:59&#39;, &#39;yyyy-mm-dd HH24:MI:SS&#39;))&quot;</span>
+
+
+<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">submit_job</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;url:    &#39;</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">url</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;job_id: &#39;</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">job_id</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;phase:  &#39;</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">phase</span><span class="p">)</span>
+
+<span class="n">job</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+
+<span class="k">while</span> <span class="n">job</span><span class="o">.</span><span class="n">phase</span> <span class="o">==</span> <span class="s1">&#39;EXECUTING&#39;</span><span class="p">:</span>
+    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;phase:  &#39;</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">phase</span><span class="p">)</span>
+
+<span class="n">resultsDATERANGE</span> <span class="o">=</span> <span class="n">job</span><span class="o">.</span><span class="n">fetch_result</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">resultsDATERANGE</span><span class="p">)</span>
+
 <span class="c1">## write to output file</span>
-<span class="n">table_daterange</span><span class="o">=</span><span class="n">results</span><span class="o">.</span><span class="n">to_table</span><span class="p">()</span>
-<span class="n">table</span><span class="o">.</span><span class="n">write</span> <span class="p">(</span><span class="s1">&#39;./table_daterange.tbl&#39;</span><span class="p">,</span><span class="nb">format</span><span class="o">=</span><span class="s1">&#39;votable&#39;</span><span class="p">,</span><span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="Pass">Pass<a class="anchor-link" href="#Pass">&#182;</a></h3>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Test-11:-select-program-ID">Test 11: select program ID<a class="anchor-link" href="#Test-11:-select-program-ID">&#182;</a></h2>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[94]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">sql</span><span class="o">=</span><span class="s2">&quot;select koaid, filehand, progid, iodin, imagetyp from koa_hires where (progid = &#39;C307&#39;) &quot;</span>  
-<span class="n">results</span>  <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">run_sync</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">,</span> <span class="n">results</span>
+<span class="n">table</span><span class="o">=</span><span class="n">resultsDATERANGE</span><span class="o">.</span><span class="n">to_table</span><span class="p">()</span>
+<span class="n">table</span><span class="o">.</span><span class="n">write</span> <span class="p">(</span><span class="s1">&#39;./table_asynch_daterange.vot&#39;</span><span class="p">,</span><span class="nb">format</span><span class="o">=</span><span class="s1">&#39;votable&#39;</span><span class="p">,</span><span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -12725,56 +12241,43 @@ HI.20040824.55224.fits HI.20040824.55224.fits
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[94]:</div>
+<div class="prompt"></div>
 
 
-
-
-<div class="output_text output_subarea output_execute_result">
-<pre>(&lt;function print&gt;, &lt;Table length=538&gt;
-         koaid          ... imagetyp
-         object         ...  object 
- ---------------------- ... --------
- HI.20180331.02525.fits ...    focus
- HI.20180331.03342.fits ...    focus
- HI.20180331.03598.fits ...    focus
- HI.20180331.03786.fits ...    focus
- HI.20180331.03943.fits ...    focus
- HI.20180331.04060.fits ...    focus
- HI.20180331.04218.fits ...    focus
- HI.20180331.04338.fits ...    focus
- HI.20180331.04502.fits ...  arclamp
- HI.20180331.04578.fits ...  arclamp
-                    ... ...      ...
- HI.20180801.45058.fits ...   object
- HI.20180801.45222.fits ...   object
- HI.20180801.45356.fits ...   object
- HI.20180801.45644.fits ...   object
- HI.20180801.45867.fits ...   object
- HI.20180801.45945.fits ...   object
- HI.20180801.46157.fits ... flatlamp
- HI.20180801.46246.fits ... flatlamp
- HI.20180801.46399.fits ...  arclamp
- HI.20180801.46463.fits ...  arclamp)</pre>
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>url:     https://koa.ipac.caltech.edu:443//TAP/async/tap_07f8g402
+job_id:  tap_07f8g402
+phase:   PENDING
+phase:   COMPLETED
+&lt;Table length=61&gt;
+        koaid                                filehand                      
+        object                                object                       
+---------------------- ----------------------------------------------------
+HI.20090101.09133.fits /koadata4/HIRES/20090101/lev0/HI.20090101.09133.fits
+HI.20090101.09658.fits /koadata4/HIRES/20090101/lev0/HI.20090101.09658.fits
+HI.20090101.09784.fits /koadata4/HIRES/20090101/lev0/HI.20090101.09784.fits
+HI.20090104.02004.fits /koadata4/HIRES/20090104/lev0/HI.20090104.02004.fits
+HI.20090104.02222.fits /koadata4/HIRES/20090104/lev0/HI.20090104.02222.fits
+HI.20090104.02477.fits /koadata4/HIRES/20090104/lev0/HI.20090104.02477.fits
+HI.20090105.04559.fits /koadata4/HIRES/20090105/lev0/HI.20090105.04559.fits
+HI.20090105.05148.fits /koadata4/HIRES/20090105/lev0/HI.20090105.05148.fits
+HI.20090105.06188.fits /koadata4/HIRES/20090105/lev0/HI.20090105.06188.fits
+HI.20090105.08445.fits /koadata4/HIRES/20090105/lev0/HI.20090105.08445.fits
+                   ...                                                  ...
+HI.20090105.10587.fits /koadata4/HIRES/20090105/lev0/HI.20090105.10587.fits
+HI.20090105.10632.fits /koadata4/HIRES/20090105/lev0/HI.20090105.10632.fits
+HI.20090105.10678.fits /koadata4/HIRES/20090105/lev0/HI.20090105.10678.fits
+HI.20090105.10724.fits /koadata4/HIRES/20090105/lev0/HI.20090105.10724.fits
+HI.20090105.10770.fits /koadata4/HIRES/20090105/lev0/HI.20090105.10770.fits
+HI.20090105.10816.fits /koadata4/HIRES/20090105/lev0/HI.20090105.10816.fits
+HI.20090105.10862.fits /koadata4/HIRES/20090105/lev0/HI.20090105.10862.fits
+HI.20090105.10908.fits /koadata4/HIRES/20090105/lev0/HI.20090105.10908.fits
+HI.20090105.10954.fits /koadata4/HIRES/20090105/lev0/HI.20090105.10954.fits
+HI.20090105.11000.fits /koadata4/HIRES/20090105/lev0/HI.20090105.11000.fits
+</pre>
+</div>
 </div>
 
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[95]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1">## write to output file</span>
-<span class="n">table_progID_C307</span><span class="o">=</span><span class="n">results</span><span class="o">.</span><span class="n">to_table</span><span class="p">()</span>
-<span class="n">table</span><span class="o">.</span><span class="n">write</span> <span class="p">(</span><span class="s1">&#39;./table_priogID_C307.tbl&#39;</span><span class="p">,</span><span class="nb">format</span><span class="o">=</span><span class="s1">&#39;votable&#39;</span><span class="p">,</span><span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</pre></div>
-
-</div>
 </div>
 </div>
 
@@ -12783,38 +12286,37 @@ HI.20040824.55224.fits HI.20040824.55224.fits
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="PASS">PASS<a class="anchor-link" href="#PASS">&#182;</a></h3>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Test-12:-Spatial_1---circle-centered-on-RA-=-262.0-Dec-=-17.01---Radius-1.0---units-in-decimal-degrees">Test 12: Spatial_1 - circle centered on RA = 262.0 Dec = 17.01   Radius 1.0   units in decimal degrees<a class="anchor-link" href="#Test-12:-Spatial_1---circle-centered-on-RA-=-262.0-Dec-=-17.01---Radius-1.0---units-in-decimal-degrees">&#182;</a></h2>
+<h2 id="Query-by-program-ID">Query by program ID<a class="anchor-link" href="#Query-by-program-ID">&#182;</a></h2>
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[96]:</div>
+<div class="prompt input_prompt">In&nbsp;[8]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">sql</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;select koaid, filehand, ra2000, dec2000 from koa_hires where contains(point(&#39;icrs&#39;, ra2000, dec2000), circle(&#39;icrs&#39;,262.0,17.0,1.0)) = 1&quot;</span><span class="p">)</span>
-</pre></div>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">sql</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;select koaid, filehand, progid, iodin, imagetyp from </span><span class="se">\</span>
+<span class="s2">      koa_hires where (progid = &#39;C307&#39;)&quot;</span><span class="p">)</span>
 
-</div>
-</div>
-</div>
+<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">submit_job</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;url:    &#39;</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">url</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;job_id: &#39;</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">job_id</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;phase:  &#39;</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">phase</span><span class="p">)</span>
 
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[97]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">results</span>  <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">run_sync</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">,</span> <span class="n">results</span>
+<span class="n">job</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+
+<span class="k">while</span> <span class="n">job</span><span class="o">.</span><span class="n">phase</span> <span class="o">==</span> <span class="s1">&#39;EXECUTING&#39;</span><span class="p">:</span>
+    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;phase:  &#39;</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">phase</span><span class="p">)</span>
+
+<span class="n">resultsPROGID</span><span class="o">=</span> <span class="n">job</span><span class="o">.</span><span class="n">fetch_result</span><span class="p">(</span> <span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">resultsPROGID</span><span class="p">)</span>
+
+<span class="c1">## write to output file</span>
+<span class="n">table_progID_C307</span><span class="o">=</span><span class="n">resultsPROGID</span><span class="o">.</span><span class="n">to_table</span><span class="p">()</span>
+<span class="n">table</span><span class="o">.</span><span class="n">write</span> <span class="p">(</span><span class="s1">&#39;./table_progID_C307.vot&#39;</span><span class="p">,</span><span class="nb">format</span><span class="o">=</span><span class="s1">&#39;votable&#39;</span><span class="p">,</span><span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -12827,39 +12329,41 @@ HI.20040824.55224.fits HI.20040824.55224.fits
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[97]:</div>
+<div class="prompt"></div>
 
 
-
-
-<div class="output_text output_subarea output_execute_result">
-<pre>(&lt;function print&gt;, &lt;Table length=42&gt;
-         koaid          ...  dec2000 
-         object         ...  float64 
- ---------------------- ... ---------
- HI.19980718.34975.fits ... 16.827111
- HI.19980912.26279.fits ... 16.824889
- HI.19980913.27523.fits ... 16.822694
- HI.19980914.23928.fits ... 16.821861
- HI.19980914.24204.fits ... 16.821861
- HI.19980914.29108.fits ... 16.822222
- HI.19980915.26653.fits ...   16.8225
- HI.19980916.25837.fits ... 16.823694
- HI.19980918.24196.fits ... 16.825194
- HI.19990421.49245.fits ...   17.5081
-                    ... ...       ...
- HI.20040824.18925.fits ... 17.509944
- HI.20040825.18800.fits ... 17.510194
- HI.20041002.18948.fits ... 17.509944
- HI.20041002.19291.fits ... 17.509944
- HI.20041002.19935.fits ... 17.509944
- HI.20041002.20579.fits ... 17.509944
- HI.20050301.49856.fits ... 16.825028
- HI.20160126.56113.fits ...   16.8245
- HI.20160714.38961.fits ...  16.82319
- HI.20180702.37596.fits ...  16.82131)</pre>
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>url:     https://koa.ipac.caltech.edu:443//TAP/async/tap_s94zk9ya
+job_id:  tap_s94zk9ya
+phase:   PENDING
+phase:   COMPLETED
+&lt;Table length=538&gt;
+        koaid          ... imagetyp
+        object         ...  object 
+---------------------- ... --------
+HI.20180331.02525.fits ...    focus
+HI.20180331.03342.fits ...    focus
+HI.20180331.03598.fits ...    focus
+HI.20180331.03786.fits ...    focus
+HI.20180331.03943.fits ...    focus
+HI.20180331.04060.fits ...    focus
+HI.20180331.04218.fits ...    focus
+HI.20180331.04338.fits ...    focus
+HI.20180331.04502.fits ...  arclamp
+HI.20180331.04578.fits ...  arclamp
+                   ... ...      ...
+HI.20180801.45058.fits ...   object
+HI.20180801.45222.fits ...   object
+HI.20180801.45356.fits ...   object
+HI.20180801.45644.fits ...   object
+HI.20180801.45867.fits ...   object
+HI.20180801.45945.fits ...   object
+HI.20180801.46157.fits ... flatlamp
+HI.20180801.46246.fits ... flatlamp
+HI.20180801.46399.fits ...  arclamp
+HI.20180801.46463.fits ...  arclamp
+</pre>
 </div>
-
 </div>
 
 </div>
@@ -12870,38 +12374,37 @@ HI.20040824.55224.fits HI.20040824.55224.fits
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="PASS">PASS<a class="anchor-link" href="#PASS">&#182;</a></h3>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="Test-13---Spatial_2-box-with-262.0-Dec-=-17.01----and-1-degree">Test 13 - Spatial_2 box with 262.0 Dec = 17.01    and 1 degree<a class="anchor-link" href="#Test-13---Spatial_2-box-with-262.0-Dec-=-17.01----and-1-degree">&#182;</a></h3>
+<h2 id="Spatial-cone-search">Spatial cone search<a class="anchor-link" href="#Spatial-cone-search">&#182;</a></h2>
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[98]:</div>
+<div class="prompt input_prompt">In&nbsp;[9]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">sql</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;select koaid, filehand, ra2000, dec2000 from koa_hires where contains(point(&#39;icrs&#39;, ra2000, dec2000), box(&#39;icrs&#39;,262.0,17.0,2.0,2.0)) = 1&quot;</span><span class="p">)</span>
-</pre></div>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">sql</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;select koaid, filehand, ra2000, dec2000 from koa_hires </span><span class="se">\</span>
+<span class="s2">    where contains(point(&#39;icrs&#39;, ra2000, dec2000), circle(&#39;icrs&#39;,262.0,17.0,1.0)) = 1&quot;</span><span class="p">)</span>
+    
+<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">submit_job</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;url:    &#39;</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">url</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;job_id: &#39;</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">job_id</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;phase:  &#39;</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">phase</span><span class="p">)</span>
 
-</div>
-</div>
-</div>
+<span class="n">job</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
 
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[99]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">results</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">run_sync</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">,</span> <span class="n">results</span>
+<span class="k">while</span> <span class="n">job</span><span class="o">.</span><span class="n">phase</span> <span class="o">==</span> <span class="s1">&#39;EXECUTING&#39;</span><span class="p">:</span>
+    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;phase:  &#39;</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">phase</span><span class="p">)</span>
+
+<span class="n">resultsSPA</span><span class="o">=</span> <span class="n">job</span><span class="o">.</span><span class="n">fetch_result</span><span class="p">(</span> <span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">resultsSPA</span><span class="p">)</span>
+
+<span class="c1"># write to output file</span>
+<span class="n">table</span><span class="o">=</span><span class="n">resultsSPA</span><span class="o">.</span><span class="n">to_table</span><span class="p">()</span>
+<span class="n">table</span><span class="o">.</span><span class="n">write</span> <span class="p">(</span><span class="s1">&#39;./table_asynch_spatial_cone.vot&#39;</span><span class="p">,</span><span class="nb">format</span><span class="o">=</span><span class="s1">&#39;votable&#39;</span><span class="p">,</span><span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -12914,56 +12417,43 @@ HI.20040824.55224.fits HI.20040824.55224.fits
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[99]:</div>
+<div class="prompt"></div>
 
 
-
-
-<div class="output_text output_subarea output_execute_result">
-<pre>(&lt;function print&gt;, &lt;Table length=42&gt;
-         koaid          ...  dec2000 
-         object         ...  float64 
- ---------------------- ... ---------
- HI.19980718.34975.fits ... 16.827111
- HI.19980912.26279.fits ... 16.824889
- HI.19980913.27523.fits ... 16.822694
- HI.19980914.23928.fits ... 16.821861
- HI.19980914.24204.fits ... 16.821861
- HI.19980914.29108.fits ... 16.822222
- HI.19980915.26653.fits ...   16.8225
- HI.19980916.25837.fits ... 16.823694
- HI.19980918.24196.fits ... 16.825194
- HI.19990421.49245.fits ...   17.5081
-                    ... ...       ...
- HI.20040824.18925.fits ... 17.509944
- HI.20040825.18800.fits ... 17.510194
- HI.20041002.18948.fits ... 17.509944
- HI.20041002.19291.fits ... 17.509944
- HI.20041002.19935.fits ... 17.509944
- HI.20041002.20579.fits ... 17.509944
- HI.20050301.49856.fits ... 16.825028
- HI.20160126.56113.fits ...   16.8245
- HI.20160714.38961.fits ...  16.82319
- HI.20180702.37596.fits ...  16.82131)</pre>
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>url:     https://koa.ipac.caltech.edu:443//TAP/async/tap_h72yqyl9
+job_id:  tap_h72yqyl9
+phase:   PENDING
+phase:   COMPLETED
+&lt;Table length=42&gt;
+        koaid          ...  dec2000 
+        object         ...  float64 
+---------------------- ... ---------
+HI.19980718.34975.fits ... 16.827111
+HI.19980912.26279.fits ... 16.824889
+HI.19980913.27523.fits ... 16.822694
+HI.19980914.23928.fits ... 16.821861
+HI.19980914.24204.fits ... 16.821861
+HI.19980914.29108.fits ... 16.822222
+HI.19980915.26653.fits ...   16.8225
+HI.19980916.25837.fits ... 16.823694
+HI.19980918.24196.fits ... 16.825194
+HI.19990421.49245.fits ...   17.5081
+                   ... ...       ...
+HI.20040824.18925.fits ... 17.509944
+HI.20040825.18800.fits ... 17.510194
+HI.20041002.18948.fits ... 17.509944
+HI.20041002.19291.fits ... 17.509944
+HI.20041002.19935.fits ... 17.509944
+HI.20041002.20579.fits ... 17.509944
+HI.20050301.49856.fits ... 16.825028
+HI.20160126.56113.fits ...   16.8245
+HI.20160714.38961.fits ...  16.82319
+HI.20180702.37596.fits ...  16.82131
+</pre>
+</div>
 </div>
 
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[100]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1">## write to output file</span>
-<span class="n">table_spatial_1</span><span class="o">=</span><span class="n">results</span><span class="o">.</span><span class="n">to_table</span><span class="p">()</span>
-<span class="n">table</span><span class="o">.</span><span class="n">write</span> <span class="p">(</span><span class="s1">&#39;./table_spatial_1.tbl&#39;</span><span class="p">,</span><span class="nb">format</span><span class="o">=</span><span class="s1">&#39;votable&#39;</span><span class="p">,</span><span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</pre></div>
-
-</div>
 </div>
 </div>
 
@@ -12972,38 +12462,38 @@ HI.20040824.55224.fits HI.20040824.55224.fits
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h4 id="FAIL---no-records-returned;-known-bug">FAIL - no records returned; known bug<a class="anchor-link" href="#FAIL---no-records-returned;-known-bug">&#182;</a></h4>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="Test-14---spatial_3,-polygon">Test 14 - spatial_3, polygon<a class="anchor-link" href="#Test-14---spatial_3,-polygon">&#182;</a></h3>
+<h2 id="Spatial-box-search">Spatial box search<a class="anchor-link" href="#Spatial-box-search">&#182;</a></h2>
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[101]:</div>
+<div class="prompt input_prompt">In&nbsp;[10]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">sql</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;select koaid, filehand, ra2000, dec2000 from koa.koa_hires_v7 where contains(point(&#39;icrs&#39;, ra2000, dec2000), polygon(&#39;icrs&#39;,209.80225,53.34894,209.80225,55.34894,211.80225,54.34894)) = 1&quot;</span><span class="p">)</span>
-</pre></div>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">sql</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;select koaid, filehand, ra2000, dec2000 from koa_hires where </span><span class="se">\</span>
+<span class="s2">     contains(point(&#39;icrs&#39;, ra2000, dec2000), </span><span class="se">\</span>
+<span class="s2">     box(&#39;icrs&#39;,262.0,17.0,2.0,120)) = 1&quot;</span><span class="p">)</span>
 
-</div>
-</div>
-</div>
+<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">submit_job</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;url:    &#39;</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">url</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;job_id: &#39;</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">job_id</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;phase:  &#39;</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">phase</span><span class="p">)</span>
 
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[102]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">results</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">run_sync</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">,</span> <span class="n">results</span>
+<span class="n">job</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+
+<span class="k">while</span> <span class="n">job</span><span class="o">.</span><span class="n">phase</span> <span class="o">==</span> <span class="s1">&#39;EXECUTING&#39;</span><span class="p">:</span>
+    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;phase:  &#39;</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">phase</span><span class="p">)</span>
+
+<span class="n">resultsSPA_BOX</span><span class="o">=</span> <span class="n">job</span><span class="o">.</span><span class="n">fetch_result</span><span class="p">(</span> <span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">resultsSPA_BOX</span><span class="p">)</span>
+
+<span class="c1">## write to output file</span>
+<span class="n">table</span><span class="o">=</span><span class="n">resultsSPA_BOX</span><span class="o">.</span><span class="n">to_table</span><span class="p">()</span>
+<span class="n">table</span><span class="o">.</span><span class="n">write</span> <span class="p">(</span><span class="s1">&#39;./table_spatial_Box.vot&#39;</span><span class="p">,</span><span class="nb">format</span><span class="o">=</span><span class="s1">&#39;votable&#39;</span><span class="p">,</span><span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -13016,66 +12506,83 @@ HI.20040824.55224.fits HI.20040824.55224.fits
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[102]:</div>
+<div class="prompt"></div>
 
 
-
-
-<div class="output_text output_subarea output_execute_result">
-<pre>(&lt;function print&gt;, &lt;Table length=28&gt;
-         koaid          ...  dec2000 
-         object         ...  float64 
- ---------------------- ... ---------
- HI.20040114.51275.fits ... 54.353806
- HI.20040114.53552.fits ... 54.353806
- HI.20040114.55829.fits ... 54.353806
- HI.20040114.58182.fits ... 54.353833
- HI.20060420.33559.fits ... 54.352917
- HI.20060420.35412.fits ... 54.352917
- HI.20060420.37265.fits ... 54.352917
- HI.20060420.39117.fits ... 54.352917
- HI.20060420.41232.fits ... 54.317028
- HI.20060420.43085.fits ... 54.317028
-                    ... ...       ...
- HI.20110905.19585.fits ...  54.27675
- HI.20110909.17581.fits ...  54.27289
- HI.20110909.18064.fits ...  54.27289
- HI.20110909.18415.fits ...  54.27289
- HI.20110909.19067.fits ...  54.27289
- HI.20110909.19719.fits ...  54.27289
- HI.20110920.17641.fits ...  54.27347
- HI.20110923.18047.fits ...  54.27414
- HI.20110923.18126.fits ...  54.27414
- HI.20110923.18478.fits ...  54.27414)</pre>
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>url:     https://koa.ipac.caltech.edu:443//TAP/async/tap_kzvoyr52
+job_id:  tap_kzvoyr52
+phase:   PENDING
+phase:   COMPLETED
+&lt;Table length=994&gt;
+        koaid          ...  dec2000  
+        object         ...  float64  
+---------------------- ... ----------
+HI.19941214.78458.fits ...  29.922813
+HI.19950716.29399.fits ... -37.293839
+HI.19950716.29658.fits ... -37.293839
+HI.19950716.29859.fits ... -37.293839
+HI.19950716.30097.fits ... -37.293839
+HI.19951129.15228.fits ...       25.0
+HI.19951129.15327.fits ...       25.0
+HI.19960523.16106.fits ...    5.33211
+HI.19960523.16363.fits ...    5.33211
+HI.19960523.16460.fits ...    5.33211
+                   ... ...        ...
+HI.20180830.30875.fits ...   66.69553
+HI.20180830.31040.fits ...   66.69553
+HI.20180830.31309.fits ...   66.69553
+HI.20180830.31509.fits ...   66.69553
+HI.20180830.31632.fits ...   66.69553
+HI.20180923.20972.fits ...   27.28369
+HI.20180928.20868.fits ...   52.79058
+HI.20180929.18460.fits ...   52.79053
+HI.20190125.58818.fits ...   47.40228
+HI.20190125.58982.fits ...   34.27144
+</pre>
+</div>
 </div>
 
 </div>
-
-</div>
 </div>
 
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h3 id="Spatial--polygon-search">Spatial  polygon search<a class="anchor-link" href="#Spatial--polygon-search">&#182;</a></h3>
+</div>
+</div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[103]:</div>
+<div class="prompt input_prompt">In&nbsp;[11]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="c1">## write to output file</span>
-<span class="n">table_spatial_P</span><span class="o">=</span><span class="n">results</span><span class="o">.</span><span class="n">to_table</span><span class="p">()</span>
-<span class="n">table</span><span class="o">.</span><span class="n">write</span> <span class="p">(</span><span class="s1">&#39;./table_spatial_P.tbl&#39;</span><span class="p">,</span><span class="nb">format</span><span class="o">=</span><span class="s1">&#39;votable&#39;</span><span class="p">,</span><span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</pre></div>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">sql</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;select koaid, filehand, ra2000, dec2000 from koa.koa_hires_v7 where </span><span class="se">\</span>
+<span class="s2">    contains(point(&#39;icrs&#39;, ra2000, dec2000), </span><span class="se">\</span>
+<span class="s2">    polygon(&#39;icrs&#39;,209.80225,53.34894,209.80225,55.34894,211.80225,54.34894)) = 1&quot;</span><span class="p">)</span>
 
-</div>
-</div>
-</div>
+<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">submit_job</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;url:    &#39;</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">url</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;job_id: &#39;</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">job_id</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;phase:  &#39;</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">phase</span><span class="p">)</span>
 
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[104]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="nb">print</span><span class="p">,</span> <span class="n">results</span>
+<span class="n">job</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+
+<span class="k">while</span> <span class="n">job</span><span class="o">.</span><span class="n">phase</span> <span class="o">==</span> <span class="s1">&#39;EXECUTING&#39;</span><span class="p">:</span>
+    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;phase:  &#39;</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">phase</span><span class="p">)</span>
+
+<span class="n">resultsSPA_POLY</span><span class="o">=</span> <span class="n">job</span><span class="o">.</span><span class="n">fetch_result</span><span class="p">(</span> <span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">resultsSPA_POLY</span><span class="p">)</span>
+
+<span class="c1">## write to output file</span>
+<span class="n">table</span><span class="o">=</span><span class="n">resultsSPA_POLY</span><span class="o">.</span><span class="n">to_table</span><span class="p">()</span>
+<span class="n">table</span><span class="o">.</span><span class="n">write</span> <span class="p">(</span><span class="s1">&#39;./table_spatial_P.vot&#39;</span><span class="p">,</span><span class="nb">format</span><span class="o">=</span><span class="s1">&#39;votable&#39;</span><span class="p">,</span><span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -13088,39 +12595,41 @@ HI.20040824.55224.fits HI.20040824.55224.fits
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[104]:</div>
+<div class="prompt"></div>
 
 
-
-
-<div class="output_text output_subarea output_execute_result">
-<pre>(&lt;function print&gt;, &lt;Table length=28&gt;
-         koaid          ...  dec2000 
-         object         ...  float64 
- ---------------------- ... ---------
- HI.20040114.51275.fits ... 54.353806
- HI.20040114.53552.fits ... 54.353806
- HI.20040114.55829.fits ... 54.353806
- HI.20040114.58182.fits ... 54.353833
- HI.20060420.33559.fits ... 54.352917
- HI.20060420.35412.fits ... 54.352917
- HI.20060420.37265.fits ... 54.352917
- HI.20060420.39117.fits ... 54.352917
- HI.20060420.41232.fits ... 54.317028
- HI.20060420.43085.fits ... 54.317028
-                    ... ...       ...
- HI.20110905.19585.fits ...  54.27675
- HI.20110909.17581.fits ...  54.27289
- HI.20110909.18064.fits ...  54.27289
- HI.20110909.18415.fits ...  54.27289
- HI.20110909.19067.fits ...  54.27289
- HI.20110909.19719.fits ...  54.27289
- HI.20110920.17641.fits ...  54.27347
- HI.20110923.18047.fits ...  54.27414
- HI.20110923.18126.fits ...  54.27414
- HI.20110923.18478.fits ...  54.27414)</pre>
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>url:     https://koa.ipac.caltech.edu:443//TAP/async/tap_b_726b5r
+job_id:  tap_b_726b5r
+phase:   PENDING
+phase:   COMPLETED
+&lt;Table length=28&gt;
+        koaid          ...  dec2000 
+        object         ...  float64 
+---------------------- ... ---------
+HI.20040114.51275.fits ... 54.353806
+HI.20040114.53552.fits ... 54.353806
+HI.20040114.55829.fits ... 54.353806
+HI.20040114.58182.fits ... 54.353833
+HI.20060420.33559.fits ... 54.352917
+HI.20060420.35412.fits ... 54.352917
+HI.20060420.37265.fits ... 54.352917
+HI.20060420.39117.fits ... 54.352917
+HI.20060420.41232.fits ... 54.317028
+HI.20060420.43085.fits ... 54.317028
+                   ... ...       ...
+HI.20110905.19585.fits ...  54.27675
+HI.20110909.17581.fits ...  54.27289
+HI.20110909.18064.fits ...  54.27289
+HI.20110909.18415.fits ...  54.27289
+HI.20110909.19067.fits ...  54.27289
+HI.20110909.19719.fits ...  54.27289
+HI.20110920.17641.fits ...  54.27347
+HI.20110923.18047.fits ...  54.27414
+HI.20110923.18126.fits ...  54.27414
+HI.20110923.18478.fits ...  54.27414
+</pre>
 </div>
-
 </div>
 
 </div>
@@ -13131,50 +12640,32 @@ HI.20040824.55224.fits HI.20040824.55224.fits
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h4 id="Pass">Pass<a class="anchor-link" href="#Pass">&#182;</a></h4>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="Test-15---count-between-20090101-and-20090105,-do-count,-ipac-table-format">Test 15 - count between 20090101 and 20090105, do count, ipac table format<a class="anchor-link" href="#Test-15---count-between-20090101-and-20090105,-do-count,-ipac-table-format">&#182;</a></h3>
+<h3 id="Count-number-of-records-in-a-time-range">Count number of records in a time range<a class="anchor-link" href="#Count-number-of-records-in-a-time-range">&#182;</a></h3>
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[105]:</div>
+<div class="prompt input_prompt">In&nbsp;[12]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">sql</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;select count(*) from koa_hires where (utdatetime &gt;= to_date(&#39;2009-01-01 00:00:00&#39;, &#39;yyyy-mm-dd HH24:MI:SS&#39;) and utdatetime &lt;= to_date(&#39;2009-01-05 23:59:59&#39;, &#39;yyyy-mm-dd HH24:MI:SS&#39;))&quot;</span><span class="p">)</span>
-</pre></div>
 
-</div>
-</div>
-</div>
+<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">submit_job</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;url:    &#39;</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">url</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;job_id: &#39;</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">job_id</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;phase:  &#39;</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">phase</span><span class="p">)</span>
 
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[106]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">results</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">run_sync</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
-</pre></div>
+<span class="n">job</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
 
-</div>
-</div>
-</div>
+<span class="k">while</span> <span class="n">job</span><span class="o">.</span><span class="n">phase</span> <span class="o">==</span> <span class="s1">&#39;EXECUTING&#39;</span><span class="p">:</span>
+    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;phase:  &#39;</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">phase</span><span class="p">)</span>
 
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[107]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="nb">print</span><span class="p">,</span><span class="n">results</span>
+<span class="n">results_count</span><span class="o">=</span> <span class="n">job</span><span class="o">.</span><span class="n">fetch_result</span><span class="p">(</span> <span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">results_count</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -13187,90 +12678,21 @@ HI.20040824.55224.fits HI.20040824.55224.fits
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[107]:</div>
+<div class="prompt"></div>
 
 
-
-
-<div class="output_text output_subarea output_execute_result">
-<pre>(&lt;function print&gt;, &lt;Table length=1&gt;
- count(*)
-  int32  
- --------
-       61)</pre>
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>url:     https://koa.ipac.caltech.edu:443//TAP/async/tap_mzxm1nl1
+job_id:  tap_mzxm1nl1
+phase:   PENDING
+phase:   COMPLETED
+&lt;Table length=1&gt;
+count(*)
+ int32  
+--------
+      61
+</pre>
 </div>
-
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h4 id="Re-run-and-call-count(*)-as-total">Re-run and call count(*) as total<a class="anchor-link" href="#Re-run-and-call-count(*)-as-total">&#182;</a></h4>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[108]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">sql</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;select count(*) as total from koa_hires where (utdatetime &gt;= to_date(&#39;2009-01-01 00:00:00&#39;, &#39;yyyy-mm-dd HH24:MI:SS&#39;) and utdatetime &lt;= to_date(&#39;2009-01-05 23:59:59&#39;, &#39;yyyy-mm-dd HH24:MI:SS&#39;))&quot;</span><span class="p">)</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[109]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">results</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">run_sync</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[110]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="nb">print</span><span class="p">,</span> <span class="n">results</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area">
-
-<div class="prompt output_prompt">Out[110]:</div>
-
-
-
-
-<div class="output_text output_subarea output_execute_result">
-<pre>(&lt;function print&gt;, &lt;Table length=1&gt;
- total
- int32
- -----
-    61)</pre>
-</div>
-
 </div>
 
 </div>
@@ -13281,127 +12703,61 @@ HI.20040824.55224.fits HI.20040824.55224.fits
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h4 id="Pass">Pass<a class="anchor-link" href="#Pass">&#182;</a></h4>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="Test-16---full-table-count">Test 16 - full table count<a class="anchor-link" href="#Test-16---full-table-count">&#182;</a></h3>
+<h3 id="Count-total-number-of-records">Count total number of records<a class="anchor-link" href="#Count-total-number-of-records">&#182;</a></h3>
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[111]:</div>
+<div class="prompt input_prompt">In&nbsp;[13]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">sql</span><span class="o">=</span><span class="s2">&quot;select count(*) as total from koa_hires&quot;</span>
-</pre></div>
 
-</div>
-</div>
-</div>
+<span class="n">job</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">submit_job</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;url:    &#39;</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">url</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;job_id: &#39;</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">job_id</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;phase:  &#39;</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">phase</span><span class="p">)</span>
 
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[112]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">results</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">run_sync</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
-</pre></div>
+<span class="n">job</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
 
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[113]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="nb">print</span><span class="p">,</span><span class="n">results</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area">
-
-<div class="prompt output_prompt">Out[113]:</div>
-
-
-
-
-<div class="output_text output_subarea output_execute_result">
-<pre>(&lt;function print&gt;, &lt;Table length=1&gt;
- total 
- int32 
- ------
- 408339)</pre>
-</div>
-
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h4 id="PASS">PASS<a class="anchor-link" href="#PASS">&#182;</a></h4>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="Test--17---count-on-a-keyword-that-does-not-exist">Test  17 - count on a keyword that does not exist<a class="anchor-link" href="#Test--17---count-on-a-keyword-that-does-not-exist">&#182;</a></h3>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[116]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">sql</span><span class="o">=</span><span class="s2">&quot;select count(DOESNOTEXIST) from koa_hires where (utdatetime &gt;= to_date(&#39;2009-01-01 00:00:00&#39;, &#39;yyyy-mm-dd HH24:MI:SS&#39;) and utdatetime &lt;= to_date(&#39;2009-01-05 23:59:59&#39;, &#39;yyyy-mm-dd HH24:MI:SS&#39;))&quot;</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[117]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="k">try</span><span class="p">:</span>
-    <span class="n">results</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">run_sync</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
-    <span class="n">table</span>   <span class="o">=</span> <span class="n">results</span><span class="o">.</span><span class="n">to_table</span><span class="p">()</span>
-    <span class="n">table</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;./select_countnokeyword.tbl&#39;</span><span class="p">,</span><span class="nb">format</span><span class="o">=</span><span class="s1">&#39;ascii.ipac&#39;</span><span class="p">,</span><span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">while</span> <span class="n">job</span><span class="o">.</span><span class="n">phase</span> <span class="o">==</span> <span class="s1">&#39;EXECUTING&#39;</span><span class="p">:</span>
+      <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
     
-<span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-    <span class="k">with</span> <span class="nb">open</span> <span class="p">(</span><span class="s1">&#39;./select_countnokeyword.tbl&#39;</span><span class="p">,</span> <span class="s1">&#39;w+&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fp</span><span class="p">:</span>
-      <span class="n">fp</span><span class="o">.</span><span class="n">write</span> <span class="p">(</span><span class="n">f</span><span class="s1">&#39;Error: {str(e):s}&#39;</span><span class="p">)</span>
-      <span class="n">fp</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;phase:  &#39;</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">phase</span><span class="p">)</span>
+
+<span class="n">results_count</span><span class="o">=</span> <span class="n">job</span><span class="o">.</span><span class="n">fetch_result</span><span class="p">(</span> <span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">results_count</span><span class="p">)</span>
 </pre></div>
 
 </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt"></div>
+
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>url:     https://koa.ipac.caltech.edu:443//TAP/async/tap_hd8ni68u
+job_id:  tap_hd8ni68u
+phase:   PENDING
+phase:   COMPLETED
+&lt;Table length=1&gt;
+total 
+int32 
+------
+408901
+</pre>
+</div>
+</div>
+
 </div>
 </div>
 
@@ -13410,127 +12766,13 @@ HI.20040824.55224.fits HI.20040824.55224.fits
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="Pass---reports-error-message">Pass - reports error message<a class="anchor-link" href="#Pass---reports-error-message">&#182;</a></h3>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[119]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">sql</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;select airmass from koa_hires&quot;</span><span class="p">)</span>
-
-<span class="n">results</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">run_sync</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
-</pre></div>
+<hr>
+<p><font color="#480000">Visit KOA at <a href="https://koa.ipac.caltech.edu">https://koa.ipac.caltech.edu</a>.</p>
+<p><font color="#480000"> The Keck Observatory Archive (KOA) is a collaboration between the NASA Exoplanet Science Institute (NExScI) and the W. M. Keck Observatory (WMKO). NExScI is sponsored by NASA's Exoplanet Exploration Program, and operated by the California Institute of Technology in coordination with the Jet Propulsion Laboratory (JPL).</p>
+<p><font color="#480000"> Need help? Submit your questions to the KOA Help Desk at <a href="https://koa.ipac.caltech.edu/cgi-bin/Helpdesk/nph-genTicketForm?projname=KOA">https://koa.ipac.caltech.edu/cgi-bin/Helpdesk/nph-genTicketForm?projname=KOA</a></p>
 
 </div>
 </div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area">
-
-<div class="prompt"></div>
-
-
-<div class="output_subarea output_stream output_stdout output_text">
-<pre>&lt;Table length=408339&gt;
-airmass
-float64
--------
-   1.62
-   1.77
-   1.56
-   1.66
-   1.62
-   1.71
-   1.01
-   1.43
-   1.64
-   5.14
-    ...
-   1.99
-   1.99
-   1.99
-   1.99
-   1.99
-   1.99
-   1.99
-   1.99
-   1.99
-   1.99
-</pre>
-</div>
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[120]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">sql</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;select echangl  from koa_hires where contains(point(&#39;icrs&#39;, ra2000, dec2000), circle(&#39;icrs&#39;,262.0,17.0,1.0)) = 1&quot;</span><span class="p">)</span>
-
-<span class="n">results</span> <span class="o">=</span> <span class="n">koa</span><span class="o">.</span><span class="n">run_sync</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area">
-
-<div class="prompt"></div>
-
-
-<div class="output_subarea output_stream output_stdout output_text">
-<pre>&lt;Table length=42&gt;
-  echangl  
-  float64  
------------
- 0.00088795
--0.00202961
--0.00202961
--0.00202961
--0.00202961
--0.00202961
--0.00046512
- -8.457e-05
- -4.228e-05
-        0.0
-        ...
- 0.00291756
- 0.00291756
--0.00291756
--0.00291756
--0.00291756
--0.00291756
--0.00291756
--0.01843559
--0.01957724
--0.00270614
-</pre>
-</div>
-</div>
-
-</div>
-</div>
-
 </div>
     </div>
   </div>
