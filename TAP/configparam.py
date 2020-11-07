@@ -230,7 +230,8 @@ class configParam:
             self.msg = 'Failed to find HTTP_PORT in config_file'
             raise Exception(self.msg)
 
-        self.httpurl = self.httpurl + ':' + self.port
+        if ((self.port != '80') and (self.port != '443')):
+            self.httpurl = self.httpurl + ':' + self.port
 
         self.cgipgm = ''
         if('CGI_PGM' in confobj[self.server]):

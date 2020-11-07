@@ -36,7 +36,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Behind the Scenes: How the TAP Service Works" href="tap_architecture.html" />
-    <link rel="prev" title="Operations Issues" href="operations.html" /> 
+    <link rel="prev" title="Notes on Data Formatting" href="formatting.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -86,6 +86,7 @@
 <li class="toctree-l1"><a class="reference internal" href="install.html">Installation Instructions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="configure.html">Configuration Instructions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="operations.html">Operations Issues</a></li>
+<li class="toctree-l1"><a class="reference internal" href="formatting.html">Notes on Data Formatting</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Notes on TAP Clients</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Appendices</span></p>
@@ -170,31 +171,75 @@
             
   <div class="section" id="notes-on-tap-clients">
 <h1>Notes on TAP Clients<a class="headerlink" href="#notes-on-tap-clients" title="Permalink to this headline">¶</a></h1>
-<p>While it is possible to interact with the nexsciTAP service (or any other TAP service)
-“directly” (using a browser, wget, <em>etc.</em>) most users will probably use one of a small
-set of existing tools or toolkits.  These tools layer their own behavior on top of
-nexsciTAP, affecting what the user sees.  Here we present a few notes on the effects
-of these various services.  We don’t consider any of these behaviors “errors”, just
-things to be aware of as you use the tools.</p>
-<p>Nor is this list comprehensive; these are just things we have encountered in our own use
-and testing.  As we encounter other behavior or these packages change, we will update this
-page accordingly.</p>
-<p><strong>TAPPlus</strong>.  A part of the Python Astroquery package, TAPPlus is a general library for
-accessing TAP services. In general TAPPlus works very well but in synchronous mode there
-is a hard-coded limit on the return of 2000 records.  There is no way to override this
-without changing the TAPPlus code itself.</p>
-<p>Some of the archives using nexsciTAP (specifically KOA and NEID) handle access to proprietary
-data using a security cookie.  TAPPlus does not have any facility for including cookie file
-use in the interaction. This isn’t an error (the TAP specification does not address cookies)
-but it does limit the usefulness of TAPPlus as a client for such archives.</p>
-<p><strong>PyVO</strong>.  A part of the international Virtual Observatory effort.  PyVO includes another
-general Python TAP client.  It also does not support cookie passing, though it is a simpler
-hack to add this.</p>
-<p><strong>TopCat</strong>.  TopCat is an interactive graphical viewer and editor for tabular data.  It
-includes a TAP client as one way to access input data.  While nexsciTAP tries to provide
-facilities for properly formatting output data, DBMSs in general do this poorly.  TopCat
-therefore includes its own formatting decisions which may sometime override what
-nexsciTAP has done.</p>
+<p>While it is possible to interact with the nexsciTAP server through a browser, wget, <em>etc.</em>,
+many users will prefer to use a small set of widely used clients.  We describe here the
+interaction with three widely used clients: TAPPlus (or TAP+), PyVO and TOPCAT.  All three
+support sychronous and asychronous interaction with nexsciTAP. This page presents Jupyter
+notebooks describing this interaction to search for public data housed at the Keck Observatory
+Archive (KOA; <a class="reference external" href="https://koa.ipac.caltech.edu">https://koa.ipac.caltech.edu</a>), though any compliant TAP server should work
+equally well.</p>
+<p><strong>Note:</strong> Protected (user-proprietary) data at KOA are currently inaccessible through
+through these clients, as they do not support the security cookies required to access
+private data at KOA).</p>
+<p><strong>TAPPlus (TAP+)</strong>. A part of the Python Astroquery package, TAPPlus is a general Python
+library for accessing TAP services that is maintained at the ESAC Space Data Centre
+(ESDC: <a class="reference external" href="http://www.cosmos.esa.int/web/esdc/">http://www.cosmos.esa.int/web/esdc/</a>) . In synchronous mode, the package imposes a
+hard-coded limit on the return of 2000 records.</p>
+<p>Jupyter notebooks to access KOA data:</p>
+<p>PyVO/asynchronous (<a class="reference external" href="https://github.com/Caltech-IPAC/nexsciTAP/blob/master/Jupyter/PyVO%20Asynchronous%20queries%20with%20nexsciTAP.ipynb">https://github.com/Caltech-IPAC/nexsciTAP/blob/master/Jupyter/PyVO%20Asynchronous%20queries%20with%20nexsciTAP.ipynb</a>)</p>
+<p>HTML              (<a class="reference external" href="https://github.com/Caltech-IPAC/nexsciTAP/blob/master/Jupyter/PyVO%20Asynchronous%20queries%20with%20nexsciTAP.html">https://github.com/Caltech-IPAC/nexsciTAP/blob/master/Jupyter/PyVO%20Asynchronous%20queries%20with%20nexsciTAP.html</a>)</p>
+<ul class="simple">
+<li></li>
+</ul>
+<p>PyVO/synchronous  (<a class="reference external" href="https://github.com/Caltech-IPAC/nexsciTAP/blob/master/Jupyter/PyVO%20Synchronous%20queries%20with%20nexsciTAP.ipynb">https://github.com/Caltech-IPAC/nexsciTAP/blob/master/Jupyter/PyVO%20Synchronous%20queries%20with%20nexsciTAP.ipynb</a>)</p>
+<p>HTML              (<a class="reference external" href="https://github.com/Caltech-IPAC/nexsciTAP/blob/master/Jupyter/PyVO%20Synchronous%20queries%20with%20nexsciTAP.html">https://github.com/Caltech-IPAC/nexsciTAP/blob/master/Jupyter/PyVO%20Synchronous%20queries%20with%20nexsciTAP.html</a>)</p>
+<ul class="simple">
+<li></li>
+</ul>
+<p>TAP+/asynchronous (<a class="reference external" href="https://github.com/Caltech-IPAC/nexsciTAP/blob/master/Jupyter/TAP%2B%20Asynchronous%20queries%20with%20nexsciTAP.ipynb">https://github.com/Caltech-IPAC/nexsciTAP/blob/master/Jupyter/TAP%2B%20Asynchronous%20queries%20with%20nexsciTAP.ipynb</a>)</p>
+<p>HTML              (<a class="reference external" href="https://github.com/Caltech-IPAC/nexsciTAP/blob/master/Jupyter/TAP%2B%20Asynchronous%20queries%20with%20nexsciTAP.html">https://github.com/Caltech-IPAC/nexsciTAP/blob/master/Jupyter/TAP%2B%20Asynchronous%20queries%20with%20nexsciTAP.html</a>)</p>
+<ul class="simple">
+<li></li>
+</ul>
+<p>TAP+/synchronous  (<a class="reference external" href="https://github.com/Caltech-IPAC/nexsciTAP/blob/master/Jupyter/TAP%2B%20synchronous%20queries%20with%20nexsciTAP.ipynb">https://github.com/Caltech-IPAC/nexsciTAP/blob/master/Jupyter/TAP%2B%20synchronous%20queries%20with%20nexsciTAP.ipynb</a>)</p>
+<p>HTML              (<a class="reference external" href="https://github.com/Caltech-IPAC/nexsciTAP/blob/master/Jupyter/TAP%2B%20synchronous%20queries%20with%20nexsciTAP.html">https://github.com/Caltech-IPAC/nexsciTAP/blob/master/Jupyter/TAP%2B%20synchronous%20queries%20with%20nexsciTAP.html</a>)</p>
+<p><strong>PyVO</strong>. PyVO (<a class="reference external" href="https://github.com/astropy/pyvo">https://github.com/astropy/pyvo</a>) is a Python package that provides access
+to remote data and VO-compliant services.</p>
+<p>(Jupyter notebook to access KOA data)</p>
+<p>(web version of Jupyter  notebook to access KOA data)</p>
+<p><strong>TOPCAT</strong> TOPCAT (<a class="reference external" href="http://www.star.bris.ac.uk/~mbt/topcat/">http://www.star.bris.ac.uk/~mbt/topcat/</a>) is an interactive graphical
+viewer and editor for tabular data. It provides most of the facilities that astronomers
+need for analysis and manipulation of source catalogues and other tables. It is a stand-alone
+Java application that uses Virtual Observatory (VO) standards to access and integrate
+distributed data.</p>
+<p>The screenshots below show how to call nexsciTAP from TOPCAT. Download the jar file from the
+TOPCAT web site and open the application.</p>
+<ol class="arabic simple">
+<li><p>Select “Load Table ”  from the file menu and then choose “Select From “:</p></li>
+</ol>
+<img alt="Calling nexsciTAP from TOPCAT (1)" src="_images/Figure1.png" />
+<ol class="arabic simple" start="2">
+<li><p>At the bottom of the window, enter the URL of the TAP service and click “Use Service”</p></li>
+</ol>
+<img alt="Calling nexsciTAP from TOPCAT (2)" src="_images/Figure2.png" />
+<ol class="arabic simple" start="3">
+<li><p>In the Use Service tab, enter the SQL query in the window near the bottom and hit “Run Query”:</p></li>
+</ol>
+<img alt="Calling nexsciTAP from TOPCAT (3)" src="_images/Figure3.png" />
+<ol class="arabic simple" start="4">
+<li><p>When the query has run, you will see a window that reports the status of the query:</p></li>
+</ol>
+<img alt="Calling nexsciTAP from TOPCAT (4)" src="_images/Figure4.png" />
+<ol class="arabic simple" start="5">
+<li><p>Double click on a table in Table List on the left side of the window to visualize the table:</p></li>
+</ol>
+<img alt="Calling nexsciTAP from TOPCAT (5)" src="_images/Figure5.png" />
+<ol class="arabic simple" start="6">
+<li><p>Now you are ready to analyze the results in TOPCAT.</p></li>
+</ol>
+<p><strong>Note:</strong> If you get a “metadata not found” message when you run the query,
+Select “VO-&gt; Table Service Access Protocol” from the TOPCAT main menu, then
+Select “TAP -&gt; Metadata Acquisition -&gt; TAP_SCHEMA-C”</p>
 </div>
 
 
@@ -208,7 +253,7 @@ nexsciTAP has done.</p>
         <a href="tap_architecture.html" class="btn btn-neutral float-right" title="Behind the Scenes: How the TAP Service Works" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="operations.html" class="btn btn-neutral float-left" title="Operations Issues" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="formatting.html" class="btn btn-neutral float-left" title="Notes on Data Formatting" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
