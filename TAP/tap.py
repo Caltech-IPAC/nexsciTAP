@@ -225,14 +225,15 @@ class Tap:
         if((self.format != 'votable')
            and (self.format != 'ipac')
            and (self.format != 'csv')
-           and (self.format != 'tsv')):
+           and (self.format != 'tsv')
+           and (self.format != 'json')):
 
             if self.debug:
                 logging.debug('')
                 logging.debug('format error detected')
 
             self.msg = 'Response format(' + self.format + \
-                ') must be: votable, ipac, csv, or tsv'
+                ') must be: votable, ipac, csv, tsv, or json'
 
             self.__printError__('votable', self.msg)
 
@@ -516,6 +517,8 @@ class Tap:
             self.resulttbl = 'result.csv'
         elif(self.format == 'tsv'):
             self.resulttbl = 'result.tsv'
+        elif(self.format == 'json'):
+            self.resulttbl = 'result.json'
 
         self.resultpath = self.userWorkdir + '/' + self.resulttbl
         self.resulturl = self.httpurl + self.workurl + '/TAP/' + \
@@ -671,6 +674,8 @@ class Tap:
                     self.resulttbl = 'result.csv'
                 elif(self.format == 'tsv'):
                     self.resulttbl = 'result.tsv'
+                elif(self.format == 'json'):
+                    self.resulttbl = 'result.json'
 
                 self.resultpath = self.userWorkdir + '/' + self.resulttbl
                 self.resulturl = self.httpurl + self.workurl + '/TAP/' + \
