@@ -246,7 +246,7 @@ class Tap:
         else:
             self.format = 'votable'
 
-        if len(self.format == 0:
+        if len(self.format) == 0:
             self.format = 'votable'
 
         if((self.format != 'votable')
@@ -310,15 +310,15 @@ class Tap:
         arr = self.pathinfo.split('/')
         narr = len(arr)
 
-        if(arr[0] == "async"):
+        if(arr[0] == 'async'):
             self.tapcontext = 'async'
-        elif(arr[0] == "sync"):
+        elif(arr[0] == 'sync'):
             self.tapcontext = 'sync'
-        elif (arr[0] == "availability"):
+        elif (arr[0] == 'availability'):
             self.tapcontext = 'availability'
-        elif (arr[0] == "capabilities"):
+        elif (arr[0] == 'capabilities'):
             self.tapcontext = 'capabilities'
-        elif (arr[0] == "tables"):
+        elif (arr[0] == 'tables'):
             self.tapcontext = 'tables'
          
         if (len(self.tapcontext) == 0):
@@ -330,7 +330,7 @@ class Tap:
             logging.debug(f'tapcontext = {self.tapcontext:s}')
             logging.debug(f'narr= {narr:d}')
 
-        if(narr > 1):
+        if(narr > 1 and len(arr[1]) > 0):
         #
         #{    narr > 1: 
         #    input query contains more than TAP/(sync/async)/statuskey for
@@ -1222,7 +1222,8 @@ class Tap:
         if ((self.format != 'votable') and \
             (self.format != 'ipac') and \
             (self.format != 'csv') and \
-            (self.format != 'tsv')):
+            (self.format != 'tsv') and \
+            (self.format != 'json')):
 
             if self.debug:
                 logging.debug('')
@@ -1230,7 +1231,7 @@ class Tap:
 
             self.msg = "Input parameter (format=" + self.format + \
                 ") error: response format must be: votable, ipac, csv, " + \
-                "or tsv"
+                "tsv, or json"
 
             if(self.tapcontext == 'async'):
 
@@ -2726,7 +2727,8 @@ class Tap:
 
         print ('<?xml version="1.0" encoding="UTF-8"?>')
         print ('')
-        print ('<vosi:availability xmlns="http://www.ivoa.net/xml/VOSIAvailability/v1.0"') 
+        print ('<vosi:availability')
+        print ('  xmlns:vosi="http://www.ivoa.net/xml/VOSIAvailability/v1.0"') 
         print ('  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"') 
         print ('  xsi:schemaLocation="http://www.ivoa.net/xml/VOSIAvailability/v1.0">')
         print ('    <available>true</available>')
