@@ -118,6 +118,7 @@ class Tap:
     statuskey = ''
 
     configpath = ''
+    configext  = ''
     pathinfo = ''
 
     cookiestr = ''
@@ -310,6 +311,22 @@ class Tap:
         arr = self.pathinfo.split('/')
         narr = len(arr)
 
+
+        # Special check for config filename 'extension' to allow
+        # multiple config files for the same server
+
+        if(narr > 1 and arr[0] != 'async' and arr[0] != 'sync' and \
+                arr[0] != 'availability' and arr[0] != 'capabilities' and \
+                arr[0] != 'tables'):
+            self.configext = arr[0]
+            arr = arr[1:]
+            narr = len(arr)
+            
+            if self.debug:
+                logging.debug('')
+                logging.debug(f'id= {self.id:s} configext= {self.configext:s}')
+            
+
         if(arr[0] == 'async'):
             self.tapcontext = 'async'
         elif(arr[0] == 'sync'):
@@ -392,6 +409,10 @@ class Tap:
 
         if('TAP_CONF' in os.environ):
             self.configpath = os.environ['TAP_CONF']
+
+            if(len(self.configext) > 0):
+                self.configpath = self.configpath + '.' + self.configext
+
         else:
             if self.debug:
                 logging.debug('')
