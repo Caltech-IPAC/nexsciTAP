@@ -1278,24 +1278,6 @@ class Tap:
                     logging.debug(f'maxrec_dbl= {maxrec_dbl:f}')
                     logging.debug(f'      format = {self.format:s}')
 
-#
-#    rename resulttbl for async PENDING-->RUN case
-#
-                if(self.format == 'votable'):
-                    self.resulttbl = 'result.xml'
-                elif(self.format == 'ipac'):
-                    self.resulttbl = 'result.tbl'
-                elif(self.format == 'csv'):
-                    self.resulttbl = 'result.csv'
-                elif(self.format == 'tsv'):
-                    self.resulttbl = 'result.tsv'
-                elif(self.format == 'json'):
-                    self.resulttbl = 'result.json'
-
-                self.resultpath = self.userWorkdir + '/' + self.resulttbl
-                self.resulturl = self.httpurl + self.workurl + '/TAP/' + \
-                    self.workspace + '/' + self.resulttbl
-
                 self.maxrec = int(maxrec_dbl)
                 if self.debug:
                     logging.debug('')
@@ -1321,13 +1303,31 @@ class Tap:
                 else:
                     self.__printError__(self.format, self.msg, '400')
 
+        self.param['maxrec'] = self.maxrec
+
+#
+#    rename resulttbl for async PENDING-->RUN case
+#
+        if(self.format == 'votable'):
+            self.resulttbl = 'result.xml'
+        elif(self.format == 'ipac'):
+            self.resulttbl = 'result.tbl'
+        elif(self.format == 'csv'):
+            self.resulttbl = 'result.csv'
+        elif(self.format == 'tsv'):
+            self.resulttbl = 'result.tsv'
+        elif(self.format == 'json'):
+            self.resulttbl = 'result.json'
+
+        self.resultpath = self.userWorkdir + '/' + self.resulttbl
+        self.resulturl = self.httpurl + self.workurl + '/TAP/' + \
+            self.workspace + '/' + self.resulttbl
 
         if self.debug:
             logging.debug('')
             logging.debug(f'format = {self.format:s}')
             logging.debug(f'maxrec = {self.maxrec:d}')
 
-        self.param['maxrec'] = self.maxrec
 
         if self.debug:
             logging.debug('')
