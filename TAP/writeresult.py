@@ -149,8 +149,6 @@ class writeResult:
             resulttbl = 'result.csv'
         elif(self.format == 'tsv'):
             resulttbl = 'result.tsv'
-        elif(self.format == 'json'):
-            resulttbl = 'result.json'
 
         self.outpath = self.workdir + '/' + resulttbl
 
@@ -742,50 +740,6 @@ class writeResult:
 
             rowslist = []
 
-
-            # This block was added for cases like SQLite, where
-            # the column "description" block returned by the DBMS
-            # does not give any datatypes.  For those cases where
-            # we don't have a priori schema information, we have to
-            # wait for the first data return to determine types. 
-
-            # This is complicated by the possibility that for some
-            # records some columns are sometimes NULL (value 'None').
-            # So while we don't want to scan all the data, we have 
-            # to scan until we find some value for every column.
-
-            if ibatch == 0:
-
-                for ll in range(0, nrec):
-
-                    row = rows[ll]
-
-                    rowlist = []
-
-                    for i in range(0, len(row)):
-                            
-                            dtype = type(row[i]).__name__
-
-                            if(dtype != None
-                                and (dbtypearr[i] == '' or typearr[i] == '')):
-
-                                if dtype.lower() == 'int':
-                                    dbtypearr[i] = 'NUMBER'
-                                    typearr[i] = 'int'
-
-                                if dtype.lower() == 'float':
-                                    dbtypearr[i] = 'NUMBER'
-                                    typearr[i] = 'double'
-
-                                if dtype.lower() == 'str':
-                                    dbtypearr[i] = 'VARCHAR'
-                                    typearr[i] = 'char'
-
-
-
-            # For DBMSs like Oracle that store numbers as generic NUMBER
-            # type, we need to do something similar, if more restricted
-
             for ll in range(0, nrec):
 
                 #
@@ -889,7 +843,6 @@ class writeResult:
                 #
                 # } end if ibatch == 0
                 #
-
 
             if(self.ntot == 0):
                 self.ishdr = 1

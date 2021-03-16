@@ -281,8 +281,7 @@ class runQuery:
         elif(self.dbms.lower() == 'sqlite3'):
 
             try:
-                self.conn = sqlite3.connect(self.db,
-                    detect_types=sqlite3.PARSE_DECLTYPES)
+                self.conn = sqlite3.connect(self.db)
 
                 if self.debug:
                     logging.debug('')

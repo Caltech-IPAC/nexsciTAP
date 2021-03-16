@@ -9,7 +9,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <ctype.h>
-#include <string.h>
 
 static PyObject *method_writerecs(PyObject *self, PyObject *args) {
 
@@ -33,8 +32,6 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
 
     char *cptr1;
 
-    char charval;
-
     int  ishdr;
     int  coldesc;
     int  overflow;
@@ -52,20 +49,19 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
     char    nullval[20];
     char    nullval_ipac[20];
     char    strval[1024];
-    char    jsonstr[4096];
     char    substr[40];
     
-    double  dblval = 0.0;
-    int     intval = 0;
+    double  dblval;
+    int     intval;
     int     istatus;
 
     const char *cptr_outpath = NULL;
     const char *cptr_format = NULL;
     const char *cptr = NULL;
 
-    int i, j, k, l, m;
-
-    int inlen;
+    int i;
+    int j;
+    int l;
 
     char debugfname[1024];
     int  debug  = 0;
@@ -458,7 +454,7 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
     }
 
     if (fp == (FILE *)NULL) {
-        sprintf (msg, "Failed to open filepath: [%s]", filepath);
+        sprintf (msg, "Failed to open filepath: [%s]\n", filepath);
         
         if ((debug) && (fp_debug != (FILE *)NULL)) {
             fprintf (fp_debug, "msg= [%s]\n", msg);
@@ -593,9 +589,6 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
                 }
             }
             fprintf (fp, "\n");
-        }
-        else if (strcasecmp (outfmt, "json") == 0) {
-           fprintf (fp, "[\n");
         }
         fflush (fp);
    
@@ -737,19 +730,6 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
                         fprintf (fp, "%s\t", nullval);
                     }
                 }     
-                else if (strcasecmp (outfmt, "json") == 0) {
-            
-                   if (i == 0) 
-                        fprintf (fp, "{");
-
-                    fprintf (fp, "\"%s\": null", namearr[i]);
-
-                   if (i < ncols-1)
-                        fprintf (fp, ",\n");
-
-                   if (i == ncols-1)
-                        fprintf (fp, "}");
-                }     
             }
             else if ((strcasecmp (typearr[i],   "char") == 0) || 
                      (strcasecmp (typearr[i],   "date") == 0) ||
@@ -822,79 +802,6 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
                         fprintf (fp, "%s\t", strval);
                     }
                 } 
-                else if (strcasecmp (outfmt, "json") == 0) {
-            
-                   if (i == 0) 
-                        fprintf (fp, "{");
-
-                    // JSON strings have to be encoded to escape some
-                    // stuff (mostly the double quote character)
-
-                    inlen = strlen(strval);
-
-                    m=0;
-                    for (k=0; k<inlen; ++k) {
-
-                       charval = strval[k];
-
-                       if(charval == '\b') {
-                          jsonstr[m] = '\\';
-                          jsonstr[m+1] = 'b';
-                          m += 2;
-                       }
-
-                       else if(charval == '\f') {
-                          jsonstr[m] = '\\';
-                          jsonstr[m+1] = 'f';
-                          m += 2;
-                       }
-
-                       else if(charval == '\n') {
-                          jsonstr[m] = '\\';
-                          jsonstr[m+1] = 'n';
-                          m += 2;
-                       }
-
-                       else if(charval == '\r') {
-                          jsonstr[m] = '\\';
-                          jsonstr[m+1] = 'r';
-                          m += 2;
-                       }
-
-                       else if(charval == '\t') {
-                          jsonstr[m] = '\\';
-                          jsonstr[m+1] = 't';
-                          m += 2;
-                       }
-
-                       else if(charval == '"') {
-                          jsonstr[m] = '\\';
-                          jsonstr[m+1] = '"';
-                          m += 2;
-                       }
-
-                       else if(charval == '\\') {
-                          jsonstr[m] = '\\';
-                          jsonstr[m+1] = '\\';
-                          m += 2;
-                       }
-
-                       else {
-                          jsonstr[m] = charval;
-                          ++m;
-                       }
-                    }
-
-                    jsonstr[m] = '\0';
-
-                    fprintf (fp, "\"%s\": \"%s\"", namearr[i], jsonstr);
-
-                   if (i < ncols-1)
-                        fprintf (fp, ",\n");
-
-                   if (i == ncols-1)
-                        fprintf (fp, "}\n");
-                }     
             
             }
             else if ((strcasecmp (typearr[i], "int"    ) == 0) || 
@@ -970,21 +877,6 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
                         fprintf (fp, "%s\t", strval);
                     }
                 }
-                else if (strcasecmp (outfmt, "json") == 0) {
-            
-                   sprintf (strval, "%d", intval);
-
-                   if (i == 0) 
-                        fprintf (fp, "{");
-
-                    fprintf (fp, "\"%s\": %s", namearr[i], strval);
-
-                   if (i < ncols-1)
-                        fprintf (fp, ",\n");
-
-                   if (i == ncols-1)
-                        fprintf (fp, "}\n");
-                }     
             }
             else if ((strcasecmp (typearr[i], "float" ) == 0) || 
                      (strcasecmp (typearr[i], "double") == 0)) {
@@ -1087,32 +979,12 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
                         fprintf (fp, "%s\t", strval);
                     }
                 }
-                else if (strcasecmp (outfmt, "json") == 0) {
-            
-                   if (i == 0) 
-                        fprintf (fp, "{");
-
-                    fprintf (fp, "\"%s\": %s", namearr[i], strval);
-
-                   if (i < ncols-1)
-                        fprintf (fp, ",\n");
-
-                   if (i == ncols-1)
-                        fprintf (fp, "}");
-                }     
             }
         }
 
         if (strcasecmp (outfmt, "votable") == 0) {
             fprintf (fp, "        </TR>\n");
             fflush (fp);
-        }
-
-        if (strcasecmp(outfmt, "json") == 0) {
-            if (l < nrows_data-1)
-                fprintf (fp, ",\n");
-            else
-                fprintf (fp, "\n");
         }
     }
 
@@ -1122,9 +994,6 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
         fprintf (fp_debug, "istail= %d\n", istail);
         fflush (fp_debug);
     } 
-
-    if (strcasecmp (outfmt, "json") == 0)
-        fprintf (fp, "]\n");
 
     if ((strcasecmp (outfmt, "votable") == 0) && (istail == 1)) {
         fprintf (fp, "      </TABLEDATA>\n");
