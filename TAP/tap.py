@@ -2787,7 +2787,12 @@ class Tap:
         print ('  <!-- TAP capability for this TAP service -->')
         print ('  <capability standardID="ivo://ivoa.net/std/TAP" xsi:type="tr:TableAccess">')
         print ('    <interface xsi:type="vod:ParamHTTP" role="std" version="1.1">')
-        print ('      <accessURL use="full">https://koa.ipac.caltech.edu/TAP</accessURL>')
+        
+        #print ('      <accessURL use="full">https://koa.ipac.caltech.edu/TAP</accessURL>')
+        
+        val = '      <accessURL use="full">' + self.httpurl + '/TAP</accessURL>'
+        print (val)
+        
         print ('    </interface>')
         print ('')
         print ('    <!-- the ADQL geometry functions in TAP -->')
@@ -2839,7 +2844,12 @@ class Tap:
         print ('  <!-- VOSI table metadata for this TAP service -->')
         print ('  <capability standardID="ivo://ivoa.net/std/VOSI#tables">')
         print ('    <interface xsi:type="vod:ParamHTTP" role="std">')
-        print ('      <accessURL use="full">https://koa.ipac.caltech.edu/TAP/tables</accessURL>')
+        
+        #print ('      <accessURL use="full">https://koa.ipac.caltech.edu/TAP/tables</accessURL>')
+        
+        val = '      <accessURL use="full">' + self.httpurl + '/TAP</accessURL>'
+        print (val)
+        
         print ('      <queryType>GET</queryType>')
         print ('      <resultType>application/xml</resultType>')
         print ('    </interface>')
@@ -2848,14 +2858,24 @@ class Tap:
         print ('  <!-- VOSI capabilities metadata for this TAP service -->')
         print ('  <capability standardID="ivo://ivoa.net/std/VOSI#capabilities">')
         print ('    <interface xsi:type="vod:ParamHTTP" role="std">')
-        print ('      <accessURL use="full">https://koa.ipac.caltech.edu/TAP/capabilities</accessURL>')
+        
+        #print ('      <accessURL use="full">https://koa.ipac.caltech.edu/TAP/capabilities</accessURL>')
+        
+        val = '      <accessURL use="full">' + self.httpurl + '/TAP</accessURL>'
+        print (val)
+        
         print ('    </interface>')
         print ('  </capability>')
         print ('')
         print ('  <!-- VOSI availability metadata for this TAP service -->')
         print ('  <capability standardID="ivo://ivoa.net/std/VOSI#capabilities">')
         print ('    <interface xsi:type="vod:ParamHTTP" role="std">')
-        print ('      <accessURL use="full">https://koa.ipac.caltech.edu/TAP/capabilities</accessURL>')
+        
+        #print ('      <accessURL use="full">https://koa.ipac.caltech.edu/TAP/capabilities</accessURL>')
+        
+        val = '      <accessURL use="full">' + self.httpurl + '/TAP</accessURL>'
+        print (val)
+        
         print ('    </interface>')
         print ('  </capability>')
         print ('')
