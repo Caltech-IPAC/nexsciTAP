@@ -266,11 +266,11 @@ class configParam:
         if('ACCESSID' in confobj[self.server]):
             self.accessid = confobj[self.server]['ACCESSID']
 
-        self.racol = ''
+        self.racol = 'ra'
         if('RACOL' in confobj[self.server]):
             self.racol = confobj[self.server]['RACOL']
 
-        self.deccol = ''
+        self.deccol = 'dec'
         if('DECCOL' in confobj[self.server]):
             self.deccol = confobj[self.server]['DECCOL']
 
