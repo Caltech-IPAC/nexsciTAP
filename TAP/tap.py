@@ -1210,7 +1210,8 @@ class Tap:
             logging.debug('')
             logging.debug(f'continue: check lang')
 
-        if (self.param['lang'].lower() != 'adql'):
+        if (self.param['lang'].lower() != 'adql' and \
+                self.param['lang'].lower() != 'adql-2.0'):
             
             self.msg = "Input parameter (lang=" + self.param['lang'] + \
                 ") error: only lang=ADQL is implemented." 
