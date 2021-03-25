@@ -1262,11 +1262,13 @@ class vosiTables:
                         "<dataType xsi:type=\"vod:VOTableType\">" + \
                         col_datatype + "</dataType>\n")
            
-                if (col_principal != 'None'):
+                if (col_principal != 'None' and col_principal != 0 \
+                        and col_principal != '0'):
                     fp.write("                " + \
                         "<flag>principal</flag>\n")
            
-                if (col_indexed != 'None'):
+                if (col_indexed != 'None' and col_indexed != 0 \
+                        and col_indexed != '0'):
                     fp.write("                " + "<flag>indexed</flag>\n")
         
                 fp.write("            </column>\n")
