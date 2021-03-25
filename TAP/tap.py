@@ -196,6 +196,7 @@ class Tap:
 
         if self.debug:
             logging.debug('')
+            logging.debug('nexsciTAP version 1.2.1\n\n')
             logging.debug('HTTP request keywords:\n')
 
         self.lang = ''

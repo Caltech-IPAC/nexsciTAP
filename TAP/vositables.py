@@ -1231,15 +1231,15 @@ class vosiTables:
                         col_name = data
                     elif (i == 1):
                         col_desc = data
-                    elif (i == 1):
-                        col_unit = data
                     elif (i == 2):
-                        col_ucd = data
+                        col_unit = data
                     elif (i == 3):
-                        col_datatype = data
+                        col_ucd = data
                     elif (i == 4):
-                        col_principal = data
+                        col_datatype = data
                     elif (i == 5):
+                        col_principal = data
+                    elif (i == 6):
                         col_indexed = data
 
                 irow = irow + 1
