@@ -1264,10 +1264,10 @@ class vosiTables:
            
                 if (col_principal != 'None'):
                     fp.write("                " + \
-                        "<flag>col_principal</flag>\n")
+                        "<flag>principal</flag>\n")
            
                 if (col_indexed != 'None'):
-                    fp.write("                " + "<flag>col_indexed</flag>\n")
+                    fp.write("                " + "<flag>indexed</flag>\n")
         
                 fp.write("            </column>\n")
        
