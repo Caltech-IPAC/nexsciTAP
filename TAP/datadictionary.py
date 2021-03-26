@@ -90,7 +90,7 @@ class dataDictionary:
             logging.debug('-------------------------------------------------')
 
 
-        sql = "select * from TAP_SCHEMA.columns where table_name = " + \
+        sql = "select * from TAP_SCHEMA.columns where lower(table_name) = " + \
             "'" + self.dbtable + "'"
 
         if self.debug:
@@ -213,6 +213,9 @@ class dataDictionary:
                 #             a column in data dictionary
                 #
                 col_str = str(row[ind_colname]).strip().lower()
+
+                if col_str.startswith('"') and col_str.endswith('"'):
+                    col_str = col_str[1:-1]
 
                 self.colname[i] = col_str
 
