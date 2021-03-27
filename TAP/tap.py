@@ -2789,7 +2789,7 @@ class Tap:
         print ('  <!-- TAP capability for this TAP service -->')
         print ('  <capability standardID="ivo://ivoa.net/std/TAP" xsi:type="tr:TableAccess">')
         print ('    <interface xsi:type="vod:ParamHTTP" role="std" version="1.1">')
-        val = '      <accessURL use="full">' + self.httpurl + '/TAP/capabilities</accessURL>'
+        val = '      <accessURL use="full">' + self.httpurl + '/TAP</accessURL>'
         print (val)
         
         print ('    </interface>')
