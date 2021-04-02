@@ -185,11 +185,11 @@ class Tap:
         #  Default values: maxrec = -1
         #
 
-        self.param['lang'] = ''
+        self.param['lang'] = 'ADQL'
         self.param['phase'] = ''
         self.param['request'] = 'doQuery'
         self.param['query'] = ''
-        self.param['format'] = ''
+        self.param['format'] = 'votable'
         self.param['maxrec'] = -1
 
         self.querykey = 0
@@ -199,13 +199,13 @@ class Tap:
             logging.debug('nexsciTAP version 1.2.1\n\n')
             logging.debug('HTTP request keywords:\n')
 
-        self.lang = ''
-        self.format = ''
-        self.maxrecstr = ''
+        self.lang = 'ADQL'
+        self.format = 'votable'
+        self.maxrecstr = '-1'
         self.query = ''
         self.phase = ''
 
-        self.uwsheader = '<uws:job xmlns:uws="http://www.ivoa.net/xml/UWS/v1.0" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema" xsi:schemaLocation="http://www.ivoa.net/xml/UWS/v1.0">'
+        self.uwsheader = '<uws:job xmlns:uws="http://www.ivoa.net/xml/UWS/v1.0" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema" xsi:schemaLocation="http://www.ivoa.net/xml/UWS/v1.0 http://www.ivoa.net/xml/UWS/v1.0">'
 
         for key in self.form:
             if self.debug:
@@ -778,30 +778,6 @@ class Tap:
         # } end of async and getstatus=0 case
         #
        
-        #
-        # Make result table names
-        #
-        self.resulttbl = 'result.xml'
-        if(self.format == 'votable'):
-            self.resulttbl = 'result.xml'
-        elif(self.format == 'ipac'):
-            self.resulttbl = 'result.tbl'
-        elif(self.format == 'csv'):
-            self.resulttbl = 'result.csv'
-        elif(self.format == 'tsv'):
-            self.resulttbl = 'result.tsv'
-        elif(self.format == 'json'):
-            self.resulttbl = 'result.json'
-
-        self.resultpath = self.userWorkdir + '/' + self.resulttbl
-        self.resulturl = self.httpurl + self.workurl + '/TAP/' + \
-            self.workspace + '/' + self.resulttbl
-
-        if self.debug:
-            logging.debug('')
-            logging.debug(f'resultpath  = {self.resultpath:s}')
-            logging.debug(f'resulturl   = {self.resulturl:s}')
-
         
         if ((self.tapcontext == 'async') and (self.getstatus == 1)):
         #
@@ -853,15 +829,33 @@ class Tap:
 
                 parameters = soup.find('uws:parameters')
 
+                if self.debug:
+                    logging.debug('')
+                    logging.debug('uws.parameters:')
+                    logging.debug('--------------------------------------')
+                    logging.debug(parameters)
+                    logging.debug('--------------------------------------')
+
                 parameter = parameters.find(id='query')
+
                 self.param['query'] = parameter.string
+
+                if self.param['query'] == None:
+                    self.param['query'] = ''
+
                 if self.debug:
                     logging.debug('XML status parameters:\n')
                     logging.debug(f'query = {self.param["query"]:s}')
 
                 parameter = parameters.find(id='format')
+
                 self.format = parameter.string
-                self.param['format'] = parameter.string
+
+                if self.format == None:
+                    self.format = 'votable'
+
+                self.param['format'] = self.format
+
                 if self.debug:
                     logging.debug('')
                     logging.debug(f'format = {self.param["format"]:s}')
@@ -869,12 +863,19 @@ class Tap:
                 parameter = parameters.find(id='maxrec')
                 self.maxrecstr = parameter.string
 
+                if self.maxrecstr == None:
+                    self.maxrecstr = '-1'
+
                 if self.debug:
                     logging.debug('')
                     logging.debug(f'maxrecstr = {self.maxrecstr}')
 
                 parameter = parameters.find(id ='lang')
                 self.param['lang'] = parameter.string
+
+                if self.param['lang'] == None:
+                    self.param['lang'] = 'ADQL'
+
                 if self.debug:
                     logging.debug('')
                     logging.debug(f'lang = {self.param["lang"]:s}\n')
@@ -931,6 +932,33 @@ class Tap:
         #} end async and getstatus=1 case
         #
         
+        
+        #
+        # Make result table names
+        #
+        self.resulttbl = 'result.xml'
+        if(self.format == 'votable'):
+            self.resulttbl = 'result.xml'
+        elif(self.format == 'ipac'):
+            self.resulttbl = 'result.tbl'
+        elif(self.format == 'csv'):
+            self.resulttbl = 'result.csv'
+        elif(self.format == 'tsv'):
+            self.resulttbl = 'result.tsv'
+        elif(self.format == 'json'):
+            self.resulttbl = 'result.json'
+
+        self.resultpath = self.userWorkdir + '/' + self.resulttbl
+        self.resulturl = self.httpurl + self.workurl + '/TAP/' + \
+            self.workspace + '/' + self.resulttbl
+
+        if self.debug:
+            logging.debug('')
+            logging.debug(f'format      = {self.format:s}')
+            logging.debug(f'resultpath  = {self.resultpath:s}')
+            logging.debug(f'resulturl   = {self.resulturl:s}')
+
+
         if (self.tapcontext == 'async'):
         #
         #{ async and phase= RUN: return 303 redirect with statusurl
@@ -2548,7 +2576,7 @@ class Tap:
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'xxx1')
+            logging.debug(f'wrote job status file')
 
 
         #
@@ -2753,7 +2781,7 @@ class Tap:
         print ('<vosi:availability')
         print ('  xmlns:vosi="http://www.ivoa.net/xml/VOSIAvailability/v1.0"') 
         print ('  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"') 
-        print ('  xsi:schemaLocation="http://www.ivoa.net/xml/VOSIAvailability/v1.0">')
+        print ('  xsi:schemaLocation="http://www.ivoa.net/xml/VOSIAvailability/v1.0 http://www.ivoa.net/xml/VOSIAvailability/v1.0">')
         print ('    <available>true</available>')
         print ('    <note>TAP service available.</note>')
         print ('</vosi:availability>')
