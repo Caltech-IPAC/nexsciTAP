@@ -607,26 +607,31 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
 
 
 /*
-    retieve data rows
+    retrieve data rows
 */
-    if ((nrows_data == 0) && (ishdr == 1) && (istail == 1)) {
+    if (istail == 1) {
+       if ((nrows_data == 0) && (ishdr == 1)) {
 
-        if ((debug) && (fp_debug != (FILE *)NULL)) {
-            fprintf (fp_debug, "here0-1: write tail for empty table\n");
-            fflush (fp_debug);
-        } 
+           if ((debug) && (fp_debug != (FILE *)NULL)) {
+               fprintf (fp_debug, "here0-1: write tail for empty table\n");
+               fflush (fp_debug);
+           } 
 
-        if (strcasecmp (outfmt, "votable") == 0) {
-  
-            fprintf (fp, "  </TABLE>\n");
-            fprintf (fp, "  </RESOURCE>\n");
-            fprintf (fp, "</VOTABLE>\n");
-        }
-        fflush (fp);
-        fclose (fp);
+           if (strcasecmp (outfmt, "votable") == 0) {
+     
+               fprintf (fp, "  </TABLE>\n");
+               fprintf (fp, "  </RESOURCE>\n");
+               fprintf (fp, "</VOTABLE>\n");
+           }
+           else if (strcasecmp (outfmt, "json") == 0) {
+               fprintf (fp, "]\n");
+           }
+           fflush (fp);
+           fclose (fp);
 
-        istatus = 0;    
-        return PyLong_FromLong (istatus);
+           istatus = 0;    
+           return PyLong_FromLong (istatus);
+       }
     }
     
     if ((debug) && (fp_debug != (FILE *)NULL)) {
@@ -739,10 +744,11 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
                 }     
                 else if (strcasecmp (outfmt, "json") == 0) {
             
-                   if (i == 0) 
+                   if (i == 0)  {
                         fprintf (fp, "{");
+                   }
 
-                    fprintf (fp, "\"%s\": null", namearr[i]);
+                   fprintf (fp, "\"%s\": null", namearr[i]);
 
                    if (i < ncols-1)
                         fprintf (fp, ",\n");
@@ -823,9 +829,9 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
                     }
                 } 
                 else if (strcasecmp (outfmt, "json") == 0) {
-            
-                   if (i == 0) 
+                   if (i == 0) {
                         fprintf (fp, "{");
+                   }
 
                     // JSON strings have to be encoded to escape some
                     // stuff (mostly the double quote character)
@@ -892,8 +898,9 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
                    if (i < ncols-1)
                         fprintf (fp, ",\n");
 
-                   if (i == ncols-1)
-                        fprintf (fp, "}\n");
+                   if (i == ncols-1) {
+                        fprintf (fp, "}");
+                   }
                 }     
             
             }
@@ -982,8 +989,9 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
                    if (i < ncols-1)
                         fprintf (fp, ",\n");
 
-                   if (i == ncols-1)
-                        fprintf (fp, "}\n");
+                   if (i == ncols-1) {
+                        fprintf (fp, "}");
+                   }
                 }     
             }
             else if ((strcasecmp (typearr[i], "float" ) == 0) || 
@@ -1097,8 +1105,9 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
                    if (i < ncols-1)
                         fprintf (fp, ",\n");
 
-                   if (i == ncols-1)
+                   if (i == ncols-1) {
                         fprintf (fp, "}");
+                   }
                 }     
             }
         }
@@ -1107,12 +1116,13 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
             fprintf (fp, "        </TR>\n");
             fflush (fp);
         }
-
-        if (strcasecmp(outfmt, "json") == 0) {
-            if (l < nrows_data-1)
-                fprintf (fp, ",\n");
-            else
+        else if (strcasecmp(outfmt, "json") == 0) {
+            if (l == nrows_data-1 && istail == 1) {
                 fprintf (fp, "\n");
+            }
+            else {
+                fprintf (fp, ",\n");
+            }
         }
     }
 
@@ -1123,21 +1133,24 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
         fflush (fp_debug);
     } 
 
-    if (strcasecmp (outfmt, "json") == 0)
-        fprintf (fp, "]\n");
-
-    if ((strcasecmp (outfmt, "votable") == 0) && (istail == 1)) {
-        fprintf (fp, "      </TABLEDATA>\n");
-        fprintf (fp, "    </DATA>\n");
-        fprintf (fp, "  </TABLE>\n");
-        fprintf (fp, "  </RESOURCE>\n");
-        fprintf (fp, "</VOTABLE>\n");
-    
-        if ((debug) && (fp_debug != (FILE *)NULL)) {
-            fprintf (fp_debug, "votable close brackets written\n");
-            fflush (fp_debug);
-        }     
+    if (istail == 1) {
+       if (strcasecmp (outfmt, "votable") == 0) {
+           fprintf (fp, "      </TABLEDATA>\n");
+           fprintf (fp, "    </DATA>\n");
+           fprintf (fp, "  </TABLE>\n");
+           fprintf (fp, "  </RESOURCE>\n");
+           fprintf (fp, "</VOTABLE>\n");
+       
+           if ((debug) && (fp_debug != (FILE *)NULL)) {
+               fprintf (fp_debug, "votable close brackets written\n");
+               fflush (fp_debug);
+           }     
+       }
+       else if (strcasecmp (outfmt, "json") == 0) {
+          fprintf (fp, "]\n");
+       }
     }
+
     fflush (fp);
     fclose (fp);
     
