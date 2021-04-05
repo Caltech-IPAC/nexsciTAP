@@ -702,7 +702,7 @@ class Tap:
 
                 self.msg = "There is no existing job to be aborted."
                 
-                self.statdict['phase'] = 'ERROR'
+                self.statdict['phase'] = 'ABORTED'
                 self.statdict['jobid'] = self.workspace
                 self.statdict['errmsg'] = self.msg
 
@@ -1149,11 +1149,7 @@ class Tap:
                 
                 elif (self.statdict['phase'] == 'PENDING'):
 
-                    if self.debug:
-                        logging.debug('')
-                        logging.debug(f'currently pending: no job to abort')
-                    
-                    errmsg = 'Your job is in PENDING state, nothing to ABORT'
+                    errmsg = 'PENDING job aborted'
 
                     if self.debug:
                         logging.debug('')
@@ -1165,7 +1161,7 @@ class Tap:
                     self.statdict['endtime'] = ''
                     self.statdict['duration'] = 0 
         
-                    self.statdict['phase'] = 'ERROR'
+                    self.statdict['phase'] = 'ABORTED'
                     self.statdict['errmsg'] = errmsg
 
                     """
