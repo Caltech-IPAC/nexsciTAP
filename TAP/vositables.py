@@ -1214,6 +1214,7 @@ class vosiTables:
                 col_indexed = ''
 
                 data = '' 
+
                 for i in range(0, len(row)):
                 
                     if (row[i] is None):
@@ -1243,7 +1244,11 @@ class vosiTables:
                         col_indexed = data
 
                 irow = irow + 1
-            
+
+                if col_datatype == 'timestamp':
+                    col_datatype = 'char'
+
+
                 #
                 #    for row, write column block
                 #
