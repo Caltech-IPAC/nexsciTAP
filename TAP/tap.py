@@ -452,6 +452,9 @@ class Tap:
 
         self.cookiename = self.config.cookiename
 
+        if self.workdir.endswith('/') == False:
+            self.workdir = self.workdir[:-1]
+
         if self.debug:
             logging.debug('')
             logging.debug(f'workdir    = {self.workdir:s}')
@@ -466,6 +469,28 @@ class Tap:
             logging.debug(f'deccol     = {self.config.deccol:s}')
             logging.debug(f'propfilter = {self.config.propfilter:s}')
             logging.debug(f'phase      = {self.param["phase"]:s}')
+
+
+
+        #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+        #
+        #  Special case:  HTTP DELETE.  We only need 
+        #  the REQUEST_METHOD and PATH_INFO environment
+        #  variable.  The first must be DELETE and the
+        #  second is the directory of th TAP job we wish
+        #  to delete.
+        #
+
+        if("REQUEST_METHOD" in os.environ):
+            self.request_method = os.environ["REQUEST_METHOD"]
+
+        if self.request_method == 'DELETE':
+
+            delete_dir = self.workdir + self.pathinfo
+
+            if self.debug:
+                logging.debug('')
+                logging.debug(f'DELETE: {delete_dir:s}')
 
         
         #
