@@ -2276,7 +2276,7 @@ class Tap:
         # {
         #
 
-        httphdr = "HTTP/1.1 " + errcode  + "ERROR\r"
+        httphdr = "HTTP/1.1 " + errcode  + " ERROR\r"
 
         #print("HTTP/1.1 200 OK\r")
         
