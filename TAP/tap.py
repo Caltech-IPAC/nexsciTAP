@@ -297,6 +297,8 @@ class Tap:
 
         if("PATH_INFO" in os.environ):
             self.pathinfo = os.environ["PATH_INFO"]
+        else
+            self.pathinfo = ''
 
         if(len(self.pathinfo) == 0):
             self.msg = 'PATH_INFO: sync or async not found.'
@@ -413,7 +415,6 @@ class Tap:
 
             if(len(self.configext) > 0):
                 self.configpath = self.configpath + '.' + self.configext
-
         else:
             if self.debug:
                 logging.debug('')
@@ -481,16 +482,18 @@ class Tap:
         #  to delete.
         #
 
-        if("REQUEST_METHOD" in os.environ):
-            self.request_method = os.environ["REQUEST_METHOD"]
-
-        if self.request_method == 'DELETE':
-
-            delete_dir = self.workdir + self.pathinfo
-
-            if self.debug:
-                logging.debug('')
-                logging.debug(f'DELETE: {delete_dir:s}')
+        # if("REQUEST_METHOD" in os.environ):
+        #     self.request_method = os.environ["REQUEST_METHOD"]
+        # else
+        #     self.request_method = ''
+        #
+        # if self.request_method == 'DELETE':
+        #
+        #     delete_dir = self.workdir + self.pathinfo
+        #
+        #     if self.debug:
+        #         logging.debug('')
+        #         logging.debug(f'DELETE: {delete_dir:s}')
 
         
         #
