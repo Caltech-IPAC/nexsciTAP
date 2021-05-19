@@ -297,7 +297,7 @@ class Tap:
 
         if("PATH_INFO" in os.environ):
             self.pathinfo = os.environ["PATH_INFO"]
-        else
+        else:
             self.pathinfo = ''
 
         if(len(self.pathinfo) == 0):
