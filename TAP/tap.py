@@ -297,7 +297,7 @@ class Tap:
 
         if("PATH_INFO" in os.environ):
             self.pathinfo = os.environ["PATH_INFO"]
-        else
+        else:
             self.pathinfo = ''
 
         if(len(self.pathinfo) == 0):
@@ -484,7 +484,7 @@ class Tap:
 
         # if("REQUEST_METHOD" in os.environ):
         #     self.request_method = os.environ["REQUEST_METHOD"]
-        # else
+        # else:
         #     self.request_method = ''
         #
         # if self.request_method == 'DELETE':
