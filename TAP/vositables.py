@@ -1255,7 +1255,7 @@ class vosiTables:
                 fp.write("            <column>\n")
                 fp.write("                <name>" + col_name + "</name>\n")
                 fp.write("                <description>" + \
-                    col_desc + "</description>\n")
+                    "<![CDATA[" + col_desc + "]]></description>\n")
         
                 if (col_unit != 'None'):
                     fp.write("                <unit>" + col_unit + "</unit>\n")
