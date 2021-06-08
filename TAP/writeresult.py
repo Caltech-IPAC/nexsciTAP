@@ -368,6 +368,17 @@ class writeResult:
 
                 desc = self.dd.coldesc[colname]
 
+                if self.debug:
+                    logging.debug('')
+                    logging.debug('Column is in dd:')
+                    logging.debug(f'      colname = {colname:s}')
+                    logging.debug(f'      width   = {width:d}')
+                    logging.debug(f'      coltype = {coltype:s}')
+                    logging.debug(f'      dbtype  = {dbtype:s}')
+                    logging.debug(f'      units   = {units:s}')
+                    logging.debug(f'      fmt     = {fmt:s}')
+                    logging.debug(f'      desc    = {desc:s}')
+
                 isddcolarr.append(1)
                 intcntarr.append(0)
                 fltcntarr.append(0)
@@ -379,8 +390,7 @@ class writeResult:
 
                 if(dbtype.lower() == 'string'):
 
-                    width = 0
-                    if(size is not None):
+                    if(width == 0 and size is not None):
                         width = size
 
                     if(len(colname) > width):
@@ -413,7 +423,7 @@ class writeResult:
 
                 if self.debug:
                     logging.debug('')
-                    logging.debug('Column is in dd:')
+                    logging.debug('We will use:')
                     logging.debug(f'      colname = {colname:s}')
                     logging.debug(f'      coltype = {coltype:s}')
                     logging.debug(f'      dbtype  = {dbtype:s}')
