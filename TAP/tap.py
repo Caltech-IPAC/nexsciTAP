@@ -449,11 +449,15 @@ class Tap:
         self.httpurl = self.config.httpurl
         self.cgipgm  = self.config.cgipgm
 
+        if self.debug:
+            logging.debug('')
+            logging.debug(f'workdir    = {self.workdir:s}')
+        
         self.arraysize = self.config.arraysize
 
         self.cookiename = self.config.cookiename
 
-        if self.workdir.endswith('/') == False:
+        if self.workdir.endswith('/') == True:
             self.workdir = self.workdir[:-1]
 
         if self.debug:
