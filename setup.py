@@ -4,7 +4,7 @@ from setuptools import setup
 from distutils.extension import Extension
 
 setup(name='nexsciTAP', 
-    version='1.2.2', 
+    version='1.2.3', 
     author='Mihseh Kong', 
     author_email='mihseh@ipac.caltech.edu', 
     license='LICENSE', 
