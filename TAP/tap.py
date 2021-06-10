@@ -121,6 +121,7 @@ class Tap:
     configext  = ''
     pathinfo = ''
 
+    token = ''
     cookiestr = ''
     cookiename = ''
 
@@ -202,6 +203,7 @@ class Tap:
         self.lang = 'ADQL'
         self.format = 'votable'
         self.maxrecstr = '-1'
+        self.token = ''
         self.query = ''
         self.phase = ''
 
@@ -240,6 +242,9 @@ class Tap:
 
             if(key.lower() == 'maxrec'):
                 self.maxrecstr = self.form[key].value
+
+            if(key.lower() == 'token'):
+                self.token = self.form[key].value
 
         self.nparam = len(self.param)
 
@@ -403,7 +408,18 @@ class Tap:
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'cookiestr = {self.cookiestr:s}')
+            logging.debug(f'cookiestr (http) = {self.cookiestr:s}')
+
+        if (len(self.cookiestr) == 0):
+            
+            self.cookiestr = self.token
+            if self.debug:
+                logging.debug('')
+                logging.debug(f'cookiestr (token) = {self.cookiestr:s}')
+
+        if self.debug:
+            logging.debug('')
+            logging.debug(f'cookiestr (finale) = {self.cookiestr:s}')
 
         #
         #  Extract configfile name from TAP_CONF environment variable
