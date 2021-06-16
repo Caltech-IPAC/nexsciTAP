@@ -540,8 +540,15 @@ class vosiTables:
             #
             #    2. execute column sql
             #
-                self.sql = "select column_name, description, unit, ucd, "  + \
-                    "datatype, principal, indexed from TAP_SCHEMA.columns " + \
+                #self.sql = "select column_name, description, unit, ucd, "  + \
+                #    "datatype, xtype, principal, indexed " + \
+                #    "from TAP_SCHEMA.columns " + \
+                #    "where table_name='" + table_namearr[itable] + \
+                #    "' order by column_index"
+                
+                self.sql = "select column_name, datatype, arraysize, " + \
+                    "xtype, description, utype, unit, ucd, indexed, " + \
+                    "principal, std, column_index from TAP_SCHEMA.columns " + \
                     "where table_name='" + table_namearr[itable] + \
                     "' order by column_index"
                 
@@ -686,6 +693,10 @@ class vosiTables:
     #   this query contains only three char columns:
     #   table_name, description, and table_type;
     #
+        debug = 0
+        
+        if('debug' in kwargs):
+            debug = kwargs['debug']
 
         if self.debug:
             logging.debug('')
@@ -699,7 +710,7 @@ class vosiTables:
         nfetch = self.arraysize
         cursor.arraysize = nfetch
 
-        if self.debug:
+        if debug:
             logging.debug('')
             logging.debug(f'nfetch = {nfetch:d}')
 
@@ -715,7 +726,7 @@ class vosiTables:
         #   dbdatatype, size, etc...
         #
 
-            if self.debug:
+            if debug:
                 logging.debug('')
                 logging.debug('get cursor description:')
                 logging.debug(f'i = {i:d} col = ' + str(col))
@@ -727,7 +738,7 @@ class vosiTables:
             colname = str(col[0]).lower()
             table_colname.append(colname)
 
-            if self.debug:
+            if debug:
                 logging.debug('')
                 logging.debug(f'colname(lower) = {colname:s}')
 
@@ -737,7 +748,7 @@ class vosiTables:
 
             dbdatatypestr = str(col[1])
 
-            if self.debug:
+            if debug:
                 logging.debug('')
                 logging.debug(f'dbdatatypestr = {dbdatatypestr:s}')
 
@@ -753,7 +764,7 @@ class vosiTables:
             if(ind != -1):
                 dbtype = 'NUMBER'
 
-            if self.debug:
+            if debug:
                 logging.debug(f'dbtype    = {dbtype:s}')
 
             table_dbtype.append(dbtype)
@@ -768,11 +779,11 @@ class vosiTables:
         # Start fetching data lines
         #
 
-        if self.debug:
+        if debug:
             logging.debug('')
             logging.debug('Start fetching data:')
 
-        if self.debug:
+        if debug:
             logging.debug('')
             logging.debug(f'nfetch= {nfetch:d}')
 
@@ -790,7 +801,7 @@ class vosiTables:
 
             nrec = len(rows)
 
-            if self.debug:
+            if debug:
                 logging.debug(f'nrec = {nrec:d}')
                 logging.debug('')
 
@@ -803,7 +814,7 @@ class vosiTables:
 
                 row = rows[ll]
                 
-                if self.debug:
+                if debug:
                     logging.debug ('')
                     logging.debug (f'len(row)= {len(row):d}')
                     logging.debug ('')
@@ -823,7 +834,7 @@ class vosiTables:
                     else:
                         data = row[i]
 
-                    if self.debug:
+                    if debug:
                         logging.debug (f'i= {i:d}, data= {data:s}')
                         logging.debug (f'table_colname= {table_colname[i]:s}')
                     
@@ -845,7 +856,7 @@ class vosiTables:
             #
             # } end of ll loop
             #      
-            if self.debug:
+            if debug:
                 logging.debug('')
                 logging.debug(table_namearr)
                 logging.debug(table_descarr)
@@ -858,7 +869,7 @@ class vosiTables:
             if(len(rows) < cursor.arraysize):
                 break
 
-            if self.debug:
+            if debug:
                 logging.debug ('')
                 logging.debug (f'ntot= {ntot:d}')
         #
@@ -880,6 +891,11 @@ class vosiTables:
     #   this query contains only two columns:
     #   schema_name and schema_description
     #
+        debug = 0
+
+        if('debug' in kwargs):
+            debug = kwargs['debug']
+
         if self.debug:
             logging.debug('')
             logging.debug(f'Enter __getSchemaQueryArr__\n')
@@ -888,7 +904,7 @@ class vosiTables:
         nfetch = self.arraysize
         cursor.arraysize = nfetch
         
-        if self.debug:
+        if debug:
             logging.debug('')
             logging.debug(f'nfetch= {nfetch:d}')
 
@@ -903,7 +919,7 @@ class vosiTables:
         #   dbdatatype, size, etc...
         #
 
-            if self.debug:
+            if debug:
                 logging.debug('')
                 logging.debug('----------------------------------------------')
                 logging.debug(f'i = {i:d} col = ' + str(col))
@@ -915,7 +931,7 @@ class vosiTables:
 
             colname = str(col[0]).lower()
   
-            if self.debug:
+            if debug:
                 logging.debug('')
                 logging.debug(f'colname(lower) = {colname:s}')
 
@@ -932,7 +948,7 @@ class vosiTables:
 
             dbdatatypestr = str(col[1])
 
-            if self.debug:
+            if debug:
                 logging.debug('')
                 logging.debug(f'dbdatatypestr = {dbdatatypestr:s}')
 
@@ -951,7 +967,7 @@ class vosiTables:
                 if(len(colname) > size):
                     size = len(colname)
 
-                if self.debug:
+                if debug:
                     logging.debug(f'size      = {size:d}')
 
             #
@@ -1003,7 +1019,7 @@ class vosiTables:
                 # } end unknown type
                 #
 
-            if self.debug:
+            if debug:
                 logging.debug('')
                 logging.debug(f'      width   = {width:d}')
                 logging.debug(f'      dbtype  = {dbtype:s}')
@@ -1016,7 +1032,7 @@ class vosiTables:
         # } end of for loop for analysing cursor description
         #
 
-        if self.debug:
+        if debug:
             logging.debug('')
             logging.debug('Start fetching data')
             logging.debug('----------------------------------------')
@@ -1043,7 +1059,7 @@ class vosiTables:
 
             nrec = len(rows)
 
-            if self.debug:
+            if debug:
                 logging.debug(f'nrec = {nrec:d}')
                 logging.debug('')
 
@@ -1056,7 +1072,7 @@ class vosiTables:
 
                 row = rows[ll]
                 
-                if self.debug:
+                if debug:
                     logging.debug(row)
                     logging.debug(f'row[0]= {row[0]:s}')
                     logging.debug(f'row[1]= {row[1]:s}')
@@ -1065,7 +1081,7 @@ class vosiTables:
                 self.schema_namearr.append(row[0])
                 self.schema_descarr.append(row[1])
                 
-                if self.debug:
+                if debug:
                     logging.debug(row)
                     logging.debug(self.schema_namearr)
                     logging.debug(self.schema_descarr)
@@ -1076,7 +1092,7 @@ class vosiTables:
             # } end of ll loop
             #
 
-            if self.debug:
+            if debug:
                 logging.debug('----------------------------------------')
                 logging.debug(f'irow= {irow:d}')
 
@@ -1108,6 +1124,7 @@ class vosiTables:
         cursor.arraysize = self.arraysize
 
         dbtype = []
+        colnamearr = []
 
         i = 0
         for col in cursor.description:
@@ -1161,6 +1178,7 @@ class vosiTables:
             if self.debug:
                 logging.debug(f'dbdatatype    = {dbdatatype:s}')
 
+            colnamearr.append(colname)
             dbtype.append(dbdatatype)
             #
             # } end  extract dbdatatype from col_array: col[1]
@@ -1198,23 +1216,21 @@ class vosiTables:
 
             for ll in range(0, nrec):
 
+                if (ll == 0):
+                    if self.debug:
+                        logging.debug(f'll = {ll:d}')
+                        logging.debug('')
 
                 #
                 # { Beginning ll loop: one row
                 #
 
                 row = rows[ll]
-    
-                col_name = ''
-                col_desc = ''
-                col_unit = ''
-                col_ucd = ''
-                col_datatype = ''
-                col_principal = ''
-                col_indexed = ''
-
                 data = '' 
 
+                fp.write("            <column>\n")
+               
+                col_name = ''
                 for i in range(0, len(row)):
                 
                     if (row[i] is None):
@@ -1224,58 +1240,84 @@ class vosiTables:
                     else:
                         data = str(row[i])
 
-                    if self.debug:
-                        logging.debug('')
-                        logging.debug(f'i= {i:d}, data= {data:s}')
-
                     if (i == 0):
                         col_name = data
-                    elif (i == 1):
-                        col_desc = data
-                    elif (i == 2):
-                        col_unit = data
-                    elif (i == 3):
-                        col_ucd = data
-                    elif (i == 4):
-                        col_datatype = data
-                    elif (i == 5):
-                        col_principal = data
-                    elif (i == 6):
-                        col_indexed = data
 
+                    if (ll == 0):
+                        if self.debug:
+                            logging.debug('')
+                            logging.debug(f'i= {i:d}, data= {data:s}')
+
+                    if ((data == 'timestamp') or (data == 'date')):
+                        if self.debug:
+                            logging.debug('')
+                            logging.debug(f'll= {ll:d} col_name= {col_name:s} data= {data:s}')
+                    
+
+                    if (colnamearr[i] == 'column_name'):
+                        fp.write("                <name>" + data + "</name>\n")
+                
+                    elif (colnamearr[i] == 'description'):
+                        fp.write("                <description>" + \
+                            "<![CDATA[" + data + "]]></description>\n")
+                
+                    elif (colnamearr[i] == 'datatype'):
+                        fp.write ("                " + \
+                            "<dataType xsi:type=\"vod:VOTableType\">" + \
+                            data + "</dataType>\n")
+           
+                    elif (colnamearr[i] == 'arraysize'):
+                        if (data != 'None'):
+                            fp.write ("                <arraysize>" + data + \
+                                "</arraysize\n")
+                
+                    elif (colnamearr[i] == 'xtype'):
+                        if (data != 'None'):
+                            fp.write ("                <xtype>" + data + \
+                                "</xtype>\n")
+                
+                    elif (colnamearr[i] == 'utype'):
+                        if (data != 'None'):
+                            fp.write("                <utype>" + data + \
+                            "</utype>\n")
+                
+                    elif (colnamearr[i] == 'unit'):
+                        if (data != 'None'):
+                            fp.write("                <unit>" + data + \
+                            "</unit>\n")
+                
+                    elif (colnamearr[i] == 'ucd'):
+                        if (data != 'None'):
+                            fp.write ("                <ucd>" + data + \
+                            "</ucd>\n")
+                
+                    elif (colnamearr[i] == 'indexed'):
+                        if (data != 'None'):
+                            fp.write ("                <indexed>" + data + \
+                            "</indexed>\n")
+                
+                    elif (colnamearr[i] == 'principal'):
+                        if (data != 'None' and data != 0 and data != '0'):
+                            fp.write("                " + \
+                                "<principal>" + data + "</principal>\n")
+                
+                    elif (colnamearr[i] == 'std'):
+                        if (data != 'None'):
+                            fp.write ("                <std>" + data + \
+                                "</std>\n")
+                
+                    elif (colnamearr[i] == 'column_index'):
+                        if (data != 'None' and data != 0 and data != '0'):
+                            fp.write("                " + "<column_index>" + data + \
+                                "</column_index>\n")
+                
                 irow = irow + 1
 
-                if col_datatype == 'timestamp':
-                    col_datatype = 'char'
+                #if col_datatype == 'timestamp':
+                #    col_datatype = 'char'
+                #if col_datatype == 'date':
+                #    col_datatype = 'char'
 
-
-                #
-                #    for row, write column block
-                #
-                fp.write("            <column>\n")
-                fp.write("                <name>" + col_name + "</name>\n")
-                fp.write("                <description>" + \
-                    "<![CDATA[" + col_desc + "]]></description>\n")
-        
-                if (col_unit != 'None'):
-                    fp.write("                <unit>" + col_unit + "</unit>\n")
-       
-                if (col_ucd != 'None'):
-                    fp.write ("                <ucd>" + col_ucd + "</ucd>\n")
-                
-                fp.write ("                " + \
-                        "<dataType xsi:type=\"vod:VOTableType\">" + \
-                        col_datatype + "</dataType>\n")
-           
-                if (col_principal != 'None' and col_principal != 0 \
-                        and col_principal != '0'):
-                    fp.write("                " + \
-                        "<flag>principal</flag>\n")
-           
-                if (col_indexed != 'None' and col_indexed != 0 \
-                        and col_indexed != '0'):
-                    fp.write("                " + "<flag>indexed</flag>\n")
-        
                 fp.write("            </column>\n")
        
 
@@ -1304,10 +1346,15 @@ class vosiTables:
 
 
     def __writeForeignKey__ (self, cursor, fp,  **kwargs):
-
+        
     #
     # {vosiTables.writeForeignKey
     #
+        debug = 0
+        
+        if('debug' in kwargs):
+            debug = kwargs['debug']
+
         if self.debug:
             logging.debug('')
             logging.debug('Enter __writeForeignKey')
@@ -1327,7 +1374,7 @@ class vosiTables:
             #   dbdatatype, size, etc...
             #
 
-            if self.debug:
+            if debug:
                 logging.debug('')
                 logging.debug(f'i = {i:d} col = ' + str(col))
 
@@ -1338,7 +1385,7 @@ class vosiTables:
 
             colname = str(col[0]).lower()
 
-            if self.debug:
+            if debug:
                 logging.debug('')
                 logging.debug(f'colname(lower) = {colname:s}')
 
@@ -1353,7 +1400,7 @@ class vosiTables:
 
             dbdatatypestr = str(col[1])
 
-            if self.debug:
+            if debug:
                 logging.debug('')
                 logging.debug(f'dbdatatypestr = {dbdatatypestr:s}')
 
@@ -1365,7 +1412,7 @@ class vosiTables:
             if(ind != -1):
                 dbdatatype = 'STRING'
 
-            if self.debug:
+            if debug:
                 logging.debug(f'dbdatatype    = {dbdatatype:s}')
 
             dbtype.append(dbdatatype)
@@ -1399,7 +1446,7 @@ class vosiTables:
             rows = cursor.fetchmany()
             nrec = len(rows)
 
-            if self.debug:
+            if debug:
                 logging.debug(f'nrec = {nrec:d}')
                 logging.debug('')
 
@@ -1428,7 +1475,7 @@ class vosiTables:
                     else:
                         data = str(row[i])
 
-                    if self.debug:
+                    if debug:
                         logging.debug('')
                         logging.debug(f'i= {i:d}, data= {data:s}')
 
@@ -1472,7 +1519,7 @@ class vosiTables:
             if(len(rows) < cursor.arraysize):
                 break 
 
-            if self.debug:
+            if debug:
                 logging.debug('')
                 logging.debug(f'ntot= {ntot:d}')
 
@@ -1488,13 +1535,6 @@ class vosiTables:
 
 
 
-
-
-
-
-
-
-
     def __executeSql__(self, cursor, sql, **kwargs):
     #
     # { vosiTables.executeSql
@@ -1505,7 +1545,7 @@ class vosiTables:
         if('debug' in kwargs):
             debug = kwargs['debug']
 
-        if self.debug:
+        if debug:
             logging.debug('')
             logging.debug('Enter executeSql')
             logging.debug(f'sql:= {sql:s}')
@@ -1516,7 +1556,7 @@ class vosiTables:
 
             msg = str(e).replace('"', "'")
 
-            if self.debug:
+            if debug:
                 logging.debug('')
                 logging.debug(f'create table exception: {str(msg):s}')
 
