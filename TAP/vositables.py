@@ -1269,7 +1269,7 @@ class vosiTables:
                     elif (colnamearr[i] == 'arraysize'):
                         if (data != 'None'):
                             fp.write ("                <arraysize>" + data + \
-                                "</arraysize\n")
+                                "</arraysize>\n")
                 
                     elif (colnamearr[i] == 'xtype'):
                         if (data != 'None'):
