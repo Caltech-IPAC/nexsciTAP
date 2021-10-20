@@ -30,11 +30,11 @@ then create a Python executable in your "/cgi-bin" directory tree (wherever
 you have that set up (we use .../cgi-bin/TAP/nph-tap.py under Apache).  Here
 is a minimal but fully functional example::
 
-    /bin/env python
-
+    \#!/usr/bin/env python
+    
     from TAP import tap
-
-    tap.main()
+    
+    tap.Tap()
 
 You now have an operational TAP service (that can't do anything).  
 

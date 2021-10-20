@@ -1,8 +1,7 @@
 
 
 <!DOCTYPE html>
-<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8">
   
@@ -12,12 +11,18 @@
   
 
   
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
   
   
   
 
   
-  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
   
     
       <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -29,10 +34,6 @@
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
     
-
-  
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="TAP Docstrings" href="tap_docs.html" />
@@ -50,7 +51,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home"> nexsciTAP
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> nexsciTAP
           
 
           
@@ -73,6 +74,7 @@
           
         </div>
 
+        
         <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
             
@@ -110,6 +112,7 @@
             
           
         </div>
+        
       </div>
     </nav>
 
@@ -148,7 +151,7 @@
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="index.html">Docs</a> &raquo;</li>
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
         
       <li>ADQL Docstrings</li>
     
@@ -171,9 +174,9 @@
             
   <div class="section" id="module-ADQL.adql">
 <span id="adql-docstrings"></span><h1>ADQL Docstrings<a class="headerlink" href="#module-ADQL.adql" title="Permalink to this headline">¶</a></h1>
-<dl class="py class">
+<dl class="class">
 <dt id="ADQL.adql.ADQL">
-<em class="property">class </em><code class="sig-prename descclassname">ADQL.adql.</code><code class="sig-name descname">ADQL</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dbms</span><span class="o">=</span><span class="default_value">'oracle'</span></em>, <em class="sig-param"><span class="n">mode</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">level</span><span class="o">=</span><span class="default_value">7</span></em>, <em class="sig-param"><span class="n">encoding</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">debugfile</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">racol</span><span class="o">=</span><span class="default_value">'ra'</span></em>, <em class="sig-param"><span class="n">deccol</span><span class="o">=</span><span class="default_value">'dec'</span></em>, <em class="sig-param"><span class="n">xcol</span><span class="o">=</span><span class="default_value">'x'</span></em>, <em class="sig-param"><span class="n">ycol</span><span class="o">=</span><span class="default_value">'y'</span></em>, <em class="sig-param"><span class="n">zcol</span><span class="o">=</span><span class="default_value">'z'</span></em>, <em class="sig-param"><span class="n">indxcol</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ADQL.adql.ADQL" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">ADQL.adql.</code><code class="sig-name descname">ADQL</code><span class="sig-paren">(</span><em class="sig-param">dbms='oracle'</em>, <em class="sig-param">mode=0</em>, <em class="sig-param">level=7</em>, <em class="sig-param">encoding=None</em>, <em class="sig-param">debugfile=None</em>, <em class="sig-param">racol='ra'</em>, <em class="sig-param">deccol='dec'</em>, <em class="sig-param">xcol='x'</em>, <em class="sig-param">ycol='y'</em>, <em class="sig-param">zcol='z'</em>, <em class="sig-param">indxcol=None</em><span class="sig-paren">)</span><a class="headerlink" href="#ADQL.adql.ADQL" title="Permalink to this definition">¶</a></dt>
 <dd><p>ADQL class</p>
 <p>ADQL is a variant of SQL that is understood by no DBMSs, the main
 difference from generic SQL being support for sky spatial constraints.</p>
@@ -195,9 +198,9 @@ service for managing remote database requests for astronomy
 in a general way.  TAP manages requests/results and is generally
 fed ADQL.  This ADQL translator is used by our TAP implementation
 to turn ADQL into SQL the local DBMS can handle directly.</p>
-<dl class="py method">
+<dl class="method">
 <dt id="ADQL.adql.ADQL.sql">
-<code class="sig-name descname">sql</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">adql</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ADQL.adql.ADQL.sql" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">sql</code><span class="sig-paren">(</span><em class="sig-param">adql</em><span class="sig-paren">)</span><a class="headerlink" href="#ADQL.adql.ADQL.sql" title="Permalink to this definition">¶</a></dt>
 <dd><p>sql() converts an ADQL statement into SQL appropriate to an
 Oracle database with HTM or HPX spatial index columns.</p>
 <dl class="field-list simple">
@@ -237,11 +240,19 @@ Oracle database with HTM or HPX spatial index columns.</p>
 
   <div role="contentinfo">
     <p>
+        
         &copy; Copyright 2020, NExScI / IPAC / Caltech
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -252,7 +263,6 @@ Oracle database with HTM or HPX spatial index columns.</p>
 
   </div>
   
-
 
   <script type="text/javascript">
       jQuery(function () {
