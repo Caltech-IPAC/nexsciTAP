@@ -30,7 +30,7 @@ then create a Python executable in your "/cgi-bin" directory tree (wherever
 you have that set up (we use .../cgi-bin/TAP/nph-tap.py under Apache).  Here
 is a minimal but fully functional example::
 
-    \#!/usr/bin/env python
+    #!/usr/bin/env python
     
     from TAP import tap
     
