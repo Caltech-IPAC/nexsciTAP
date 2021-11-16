@@ -83,6 +83,8 @@ class Tap:
     debug = 0
 
     debugfname = '/tmp/tap_' + str(pid) + '.debug'
+    debugfname = '/local/home/exoadmin/mysql/koa/tap_' + str(pid) + '.debug'
+
 
     sql = ''
     servernamr = ''

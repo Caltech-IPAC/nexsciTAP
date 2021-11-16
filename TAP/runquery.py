@@ -2,7 +2,6 @@
 # This code is released with a BSD 3-clause license. License information is at
 #   https://github.com/Caltech-IPAC/nexsciTAP/blob/master/LICENSE
 
-
 import sys
 import os
 import logging
@@ -15,7 +14,6 @@ import configobj
 from TAP.datadictionary import dataDictionary
 from TAP.writeresult import writeResult
 from TAP.tablenames import TableNames
-
 
 class runQuery:
 
@@ -94,6 +92,12 @@ class runQuery:
 
         if('debug' in kwargs):
             self.debug = kwargs['debug']
+
+        if self.debug:
+            logging.debug('')
+            logging.debug(f'Enter runQuery')
+            logging.debug(f'self.debug = {self.debug:d}')
+
 
         self.arraysize = 10000
         if('arraysize' in kwargs):
@@ -179,7 +183,74 @@ class runQuery:
                     logging.debug(f'db= {self.db:s}')
                     logging.debug(f'tap_schema= {self.tap_schema:s}')
 
+            
+            if(self.dbms.lower() == 'mysql'):
 
+                import mysql.connector
+            
+                self.dbserver = ''
+                self.port = 3306
+                self.socket = ''
+                self.db = ''
+                self.userid = ''
+                self.password = ''
+                
+                if ('dbserver' in self.connectInfo):
+                    self.dbserver = self.connectInfo['dbserver']
+
+                if (len(self.dbserver) == 0):
+                    self.socket = self.connectInfo['socket']
+                else:
+                    port = self.connectInfo['port']
+                    if (len(port) !=0):
+                        self.port = int(port)
+
+
+                if ((len(self.dbserver) == 0) and \
+                    (len(self.socket) == 0)):
+                    
+                    self.msg = 'Failed to retrieve required input DB server ' \
+                        'parameter [dbserver] or [socket]'
+                    
+                    self.status = 'error'
+                    raise Exception(self.msg)
+
+                if('userid' in self.connectInfo):
+                    self.userid = self.connectInfo['userid']
+
+                if(len(self.userid) == 0):
+                    self.msg = 'Failed to retrieve required input parameter'\
+                               ' [userid]'
+                    self.status = 'error'
+                    raise Exception(self.msg)
+
+                if('password' in self.connectInfo):
+                    self.password = self.connectInfo['password']
+
+                if(len(self.password) == 0):
+                    self.msg = 'Failed to retrieve required input parameter'\
+                               ' [password]'
+                    self.status = 'error'
+                    raise Exception(self.msg)
+
+                if('db' in self.connectInfo):
+                    self.db = self.connectInfo['db']
+
+                if(len(self.db) == 0):
+                    self.msg = 'Failed to retrieve required input parameter'\
+                               ' [db]'
+                    self.status = 'error'
+                    raise Exception(self.msg)
+
+                if self.debug:
+                    logging.debug('')
+                    logging.debug(f'dbserver   = {self.dbserver:s}')
+                    logging.debug(f'port   = {self.port:s}')
+                    logging.debug(f'socket   = {self.socket:s}')
+                    logging.debug(f'db   = {self.db:s}')
+                    logging.debug(f'userid   = {self.userid:s}')
+                    logging.debug(f'password = {self.password:s}')
+        
         self.sql = ''
         if('query' in kwargs):
             self.sql = kwargs['query']
@@ -281,8 +352,7 @@ class runQuery:
         elif(self.dbms.lower() == 'sqlite3'):
 
             try:
-                self.conn = sqlite3.connect(self.db,
-                    detect_types=sqlite3.PARSE_DECLTYPES)
+                self.conn = sqlite3.connect(self.db)
 
                 if self.debug:
                     logging.debug('')
@@ -311,6 +381,48 @@ class runQuery:
 
                 raise Exception(self.msg)
 
+        elif(self.dbms.lower() == 'mysql'):
+       
+            try:
+                if (len(self.dbserver) != 0):
+
+                    self.conn = mysql.connector.connect (
+                        user=self.userid, \
+                        password=self.password, \
+                        host=self.dbserver, \
+                        port=self.port, \
+                        db=self.db
+                    )
+                
+                elif (len(self.socket) != 0):
+
+                    self.conn = mysql.connector.connect (
+                        user=self.userid, \
+                        password=self.password, \
+                        unix_socket=self.socket, \
+                        db=self.db
+                    )
+                
+                else:
+                    self.status = 'error'
+                    self.msg = 'Failed to connect to mysql databases'
+                    raise Exception(self.msg)
+
+                if self.debug:
+                    logging.debug('')
+                    logging.debug('mysql connected')
+
+            except Exception as e:
+
+                self.status = 'error'
+                self.msg = 'Failed to connect to mysql databases'
+
+                raise Exception(self.msg)
+
+            if self.debug:
+                logging.debug('')
+                logging.debug('here0')
+           
         else:
             self.status = 'error'
             self.msg = 'Invalid DBMS'
@@ -326,6 +438,10 @@ class runQuery:
         try:
             self.dd = dataDictionary(self.conn, self.dbtable, debug=self.debug)
 
+            if self.debug:
+                logging.debug('')
+                logging.debug('DD successfully retrieved')
+
         except Exception as e:
 
             if self.debug:
@@ -334,25 +450,29 @@ class runQuery:
 
             self.msg = f'dataDictionary retrieval exception: {str(e)}'
 
-            raise Exception(self.msg)
+            #raise Exception(self.msg)
 
         if self.debug:
             logging.debug('')
-            logging.debug('DD successfully retrieved')
+            logging.debug('Done DD retrieval')
 
         #
         # Submit database query of user input sql
         #
 
+        cursor = self.conn.cursor()
+        
         if self.debug:
             logging.debug('')
             logging.debug(f'sql = {self.sql:s}')
             logging.debug('call execute sql')
 
-        cursor = self.conn.cursor()
-
         try:
-            self.__executeSql__(cursor, self.sql)
+            self.__executeSql__(cursor, self.sql, debug=1)
+        
+            if self.debug:
+                logging.debug('')
+                logging.debug('returned executeSql')
 
         except Exception as e:
 
@@ -365,6 +485,7 @@ class runQuery:
         if self.debug:
             logging.debug('')
             logging.debug('returned executeSql')
+
 
     #
     # Call writeResult
@@ -380,6 +501,7 @@ class runQuery:
                                   coldesc=self.coldesc,
                                   racol=self.racol,
                                   deccol=self.deccol,
+                                  dbms=self.dbms, \
                                   debug=self.debug)
 
         except Exception as e:
