@@ -198,20 +198,30 @@ class dataDictionary:
             #
             # { while loop
             #
-            rows = cursor.fetchmany()
+            
+            #rows = cursor.fetchmany(self.nfetch)
+            rows = cursor.fetchall()
 
             self.ncols = self.ncols + len(rows)
 
             if self.debug:
                 logging.debug('')
-                logging.debug(f'ncols = {self.ncols:d}')
+                logging.debug(f'i= {i:d} rows:')
+                logging.debug(rows)
+                logging.debug('')
+
 
             i = 0
             for row in rows:
+            
                 #
                 # { for loop: each row in the file represents
                 #             a column in data dictionary
                 #
+                if self.debug:
+                    logging.debug('')
+                    logging.debug(f'ncols = {self.ncols:d}')
+
                 col_str = str(row[ind_colname]).strip().lower()
 
                 if col_str.startswith('"') and col_str.endswith('"'):

@@ -157,6 +157,62 @@ class configParam:
                     f"      tap_schema = {self.connectInfo['tap_schema']:s}")
 
 
+        if(dbms == 'mysql'):
+
+            self.connectInfo['dbserver'] = ''
+            if('ServerName' in confobj[dbms]):
+                self.connectInfo['dbserver'] = confobj[dbms]['ServerName']
+
+            self.connectInfo['port'] = ''
+            if('port' in confobj[dbms]):
+                self.connectInfo['port'] = confobj[dbms]['port']
+
+            self.connectInfo['socket'] = ''
+            if ('socket' in confobj[dbms]):
+                self.connectInfo['socket'] = confobj[dbms]['socket']
+
+            if ((len(self.connectInfo['dbserver']) == 0) and \
+                (len(self.connectInfo['socket]) == 0)):
+                
+                self.status = 'error'
+                self.msg = 'Failed to find db server name OR socket info in config_file'
+                raise Exception(self.msg)
+
+            self.connectInfo['userid'] = ''
+            if('UserID' in confobj[dbms]):
+                self.connectInfo['userid'] = confobj[dbms]['UserID']
+
+            if(len(self.connectInfo['userid']) == 0):
+                self.status = 'error'
+                self.msg = 'Failed to find DBMS user ID in config_file'
+                raise Exception(self.msg)
+
+            self.connectInfo['password'] = ''
+            if('Password' in confobj[dbms]):
+                self.connectInfo['password'] = confobj[dbms]['Password']
+
+            if(len(self.connectInfo['password']) == 0):
+                self.status = 'error'
+                self.msg = 'Failed to find db password in config_file'
+                raise Exception(self.msg)
+
+            self.connectInfo['db'] = ''
+            if('DB' in confobj[dbms]):
+                self.connectInfo['db'] = confobj[dbms]['DB']
+
+            if(len(self.connectInfo['db']) == 0):
+                self.status = 'error'
+                self.msg = 'Failed to find DB in config_file'
+                raise Exception(self.msg)
+
+            if self.debug:
+                logging.debug('')
+                logging.debug(f"dbserver= {self.connectInfo['dbserver']:s}")
+                logging.debug(f"socket= {self.connectInfo['socket']:s}")
+                logging.debug(f"userid= {self.connectInfo['userid']:s}")
+                logging.debug( " password= [Not shown for security reasons.]")
+                logging.debug(f"db= {self.connectInfo['db']:s}")
+            
         self.adqlparam = {}
 
         #
