@@ -33,16 +33,16 @@ class runQuery:
     dd = None
 
     conn = None
-    dbtable = ''
+    dbtable = None
 
-    sql = ''
-    racol = ''
-    deccol = ''
+    sql = None
+    racol = 'ra'
+    deccol = 'dec'
 
     nfetch = 1000
 
-    outpath = ''
-    userworkdir = ''
+    outpath = None
+    userworkdir = None
     ntot = 0
 
     format = 'votable'
@@ -117,31 +117,31 @@ class runQuery:
 
                 import cx_Oracle
 
-                self.dbserver = ''
+                self.dbserver = None 
                 if('dbserver' in self.connectInfo):
                     self.dbserver = self.connectInfo['dbserver']
 
-                if(len(self.dbserver) == 0):
+                if (self.dbserver is None):
                     self.msg = 'Failed to retrieve required input parameter'\
                                ' [dbserver]'
                     self.status = 'error'
                     raise Exception(self.msg)
 
-                self.userid = ''
-                if('userid' in self.connectInfo):
+                self.userid = None 
+                if ('userid' in self.connectInfo):
                     self.userid = self.connectInfo['userid']
 
-                if(len(self.userid) == 0):
+                if (self.userid is None):
                     self.msg = 'Failed to retrieve required input parameter'\
                                ' [userid]'
                     self.status = 'error'
                     raise Exception(self.msg)
 
-                self.password = ''
-                if('password' in self.connectInfo):
+                self.password =  None
+                if ('password' in self.connectInfo):
                     self.password = self.connectInfo['password']
 
-                if(len(self.password) == 0):
+                if (self.password is None):
                     self.msg = 'Failed to retrieve required input parameter'\
                                ' [password]'
                     self.status = 'error'
@@ -158,21 +158,21 @@ class runQuery:
 
                 import sqlite3
 
-                self.db = ''
-                if('db' in self.connectInfo):
+                self.db = None 
+                if ('db' in self.connectInfo):
                     self.db = self.connectInfo['db']
 
-                if(len(self.db) == 0):
+                if (self.db is None):
                     self.msg = 'Failed to retrieve required input parameter'\
                                ' [db]'
                     self.status = 'error'
                     raise Exception(self.msg)
 
-                self.tap_schema = ''
+                self.tap_schema = None 
                 if('tap_schema' in self.connectInfo):
                     self.tap_schema = self.connectInfo['tap_schema']
 
-                if(len(self.tap_schema) == 0):
+                if (self.tap_schema is None):
                     self.msg = 'Failed to retrieve required input parameter'\
                                ' [tap_schema]'
                     self.status = 'error'
@@ -188,26 +188,27 @@ class runQuery:
 
                 import mysql.connector
             
-                self.dbserver = ''
+                self.dbserver = None 
                 self.port = 3306
-                self.socket = ''
-                self.db = ''
-                self.userid = ''
-                self.password = ''
+                self.socket =  None
+                self.db =  None
+                self.userid =  None
+                self.password =  None
                 
                 if ('dbserver' in self.connectInfo):
                     self.dbserver = self.connectInfo['dbserver']
 
-                if (len(self.dbserver) == 0):
+                if (self.dbserver is None):
                     self.socket = self.connectInfo['socket']
                 else:
+                    port = None
                     port = self.connectInfo['port']
-                    if (len(port) !=0):
+                    if (port is not None):
                         self.port = int(port)
 
 
-                if ((len(self.dbserver) == 0) and \
-                    (len(self.socket) == 0)):
+                if ((self.dbserver is None) and \
+                    (self.socket is None)):
                     
                     self.msg = 'Failed to retrieve required input DB server ' \
                         'parameter [dbserver] or [socket]'
@@ -218,7 +219,7 @@ class runQuery:
                 if('userid' in self.connectInfo):
                     self.userid = self.connectInfo['userid']
 
-                if(len(self.userid) == 0):
+                if(self.userid is  None):
                     self.msg = 'Failed to retrieve required input parameter'\
                                ' [userid]'
                     self.status = 'error'
@@ -227,44 +228,47 @@ class runQuery:
                 if('password' in self.connectInfo):
                     self.password = self.connectInfo['password']
 
-                if(len(self.password) == 0):
+                if(self.password is None):
                     self.msg = 'Failed to retrieve required input parameter'\
                                ' [password]'
                     self.status = 'error'
                     raise Exception(self.msg)
 
-                if('db' in self.connectInfo):
-                    self.db = self.connectInfo['db']
+                if('dbschema' in self.connectInfo):
+                    self.db = self.connectInfo['dbschema']
 
-                if(len(self.db) == 0):
+                if(self.db is None):
                     self.msg = 'Failed to retrieve required input parameter'\
-                               ' [db]'
+                               ' [dbschema]'
                     self.status = 'error'
                     raise Exception(self.msg)
 
                 if self.debug:
                     logging.debug('')
-                    logging.debug(f'dbserver   = {self.dbserver:s}')
-                    logging.debug(f'port   = {self.port:s}')
-                    logging.debug(f'socket   = {self.socket:s}')
+                    logging.debug('dbserver=')
+                    logging.debug(self.dbserver)
+                    logging.debug('port=')
+                    logging.debug(self.port)
+                    logging.debug('socket=')
+                    logging.debug(self.socket)
                     logging.debug(f'db   = {self.db:s}')
                     logging.debug(f'userid   = {self.userid:s}')
                     logging.debug(f'password = {self.password:s}')
         
-        self.sql = ''
+        self.sql = None 
         if('query' in kwargs):
             self.sql = kwargs['query']
 
-        if(len(self.sql) == 0):
+        if(self.sql is None):
             self.msg = 'Failed to retrieve required input parameter [query]'
             self.status = 'error'
             raise Exception(self.msg)
 
-        self.userworkdir = ''
+        self.userworkdir =  None
         if('workdir' in kwargs):
             self.userworkdir = kwargs['workdir']
 
-        if(len(self.userworkdir) == 0):
+        if (self.userworkdir is None):
             self.msg = \
                 'Failed to retrieve required input parameter [userworkdir]'
             self.status = 'error'
@@ -276,11 +280,11 @@ class runQuery:
             logging.debug(f'sql= {self.sql:s}')
 
 
-        self.racol = ''
+        self.racol =  'ra'
         if('racol' in kwargs):
             self.racol = kwargs['racol']
 
-        self.deccol = ''
+        self.deccol = 'dec'
         if('deccol' in kwargs):
             self.deccol = kwargs['deccol']
 
@@ -288,7 +292,7 @@ class runQuery:
             logging.debug('')
             logging.debug(f'racol= {self.racol:s}')
             logging.debug(f'deccol= {self.deccol:s}')
-
+        
 
         if('format' in kwargs):
             self.format = kwargs['format']
@@ -315,7 +319,7 @@ class runQuery:
         # Extract DB table name from query
         #
 
-        self.dbtable = ''
+        self.dbtable = None 
 
         tn = TableNames()
         tables = tn.extract_tables(self.sql)
@@ -381,10 +385,10 @@ class runQuery:
 
                 raise Exception(self.msg)
 
-        elif(self.dbms.lower() == 'mysql'):
+        elif (self.dbms.lower() == 'mysql'):
        
             try:
-                if (len(self.dbserver) != 0):
+                if (self.dbserver is not None):
 
                     self.conn = mysql.connector.connect (
                         user=self.userid, \
@@ -394,7 +398,7 @@ class runQuery:
                         db=self.db
                     )
                 
-                elif (len(self.socket) != 0):
+                elif (self.socket is not None):
 
                     self.conn = mysql.connector.connect (
                         user=self.userid, \

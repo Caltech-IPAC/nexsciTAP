@@ -262,9 +262,9 @@ class writeResult:
 
 
         dbdatatype = None
-        precision = 0
+        precision = None 
         scale = None
-        size = 0
+        size = None 
 
         nfetch = self.arraysize
 
@@ -316,12 +316,6 @@ class writeResult:
             # col_array:
             #   col[1], col[2], col[4], and col[5]
             #
-
-            dbdatatype = ''
-            size = None
-            precision = None
-            scale = None
-
 
             if self.debug:
                 logging.debug('')
@@ -375,6 +369,12 @@ class writeResult:
             #
             # { mysql datatype from descriptor
             #    
+                if self.debug:
+                    logging.debug('')
+                    logging.debug(f'mysql:')
+                    logging.debug('col[2]:')
+                    logging.debug(col[2])
+
                 coltype = int(col[1])
                 
                 if (coltype == 253):
@@ -403,28 +403,23 @@ class writeResult:
 
             if self.debug:
                 logging.debug(f'dbdatatype    = {dbdatatype:s}')
+                logging.debug('size=')
+                logging.debug(size)
 
-            size = None
             if(col[2] is not None):
-
-                size = col[2]
-                if(len(colname) > size):
-                    size = len(colname)
-
+                size = int(col[2])
+            
                 if self.debug:
-                    logging.debug(f'size      = {size:d}')
+                    logging.debug(f'size= {size:d}')
 
-
-            precision = None
             if(col[4] is not None):
-                precision = col[4]
+                precision = int(col[4])
 
                 if self.debug:
                     logging.debug(f'precision = {precision:d}')
 
-            scale = None
             if(col[5] is not None):
-                scale = col[5]
+                scale = int(col[5])
 
                 if self.debug:
                     logging.debug(f'scale     = {scale:d}')
@@ -485,11 +480,19 @@ class writeResult:
                 if ((dbtype.lower() == 'string') or \
                     (dbtype.lower() == 'varchar')):
 
-                    width = 0
-                    if(size is not None):
-                        width = size
+                    if self.debug:
+                        logging.debug('')
+                        logging.debug(f'here0: char type col in dd')
+                        logging.debug('size=')
+                        logging.debug(size)
+                    
+                    #if (size is not None):
+                    #    width = size
+  
+                    #if self.debug:
+                    #    logging.debug('')
 
-                    if(len(colname) > width):
+                    if (len(colname) > width):
                         width = len(colname)
 
                     coltype = 'char'
@@ -549,9 +552,9 @@ class writeResult:
                     #
 
                     width = 80
-                    if(size is not None):
+                    if ((size is not None) and (size > 0)):
                         width = size
-
+  
                     if(len(colname) > width):
                         width = len(colname)
 
@@ -628,10 +631,10 @@ class writeResult:
                 elif(dbdatatype == 'NUMBER'):
 
                     #
-                    # { dbdatatype == NUMBER
+                    # { dbdatatype == NUMBER: this is Oracle special dtype
                     #
 
-                    if(scale == 0):
+                    if (scale is None):
 
                         coltype = 'int'
                         dbtype = dbdatatype
@@ -935,8 +938,6 @@ class writeResult:
                     if self.debug:
                         logging.debug('')
                         logging.debug(f'i = {i:d}')
-                        logging.debug('dtype=')
-                        logging.debug(dtype)
                         logging.debug('row[i]:')
                         logging.debug(row[i])
 
@@ -960,11 +961,16 @@ class writeResult:
                         # summary determination 
                         #
                         if ((self.dbms.lower() == 'oracle') and \
-                            (ibatch == 0) and \ 
+                            (ibatch == 0) and \
                             (isddcolarr[i] == 0) and \
                             (dbtypearr[i] == 'NUMBER')):
 
                             dtype = type(row[i]).__name__
+                    
+                            if self.debug:
+                                logging.debug('')
+                                logging.debug(f'i = {i:d} dtype=')
+                                logging.debug(dtype)
 
                             if (dtype == 'int'):
                                 intcntarr[i] = intcntarr[i] + 1

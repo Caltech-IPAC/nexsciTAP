@@ -83,8 +83,6 @@ class Tap:
     debug = 0
 
     debugfname = '/tmp/tap_' + str(pid) + '.debug'
-    debugfname = '/local/home/exoadmin/mysql/koa/tap_' + str(pid) + '.debug'
-
 
     sql = ''
     servernamr = ''
@@ -452,6 +450,10 @@ class Tap:
         self.config = None
         try:
             self.config = configParam(self.configpath, debug=self.debug)
+        
+            if self.debug:
+                logging.debug('')
+                logging.debug(f'returned configParam')
 
         except Exception as e:
 
