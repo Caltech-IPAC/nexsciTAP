@@ -206,10 +206,7 @@ class dataDictionary:
 
             if self.debug:
                 logging.debug('')
-                logging.debug(f'i= {i:d} rows:')
-                logging.debug(rows)
-                logging.debug('')
-
+                logging.debug(f'ncols= {self.ncols:d}')
 
             i = 0
             for row in rows:
@@ -220,7 +217,7 @@ class dataDictionary:
                 #
                 if self.debug:
                     logging.debug('')
-                    logging.debug(f'ncols = {self.ncols:d}')
+                    logging.debug(f'i = {i:d}')
 
                 col_str = str(row[ind_colname]).strip().lower()
 
