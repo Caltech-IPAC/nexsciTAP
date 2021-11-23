@@ -209,6 +209,7 @@ class Tap:
 
         self.uwsheader = '<uws:job xmlns:uws="http://www.ivoa.net/xml/UWS/v1.0" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema" xsi:schemaLocation="http://www.ivoa.net/xml/UWS/v1.0 http://www.ivoa.net/xml/UWS/v1.0">'
 
+        
         for key in self.form:
             if self.debug:
                 logging.debug(f'      key: {key:<15}   val: {self.form[key].value:s}')
@@ -953,7 +954,7 @@ class Tap:
                 self.statdict['starttime'] = job['uws:startTime']
                 self.statdict['endtime'] = job['uws:endTime']
                 self.statdict['destruction'] = job['uws:destruction']
-                self.statdict['duration'] = job['uws:executionDuration']
+                self.statdict['duration'] = job['uws:executionduration']
 
                 if self.debug:
                     logging.debug ('')
@@ -1047,7 +1048,8 @@ class Tap:
                     logging.debug(destructtime)
 
                 starttime = stime.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-4]
-                destruction = destructtime.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-4]
+                destruction = \
+                    destructtime.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-4] + 'Z'
 
                 if self.debug:
                     logging.debug('')
@@ -1900,6 +1902,8 @@ class Tap:
         # Header
         #
 
+        uwsschema =  ' version="1.1" xsi:schemaLocation="http://www.ivoa.net/xml/UWS/v1.0 http://www.ivoa.net/xml/UWS/v1.0 http://www.w3.org/1999/xlink http://www.w3.org/1999/xlink.xsd http://www.w3.org/2001/XMLSchema http://www.w3.org/2001/XMLSchema.xsd">\n'
+
         print("HTTP/1.1 200 OK\r")
 
         if(outtype == 'xml'):
@@ -1909,44 +1913,26 @@ class Tap:
 
             print('<?xml version="1.0" encoding="UTF-8"?>')
            
-            print (self.uwsheader)
+            #print (self.uwsheader)
             
-            """
-            print ('<uws:job xmlns:uws="http://www.ivoa.net/xml/UWS/v1.0"'
-                  ' xmlns:xlink="http://www.w3.org/1999/xlink"'
-                  ' xmlns:xsi="http://www.w3.org/2001/XMLSchema"'
-                  ' xsi:schemaLocation="http://www.ivoa.net/xml/UWS/v1.0">')
-
-            print('<uws:job xmlns:uws="http://www.ivoa.net/xml/UWS/v1.0"'
-                  ' xmlns:xlink="http://www.w3.org/1999/xlink"'
-                  ' xmlns:xs="http://www.w3.org/2001/XMLSchema"'
-                  ' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"'
-                  ' xsi:schemaLocation="http://www.ivoa.net/xml/UWS/v1.0'
-                  ' http://www.ivoa.net.xml/UWS/v1.0">')
-            """
-
-            if((key == 'errorSummary')
-                    or (key == 'errmsg')
-                    or (key == 'error')):
-
-                if(len(retval) == 0):
-                    print('    <uws:errorSummary></uws:errorSummary>')
-                else:
-                    print('    <uws:errorSummary>')
-                    print(retval)
-                    print('    </uws:errorSummary>')
+            if ((key == 'error')
+                    or (key == 'errorSummary')
+                    or (key == 'errmsg')):
+                self.__printError__ ('votable', retval) 
 
             elif(key == 'parameters'):
-
-                print(retval)
+                
+                ind = retval.index('>')
+                val = retval[0,ind-1] + uwsschema + retval[ind+1]   
+                print(val)
 
             elif((key == 'results') or (key == 'results/resulturl')):
+                hdr = '<uws:results' + uwsschema
+                print(hdr)
+                print (retval)
+                print ('</uws:results>')
 
-                print('    <uws:results>')
-                print(retval)
-                print('    </uws:results>')
-
-            print('</uws:job>')
+            #print('</uws:job>')
             sys.stdout.flush()
 
         else:
@@ -2094,7 +2080,7 @@ class Tap:
         if((key == 'phase')
                 or (key == 'startTime')
                 or (key == 'endTime')
-                or (key == 'executionDuration')
+                or (key == 'executionduration')
                 or (key == 'destruction')
                 or (key == 'jobId')
                 or (key == 'runId')
@@ -2112,7 +2098,7 @@ class Tap:
             if((key == 'phase')
                     or (key == 'startTime')
                     or (key == 'endTime')
-                    or (key == 'executionDuration')
+                    or (key == 'executionduration')
                     or (key == 'destruction')
                     or (key == 'jobId')
                     or (key == 'runId')):
@@ -2302,13 +2288,13 @@ class Tap:
         #
         # {
         #
-
-        httphdr = "HTTP/1.1 " + errcode  + " ERROR\r"
-
+        
         #print("HTTP/1.1 200 OK\r")
         
+        httphdr = "HTTP/1.1 " + errcode  + " ERROR\r"
         print(httphdr)
 
+        """
         print("Content-type: text/xml\r")
         print("\r")
 
@@ -2323,8 +2309,8 @@ class Tap:
         print('</INFO>')
         print('</RESOURCE>')
         print('</VOTABLE>')
-
         """
+
         if(fmt == 'votable'):
 
             print("Content-type: text/xml\r")
@@ -2346,7 +2332,6 @@ class Tap:
             print("Content-type: text/plain\r")
             print("\r")
             print (errmsg)
-        """
 
         sys.stdout.flush()
         sys.exit()
@@ -2601,7 +2586,7 @@ class Tap:
 
         fp.write(f"    <uws:endTime>{statdict['endtime']:s}</uws:endTime>\n")
 
-        fp.write(f"    <uws:executionDuration>{statdict['duration']:d}</uws:executionDuration>\n")
+        fp.write(f"    <uws:executionduration>{statdict['duration']:d}</uws:executionduration>\n")
 
         if (statdict['destruction'] is None):
             fp.write('    <uws:destruction xsi:nil="true"/>\n')
