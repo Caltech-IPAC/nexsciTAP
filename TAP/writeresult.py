@@ -207,7 +207,7 @@ class writeResult:
             logging.debug(self.cursor.description)
             logging.debug('------------------------------------------------')
 
-        for desc in cursor.description:
+        for desc in self.cursor.description:
             
             name = desc[0]
             coltype = desc[1]
@@ -215,13 +215,14 @@ class writeResult:
             internalsz = desc[3]
             precision = desc[4]
             scale = desc[5] 
-            nullok = desc[7]
-            columnflags = desc[8]
+            nullok = desc[6]
             
+            """
             if self.debug:
                 logging.debug('')
                 logging.debug(f'name = {name:s}')
-                logging.debug(f'coltype = {coltype:d}')
+                logging.debug(f'coltype:')
+                logging.debug(coltype)
                 logging.debug(f'dispsize:')
                 logging.debug(dispsize)
                 logging.debug(f'internalsz:')
@@ -232,9 +233,8 @@ class writeResult:
                 logging.debug(scale)
                 logging.debug(f'nullok:')
                 logging.debug(nullok)
-                logging.debug(f'columnflagsk:')
-                logging.debug(columnflags)
-                
+            """
+
         #
         # C interface list:
         #
@@ -270,10 +270,10 @@ class writeResult:
 
         self.cursor.arraysize = nfetch
 
-        if self.debug:
-            logging.debug('')
-            logging.debug(f'cursor.description:')
-            logging.debug(self.cursor.description)
+        #if self.debug:
+        #    logging.debug('')
+        #    logging.debug(f'cursor.description:')
+        #    logging.debug(self.cursor.description)
         
         i = 0
         for col in self.cursor.description:
@@ -320,11 +320,20 @@ class writeResult:
             if self.debug:
                 logging.debug('')
                 logging.debug(f'analyze description array:')
+                logging.debug(f'dbms= {self.dbms:s}')
+
 
             if (self.dbms.lower() == 'oracle'):
             #
             # { oracle datatype from descriptor
             #    
+                if self.debug:
+                    logging.debug('')
+                    logging.debug('oracle:')
+                    logging.debug('col[1]:')
+                    logging.debug(col[1])
+                    logging.debug(f'str(col[1]= {str(col[1]):s}')
+
                 dbdatatypestr = str(col[1])
 
                 if self.debug:
@@ -334,7 +343,7 @@ class writeResult:
                 ind = dbdatatypestr.find("VARCHAR")
                 if(ind != -1):
                     dbdatatype = 'VARCHAR'
-
+                
                 ind = dbdatatypestr.find("STRING")
                 if(ind != -1):
                     dbdatatype = 'STRING'
@@ -362,6 +371,10 @@ class writeResult:
                 ind = dbdatatypestr.find("FLOAT")
                 if(ind != -1):
                     dbdatatype = 'FLOAT'
+                
+                if self.debug:
+                    logging.debug('')
+                    logging.debug(f'dbdatatype = {dbdatatype:s}')
             #
             # } end oracle datatype
             #
@@ -372,8 +385,8 @@ class writeResult:
                 if self.debug:
                     logging.debug('')
                     logging.debug(f'mysql:')
-                    logging.debug('col[2]:')
-                    logging.debug(col[2])
+                    logging.debug('col[1]:')
+                    logging.debug(col[1])
 
                 coltype = int(col[1])
                 

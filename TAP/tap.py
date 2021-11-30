@@ -2,7 +2,6 @@
 # This code is released with a BSD 3-clause license. License information is at
 #   https://github.com/Caltech-IPAC/nexsciTAP/blob/master/LICENSE
 
-
 import os
 import sys
 import fcntl
@@ -626,7 +625,7 @@ class Tap:
 
             if (isExist == 0):
                 self.msg = 'work directory based on input jobid does not exist.'
-                self.__printError__('votable', self.msg, '500')
+                self.__printError__('votable', self.msg, errcode='500')
 
             #
             # } end of retrieve workspace
@@ -761,7 +760,7 @@ class Tap:
 
                 
                 """
-                self.__printError__('votable', self.msg, '400')
+                self.__printError__('votable', self.msg, errcode='400')
 
                 if self.debug:
                     logging.debug('')
@@ -802,7 +801,7 @@ class Tap:
 
                 
                 """
-                self.__printError__('votable', self.msg, '400')
+                self.__printError__('votable', self.msg, errcode='400')
 
                 if self.debug:
                     logging.debug('')
@@ -845,16 +844,16 @@ class Tap:
                 if self.debug:
                     logging.debug('')
                     logging.debug('case: getStatus')
-
+            
                 try:
-                    self.__getStatus__(self.workdir, self.id, self.statuskey,
+                    self.__getStatus__(self.workdir, self.id, self.statuskey, \
                                        self.param)
                 except Exception as e:
-                    self.__writeAsyncError__(str(e), self.statuspath,
-                                             self.statdict, self.param)
-
+                   
+                    self.__printError__(self.format, str(e))
+                    
             #
-            # } end getStatus will exit when done
+            # } end getStatus and printError will exit when done
             #
             
             else:
@@ -1299,7 +1298,7 @@ class Tap:
                 self.__writeAsyncError__(self.msg, self.statuspath,
                                          self.statdict, self.param)
             else:
-                self.__printError__('votable', self.msg, '400')
+                self.__printError__('votable', self.msg, errcode='400')
 
         """
         if ((self.tapcontext == 'async') and \
@@ -1339,7 +1338,7 @@ class Tap:
                 self.__writeAsyncError__(self.msg, self.statuspath,
                                          self.statdict, self.param)
             else:
-                self.__printError__('votable', self.msg, '400')
+                self.__printError__('votable', self.msg, errcode='400')
 
 
         if self.debug:
@@ -1381,7 +1380,7 @@ class Tap:
                     self.__writeAsyncError__(self.msg, self.statuspath,
                                              self.statdict, self.param)
                 else:
-                    self.__printError__(self.format, self.msg, '400')
+                    self.__printError__(self.format, self.msg, errcode='400')
 
         self.param['maxrec'] = self.maxrec
 
@@ -1433,7 +1432,7 @@ class Tap:
                 self.__writeAsyncError__(self.msg, self.statuspath,
                                          self.statdict, self.param)
             else:
-                self.__printError__(self.format, self.msg, '400')
+                self.__printError__(self.format, self.msg, errcode='400')
 
         #
         # } end dealing with input errors
@@ -1517,7 +1516,7 @@ class Tap:
                 self.__writeAsyncError__(str(e), self.statuspath,
                                          self.statdict, self.param)
             else:
-                self.__printError__(self.format, str(e), '400')
+                self.__printError__(self.format, str(e), errcode='400')
 
         #
         # Extract DB table name from query(This will be replaced with a library
@@ -1545,7 +1544,7 @@ class Tap:
                 self.__writeAsyncError__(self.msg, self.statuspath,
                                          self.statdict, self.param)
             else:
-                self.__printError__(self.format, self.msg, '400')
+                self.__printError__(self.format, self.msg, errcode='400')
 
         if self.debug:
             logging.debug('')
@@ -1631,7 +1630,7 @@ class Tap:
                                              self.statdict, self.param)
 
                 else:
-                    self.__printError__(self.format, str(e), '400')
+                    self.__printError__(self.format, str(e), errcode='400')
             #
             # } end runquery
             #
@@ -1682,7 +1681,7 @@ class Tap:
                     self.__writeAsyncError__(str(e), self.statuspath,
                                              self.statdict, self.param)
                 else:
-                    self.__printError__(self.format, str(e), '400')
+                    self.__printError__(self.format, str(e), errcode='400')
             #
             # } end propfilter
             #
@@ -1901,8 +1900,19 @@ class Tap:
         #
         # Header
         #
+        
+        retvalstr = str(retval)
+        if self.debug:
+            logging.debug('')
+            logging.debug('Enter printStatus')
+            logging.debug(f'key= {key:s}')
+            logging.debug(f'outtype= {outtype:s}')
+            logging.debug('retval=')
+            logging.debug(retval)
+            logging.debug(f'retvalstr= {retvalstr:s}')
 
-        uwsschema =  ' version="1.1" xsi:schemaLocation="http://www.ivoa.net/xml/UWS/v1.0 http://www.ivoa.net/xml/UWS/v1.0 http://www.w3.org/1999/xlink http://www.w3.org/1999/xlink.xsd http://www.w3.org/2001/XMLSchema http://www.w3.org/2001/XMLSchema.xsd">\n'
+
+        uwsschema = ' xmlns:uws="http://www.ivoa.net/xml/UWS/v1.0" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema" xsi:schemaLocation="http://www.ivoa.net/xml/UWS/v1.0 http://www.ivoa.net/xml/UWS/v1.0">' 
 
         print("HTTP/1.1 200 OK\r")
 
@@ -1913,63 +1923,95 @@ class Tap:
 
             print('<?xml version="1.0" encoding="UTF-8"?>')
            
-            #print (self.uwsheader)
-            
             if ((key == 'error')
                     or (key == 'errorSummary')
                     or (key == 'errmsg')):
+                
+                if self.debug:
+                    logging.debug('')
+                    logging.debug('key = error')
+                
                 self.__printError__ ('votable', retval) 
 
             elif(key == 'parameters'):
                 
-                ind = retval.index('>')
-                val = retval[0,ind-1] + uwsschema + retval[ind+1]   
+                if self.debug:
+                    logging.debug('')
+                    logging.debug('key = parameters')
+                
+                ind = retvalstr.index('>')
+                if self.debug:
+                    logging.debug('')
+                    logging.debug('ind=')
+                    logging.debug(ind)
+                
+                if self.debug:
+                    logging.debug('')
+                    logging.debug(f'retvalstr[0:ind]= {retvalstr[0:ind-1]:s}')
+                    logging.debug(f'retvalstr[ind+1]= {retvalstr[ind+1]:s}')
+                
+                val = retvalstr[0:ind] + uwsschema + retvalstr[ind+1:]   
+                if self.debug:
+                    logging.debug('')
+                    logging.debug(f'val= {val:s}')
+                
                 print(val)
+                sys.stdout.flush()
 
-            elif((key == 'results') or (key == 'results/resulturl')):
-                hdr = '<uws:results' + uwsschema
-                print(hdr)
-                print (retval)
-                print ('</uws:results>')
-
-            #print('</uws:job>')
-            sys.stdout.flush()
+            elif(key == 'results'):
+                
+                ind = retvalstr.index('>')
+                val = retvalstr[0:ind] + uwsschema + retvalstr[ind+1:]   
+                if self.debug:
+                    logging.debug('')
+                    logging.debug(f'val= {val:s}')
+                
+                print(val)
+                sys.stdout.flush()
 
         else:
             print("Content-type: text/plain\r")
             print("\r")
 
-            print(retval)
+            print (retval)
             sys.stdout.flush()
-
-        sys.stdout.flush()
-
+        
         if self.debug:
             logging.debug('Write status to user and exit.')
-
-        return
-
+        
+        sys.exit()
         #
         # } end of printStatus
         #
 
 
+
     def __getStatus__(self, workdir, workspace, key, param, **kwargs):
 
         #
-        # {
+        # { initialize format to votable but after extracting format
+        #   the output should follow the format 
         #
+        if self.debug:
+            logging.debug('')
+            logging.debug('Enter __getStatus__')
+            logging.debug('key= ')
+            logging.debug(key)
 
+        
         isExist = os.path.exists(self.statuspath)
 
         if(isExist == 0):
             msg = 'Status file: status.xml does not exist.'
-            raise Exception(msg)
+            self.__printError ('votable', msg)
 
         if self.debug:
             logging.debug('')
             logging.debug('statuspath exists')
 
+        #
+        #  first find out the format for printing the status or error
+        #
         data = ''
         try:
             data = self.__getStatusData__(self.statuspath)
@@ -1977,17 +2019,16 @@ class Tap:
         except Exception as e:
 
             msg = 'Error getStatusData: ' + str(e)
-            raise Exception(msg)
+            self.__printError ('votable', msg)
 
         #
         # No key: return the whole status file
         #
-
-        if self.debug:
-            logging.debug('')
-            logging.debug('Return status.xml to user and exit.')
-
         if(len(key) == 0):
+
+            if self.debug:
+                logging.debug('')
+                logging.debug('Return status.xml to user and exit.')
 
             print("HTTP/1.1 200 OK\r")
             print("Content-type: text/xml\r")
@@ -1998,72 +2039,45 @@ class Tap:
         #
         # Extract format
         #
-
         soup = None
         try:
             soup = BeautifulSoup(data, 'lxml')
 
         except Exception as e:
-            if(self.tapcontext == 'async'):
-                
-                self.phase = 'ERROR'
-                self.__writeAsyncError__(str(e), self.statuspath,
-                                         self.statdict, self.param)
-            else: 
-                self.__printError__('votable', str(e), '400')
+            self.__printError__('votable', str(e))
 
-        format = 'votable'
-
+        self.format = 'votable'
+        parameters = ''
         try:
             parameters = soup.find('uws:parameters')
-            parameter = parameters.find(id='format')
+            if self.debug:
+                logging.debug('')
+                logging.debug('parameters extracted:')
+                logging.debug(parameters)
 
-            format = parameter.string
+            parameter = parameters.find(id='format')
+            self.format = parameter.string
+            if self.debug:
+                logging.debug('')
+                logging.debug(\
+                    f'parameter format extracted: format= {self.format:s}')
 
         except Exception as e:
-
-            if(self.tapcontext == 'async'):
-                
-                self.phase = 'ERROR'
-                self.__writeAsyncError__(str(e), self.statuspath,
-                                         self.statdict, self.param)
-            else: 
-                self.__printError__('votable', str(e), '400')
+            self.__printError__('votable', str(e))
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'format= {format:s}')
+            logging.debug(parameters)
+            logging.debug(f'format= {self.format:s}')
 
-        job = None
-        try:
-            job = self.__getStatusJob__(data)
-
-        except Exception as e:
-            msg = 'Exception retrieving job from status file: ' + str(e)
-            raise Exception(msg)
-
-
-        if(key == 'parameters'):
-
-            parameters = None
-            try:
-                parameters = soup.find('uws:parameters')
-            except Exception as e:
-                if(self.tapcontext == 'async'):
-                
-                    self.phase = 'ERROR'
-                    self.__writeAsyncError__(str(e), self.statuspath,
-                                         self.statdict, self.param)
-                else: 
-                    self.__printError__(format, str(e), '400')
+        if (key == 'parameters'):
 
             if self.debug:
                 logging.debug('')
-                logging.debug('parameters:')
-                logging.debug(parameters)
-
+                logging.debug('key == parameters')
+                logging.debug('call __printStatus')
+            
             self.__printStatus__('parameters', parameters, 'xml')
-            sys.exit()
 
         #
         # Parse data to extract inparam
@@ -2075,7 +2089,7 @@ class Tap:
 
         except Exception as e:
             msg = 'Exception retrieving job from status file: ' + str(e)
-            raise Exception(msg)
+            self.__printError__(self.format, msg)
 
         if((key == 'phase')
                 or (key == 'startTime')
@@ -2087,6 +2101,11 @@ class Tap:
                 or (key == 'ownerId')
                 or (key == 'quote')):
 
+            if self.debug:
+                logging.debug('')
+                logging.debug(f'key == executionduration or destruction')
+
+            parameters = None
             #
             # { Single value return
             #
@@ -2128,169 +2147,283 @@ class Tap:
         #
 
         phase = job['uws:phase']
+        if self.debug:
+            logging.debug('')
+            logging.debug(f'phase= {phase:s}')
 
         if((key == 'errorSummary')
                 or (key == 'errmsg')
                 or (key == 'error')):
 
+            if self.debug:
+                logging.debug('')
+                logging.debug(f'key == error')
+            
             retval = ''
             errmsg = ''
 
             if(phase.lower() == 'error'):
 
+                if self.debug:
+                    logging.debug('')
+                    logging.debug(f'key == error')
+
                 try:
                     errmsg = job['uws:errorSummary']['uws:message']
                 except Exception as e:
-                    pass
+                    self.printError (\
+                        self.format, 'error extracting errorSummary')
 
             if self.debug:
                 logging.debug('')
                 logging.debug(f'errmsg: {errmsg:s}')
 
-            if(len(errmsg) > 0):
-                outstr = f'        <uws:message>{errmsg:s}</uws:message>'
-            else:
-                outstr = ''
+            if (self.format == 'votable'):
+                
+                if (len(errmsg) > 0):
+                    outstr = f'        <uws:message>{errmsg:s}</uws:message>'
+                else:
+                    outstr = f'        <uws:message></uws:message>'
 
-            self.__printStatus__('errorSummary', outstr, 'xml')
+                self.__printStatus__('errorSummary', outstr, 'xml')
+            
+            else:
+                if (len(errmsg) > 0):
+                    outstr = errmsg 
+                else:
+                    outstr = 'No error message'
+
+                self.__printStatus__('errorSummary', outstr, 'plain')
+
             sys.exit()
 
         #
         # } end return error
         #
 
-        #
-        # { Input key: result, results, resulturl
-        #
+        if self.debug:
+            logging.debug('')
+            logging.debug('got here0')
 
-        result = 'None'
-        resulturl = 'None'
+        results = ''
+        result = ''
+        resulturl = ''
+        
+        #results = job['uws:results']
+        #result = job['uws:results']['uws:result']
+        #resulturl = job['uws:results']['uws:result']['@xlink:href']
+        
+        #if self.debug:
+        #    logging.debug('')
+        #    logging.debug('got here1')
+        #    logging.debug('results:')
+        #    logging.debug(results)
+        #    logging.debug('result:')
+        #    logging.debug(result)
+        #    logging.debug('resulturl:')
+        #    logging.debug(resulturl)
+       
 
-        if(key == 'resulturl'):
-            key = 'results/resulturl'
-        if(key == 'result'):
-            key = 'results/result'
-
-        if((key == 'results')
+        if ((key == 'results')
                 or (key == 'results/result')
                 or (key == 'results/resulturl')):
-
-            try:
-                result = job['uws:results']['uws:result']
-
-                if(phase.lower() == 'completed'):
-                    resulturl = job['uws:results']['uws:result']['@xlink:href']
-
-            except Exception as e:
-                if self.debug:
-                    logging.debug('')
-                    logging.debug('error retrieving result')
-                pass
-
-        if self.debug:
-            logging.debug('')
-            logging.debug(f'resulturl: {resulturl:s}')
-            logging.debug('result:')
-            logging.debug(result)
-
-
-        if((key == 'results') or (key == 'results/resulturl')):
-
+        #
+        #{ if results or results/result or results/resulturl
+        #
             if self.debug:
                 logging.debug('')
-                logging.debug('case1: results/resulturl')
+                logging.debug(\
+                    'case results or results/result or results/resulturl')
 
-            outstr = '        <uws:result id="result" xlink:type="simple"' \
-                     f' xlink:href="{resulturl:s}"/>'
+            
+            if (key == 'results'):
+            #
+            # { if results
+            #
+                if self.debug:
+                    logging.debug('')
+                    logging.debug('key= results')
+            
+                if (phase.lower() == 'completed'):
+                #
+                # { if reulsts case and phase = completed
+                #
+                    try:
+                        results = soup.find('uws:results')
+                        if self.debug:
+                            logging.debug('')
+                            logging.debug('results extracted:')
+                            #logging.debug(results)
 
-            self.__printStatus__(key, outstr, 'xml')
-            sys.exit()
+                        #result = results.find (id='result')
+                        #if self.debug:
+                        #    logging.debug('')
+                        #    logging.debug('result extracted:')
+                        #    logging.debug(result)
 
-        if(len(resulturl) == 0):
-            msg = 'resulturl not found.'
-            if(self.tapcontext == 'async'):
+                        #results = job['uws:results']
+        
+                        #if self.debug:
+                        #    logging.debug('')
+                        #    logging.debug(f'results: {results:s}')
                 
-                self.phase = 'ERROR'
-                self.__writeAsyncError__(msg, self.statuspath,
-                                         self.statdict, self.param)
-            else: 
-                self.__printError__(format, msg, '400')
+                        #outstr = results
 
-        #
-        # Last case: 'results/result' -- return result table
-        #
-
-        indx = resulturl.find(workspace)
-        substr = resulturl[indx:]
-
-        resultpath = workdir + '/TAP/' + substr
-        if self.debug:
-            logging.debug('')
-            logging.debug(f'resultpath = {resultpath:s}')
-
-        fp = None
-        try:
-            fp = open(resultpath, 'r')
-        except Exception as e:
-            msg = 'Failed to open result file: ' + resultpath
-            if(self.tapcontext == 'async'):
+                    except Exception as e:
+                    
+                        if self.debug:
+                            logging.debug('')
+                            logging.debug('error retrieving results')
                 
-                self.phase = 'ERROR'
-                self.__writeAsyncError__(msg, self.statuspath,
-                                         self.statdict, self.param)
-            else: 
-                self.__printError__(format, msg, '400')
-
-        print("HTTP/1.1 200 OK\r")
-
-        if(format == 'json'):
-            print("Content-type: application/json\r")
-        elif(format == 'votable'):
-            print("Content-type: text/xml\r")
-        else:
-            print("Content-type: text/plain\r")
-        print("\r")
-
-        try:
-            while True:
-
-                line = fp.readline()
-
-                if not line:
-                    break
-
-                sys.stdout.write(line)
-                sys.stdout.flush()
-
-        except Exception as e:
-            if(self.tapcontext == 'async'):
+                        self.__printError__(self.format, \
+                            'Failed to extract results', errcode='400')
+        
+                    if self.debug:
+                        logging.debug('')
+                        logging.debug('results:')
+                        logging.debug(results)
+                        logging.debug('result:')
+                        logging.debug(result)
+            
+                    self.__printStatus__(key, results, 'xml')
+                    sys.exit()
                 
-                self.phase = 'ERROR'
-                self.__writeAsyncError__(str(e), self.statuspath,
-                                         self.statdict, self.param)
+                #
+                # } end results case 
+                # 
+                else:
+                #
+                # { if reulsts case but phase NOT completed
+                #
+                    self.__printError__ (self.format, \
+                        'No results because phase is not COMPLETED')
+                #
+                # } if reulsts case but phase NOT completed
+                #
+            #
+            # } end if results
+            #
             else: 
-                self.__printError__(format, str(e), '400')
+            #
+            # { if results/resulturl or 'results/result:
+            #
+                if (phase.lower() == 'completed'):
+                #
+                # { if reulsts/resulturl or results/result cases 
+                #   and phase = completed
+                #
+                    try:
+                        #result = job['uws:results']['uws:result']
+                        resulturl = \
+                            job['uws:results']['uws:result']['@xlink:href']
 
-        fp.close()
-        sys.exit()
+                    except Exception as e:
+                    
+                        if self.debug:
+                            logging.debug('')
+                            logging.debug('error retrieving result')
+                    
+                        self.__printError__ (self.format, \
+                            'Error retrieving result or resulturl')
 
+                    if self.debug:
+                        logging.debug('')
+                        logging.debug('resulturl:')
+                        logging.debug(resulturl)
+
+
+                    if (key == 'results/resulturl'):
+
+                        self.__printStatus__(key, resulturl, 'plain')
+                        sys.exit()
+                
+                    elif (key == 'results/result'):
+
+                        indx = resulturl.find(workspace)
+                        substr = resulturl[indx:]
+
+                        resultpath = workdir + '/TAP/' + substr
+                        if self.debug:
+                            logging.debug('')
+                            logging.debug(f'resultpath = {resultpath:s}')
+
+                        fp = None
+                        try:
+                            fp = open(resultpath, 'r')
+                        except Exception as e:
+                            msg = 'Failed to open result file: ' + resultpath
+                            self.__printError__(format, msg, errcode='400')
+
+                        print("HTTP/1.1 200 OK\r")
+
+                        if(format == 'json'):
+                            print("Content-type: application/json\r")
+                        elif(format == 'votable'):
+                            print("Content-type: text/xml\r")
+                        else:
+                            print("Content-type: text/plain\r")
+                        print("\r")
+
+                        try:
+                            while True:
+
+                                line = fp.readline()
+
+                                if not line:
+                                    break
+
+                                sys.stdout.write(line)
+                                sys.stdout.flush()
+
+                        except Exception as e:
+                            self.__printError__(format, str(e), errcode='400')
+
+                        fp.close()
+                        sys.exit()
+                
+                #
+                # } end results/resulturl or results/result  cases 
+                # and phase completed
+                # 
+                
+                else:
+                #
+                # { if reulsts/resulturl or results/result cases 
+                #   and phase NOT completed
+                #
+                    self.__printError__ (self.format, \
+                        'No result or resulturl because phase is not COMPLETED')
+            
+                #
+                # } end results/resulturl or results/result  cases 
+                # and phase NOT completed
+                # 
+             
+            #
+            # } if results/resulturl or 'results/result:
+            #
         #
-        # } end return result
-        #
+        # } end results or results/resulturl or results/result  cases 
+        # 
 
         #
         # } end of getStatus
         #
 
 
-    def __printError__(self, fmt, errmsg, errcode):
+    def __printError__(self, fmt, errmsg, **kwargs):
 
         #
         # {
         #
         
         #print("HTTP/1.1 200 OK\r")
-        
+     
+        errcode = ''         
+        if ('errcode' in kwargs):
+            errcode = kwargs['errcode']
+
+
         httphdr = "HTTP/1.1 " + errcode  + " ERROR\r"
         print(httphdr)
 
@@ -2411,7 +2544,7 @@ class Tap:
             fp = open(resultpath, 'r')
         except IOError:
             msg = 'Failed to open result file.'
-            self.__printError__(msg)
+            self.__printError__(format, msg)
 
         if(format == 'json'):
             print("Content-type: application/json\r")
@@ -2775,7 +2908,7 @@ class Tap:
             fp = open(vosipath, 'r')
         except Exception as e:
             msg = 'Failed to open vositable path: ' + vosipath
-            self.__printError__('votable', msg, '400')
+            self.__printError__('votable', msg, errcode='400')
 
         print("HTTP/1.1 200 OK\r")
         print("Content-type: text/xml\r")
@@ -2793,7 +2926,7 @@ class Tap:
                 sys.stdout.flush()
 
         except Exception as e:
-            self.__printError__('votable', str(e), '400')
+            self.__printError__('votable', str(e), errcode='400')
 
         fp.close()
         sys.exit()
@@ -2940,7 +3073,6 @@ class Tap:
         #
         # } end printVosiCapability
         #
-
     
     #
     # } end tap class
