@@ -1912,28 +1912,30 @@ class Tap:
             logging.debug(f'retvalstr= {retvalstr:s}')
 
 
-        uwsschema = ' xmlns:uws="http://www.ivoa.net/xml/UWS/v1.0" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema" xsi:schemaLocation="http://www.ivoa.net/xml/UWS/v1.0 http://www.ivoa.net/xml/UWS/v1.0">' 
+        uwsschema = ' xmlns:uws="http://www.ivoa.net/xml/UWS/v1.0" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema" xsi:schemaLocation="http://www.ivoa.net/xml/UWS/v1.0 http://www.ivoa.net/xml/UWS/v1.0">'
 
+        
+        if ((key == 'error')
+            or (key == 'errorSummary')
+            or (key == 'errmsg')):
+            
+            if(outtype == 'xml'):
+                self.__printError__ ('votable', retval) 
+            else:
+                self.__printError__ ('plain', retval) 
+        
+        #
+        #    parameters and results vosi endpoints
+        #
         print("HTTP/1.1 200 OK\r")
 
         if(outtype == 'xml'):
 
             print("Content-type: text/xml\r")
             print("\r")
-
             print('<?xml version="1.0" encoding="UTF-8"?>')
            
-            if ((key == 'error')
-                    or (key == 'errorSummary')
-                    or (key == 'errmsg')):
-                
-                if self.debug:
-                    logging.debug('')
-                    logging.debug('key = error')
-                
-                self.__printError__ ('votable', retval) 
-
-            elif(key == 'parameters'):
+            if(key == 'parameters'):
                 
                 if self.debug:
                     logging.debug('')
@@ -2037,7 +2039,8 @@ class Tap:
             sys.exit()
 
         #
-        # Extract format
+        # 1. convert data to dict,
+        # 2. extract format
         #
         soup = None
         try:
@@ -2055,8 +2058,8 @@ class Tap:
                 logging.debug('parameters extracted:')
                 logging.debug(parameters)
 
-            parameter = parameters.find(id='format')
-            self.format = parameter.string
+            format = parameters.find(id='format')
+            self.format = format.string
             if self.debug:
                 logging.debug('')
                 logging.debug(\
@@ -2070,19 +2073,6 @@ class Tap:
             logging.debug(parameters)
             logging.debug(f'format= {self.format:s}')
 
-        if (key == 'parameters'):
-
-            if self.debug:
-                logging.debug('')
-                logging.debug('key == parameters')
-                logging.debug('call __printStatus')
-            
-            self.__printStatus__('parameters', parameters, 'xml')
-
-        #
-        # Parse data to extract inparam
-        #
-
         job = None
         try:
             job = self.__getStatusJob__(data)
@@ -2091,7 +2081,32 @@ class Tap:
             msg = 'Exception retrieving job from status file: ' + str(e)
             self.__printError__(self.format, msg)
 
-        if((key == 'phase')
+        if self.debug:
+            logging.debug('')
+            logging.debug('job:')
+            logging.debug(job)
+
+        phase = job['uws:phase']
+        if self.debug:
+            logging.debug('')
+            logging.debug(f'phase= {phase:s}')
+
+        if (key == 'parameters'):
+        #
+        # { key=parameters
+        #
+            if self.debug:
+                logging.debug('')
+                logging.debug('key == parameters')
+                logging.debug('call __printStatus')
+            
+            self.__printStatus__('parameters', parameters, 'xml')
+
+        #
+        # } end key=parameters
+        #
+        
+        elif ((key == 'phase')
                 or (key == 'startTime')
                 or (key == 'endTime')
                 or (key == 'executionduration')
@@ -2101,15 +2116,20 @@ class Tap:
                 or (key == 'ownerId')
                 or (key == 'quote')):
 
+        #
+        # { key=phase, startTime, endTime, etc. which return plain values
+        #  instead of xml structure
+        #
+        #
+        # Parse data to extract inparam
+        #
             if self.debug:
                 logging.debug('')
-                logging.debug(f'key == executionduration or destruction')
-
-            parameters = None
+                logging.debug(\
+                    f'key == phase, executionduration or destruction etc.')
             #
             # { Single value return
             #
-
             retval = 'None'
             keystr = 'uws:' + key
             outstr = ''
@@ -2141,17 +2161,16 @@ class Tap:
             #
             # } end single value return
             #
+        #
+        # } end key=phase, startTime, endTime, etc. which return plain values
+        #  instead of xml structure
+
 
         #
         # { Key: return error
         #
 
-        phase = job['uws:phase']
-        if self.debug:
-            logging.debug('')
-            logging.debug(f'phase= {phase:s}')
-
-        if((key == 'errorSummary')
+        elif ((key == 'errorSummary')
                 or (key == 'errmsg')
                 or (key == 'error')):
 
@@ -2201,30 +2220,7 @@ class Tap:
         # } end return error
         #
 
-        if self.debug:
-            logging.debug('')
-            logging.debug('got here0')
-
-        results = ''
-        result = ''
-        resulturl = ''
-        
-        #results = job['uws:results']
-        #result = job['uws:results']['uws:result']
-        #resulturl = job['uws:results']['uws:result']['@xlink:href']
-        
-        #if self.debug:
-        #    logging.debug('')
-        #    logging.debug('got here1')
-        #    logging.debug('results:')
-        #    logging.debug(results)
-        #    logging.debug('result:')
-        #    logging.debug(result)
-        #    logging.debug('resulturl:')
-        #    logging.debug(resulturl)
-       
-
-        if ((key == 'results')
+        elif ((key == 'results')
                 or (key == 'results/result')
                 or (key == 'results/resulturl')):
         #
@@ -2405,7 +2401,10 @@ class Tap:
         #
         # } end results or results/resulturl or results/result  cases 
         # 
+        else:
+            msg = f'key {key:s} is not a valid key'
 
+            self.__printError__ (self.format, msg)
         #
         # } end of getStatus
         #
@@ -2417,15 +2416,13 @@ class Tap:
         # {
         #
         
-        #print("HTTP/1.1 200 OK\r")
-     
         errcode = ''         
         if ('errcode' in kwargs):
             errcode = kwargs['errcode']
 
-
-        httphdr = "HTTP/1.1 " + errcode  + " ERROR\r"
+        httphdr = "HTTP/1.1 " + str(errcode)  + " ERROR\r"
         print(httphdr)
+        print("\r")
 
         """
         print("Content-type: text/xml\r")
