@@ -555,7 +555,7 @@ class runQuery:
 
             if self.debug:
                 logging.debug('')
-                logging.debug(f'create table exception: {str(msg):s}')
+                logging.debug(f'executeSql exception: {str(msg):s}')
 
             # raise Exception(str(e))
             raise Exception(msg)
