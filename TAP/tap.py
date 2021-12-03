@@ -1555,6 +1555,9 @@ class Tap:
         if self.debug:
             logging.debug('')
             logging.debug(f'datalevel = [{self.datalevel:s}]')
+            logging.debug(f'propflag = [{self.propflag:d}]')
+            logging.debug(\
+                f'config.propflag = [{self.config.propfilter.lower():s}]')
 
         #
         # Determine whether to use runQuery or propFilter to execute SQL
