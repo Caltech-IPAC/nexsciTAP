@@ -1451,29 +1451,16 @@ class propFilter:
 
         if(self.propfilter == 'koa'):
 
-            if(self.instrument.lower() == 'hires'):
+            if(len(self.userid) > 0):
 
-                if(len(self.userid) > 0):
+                access_constraint = \
+                    "((current_date > add_months(date_obs, propint))" + \
+                    " or(lower(" + accessid + ") in(select " + \
+                    accessid + " from " + tmp_accessiddbtbl + ")))"
 
-                    access_constraint = \
-                        "((current_date > add_months(date_obs, propmin))" + \
-                        " or(lower(" + accessid + ") in(select " + \
-                        accessid + " from " + tmp_accessiddbtbl + ")))"
-
-                else:
-                    access_constraint = \
-                        "(current_date > add_months(date_obs, propmin))"
             else:
-                if(len(self.userid) > 0):
-
-                    access_constraint = \
-                        "((current_date > add_months(date_obs, propint))" + \
-                        " or(lower(" + accessid + ") in(select " + \
-                        accessid + " from " + tmp_accessiddbtbl + ")))"
-
-                else:
-                    access_constraint = \
-                        "(current_date > add_months(date_obs, propint))"
+                access_constraint = \
+                    "(current_date > add_months(date_obs, propint))"
 
             if self.debug:
                 logging.debug('')
