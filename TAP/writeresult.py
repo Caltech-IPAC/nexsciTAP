@@ -408,6 +408,9 @@ class writeResult:
                 if (coltype == 7):
                     dbdatatype = 'TIMESTAMP'
 
+                if (coltype == 8):
+                    dbdatatype = 'LONGLONG'
+
                 if (coltype == 10):
                     dbdatatype = 'DATE'
             #
@@ -606,7 +609,7 @@ class writeResult:
                 elif ((dbdatatype == 'LONG') or \
                     (dbdatatype == 'INT')):
                     #
-                    # { dbdatatype == LONG_BINARY
+                    # { dbdatatype == LONG or INT
                     #
 
                     coltype = 'int'
@@ -618,7 +621,24 @@ class writeResult:
                     fmt = str(width) + 'd'
 
                     #
-                    # } end dbdatatype == LONG_BINARY
+                    # } end dbdatatype == LONG or INT
+                    #
+
+                elif (dbdatatype == 'LONGLONG'):
+                    #
+                    # { dbdatatype == LONGLONG
+                    #
+
+                    coltype = 'long'
+                    dbtype = 'longlong'
+
+                    width = 24
+                    if(len(colname) > width):
+                        width = len(colname)
+                    fmt = str(width) + 'ld'
+
+                    #
+                    # } end dbdatatype == LONGLONG
                     #
 
                 elif ((dbdatatype == 'FLOAT') or \
