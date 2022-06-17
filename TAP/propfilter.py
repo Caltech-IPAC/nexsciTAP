@@ -7,6 +7,7 @@ import os
 import logging
 
 import datetime
+import time
 
 from TAP.writeresult import writeResult
 from TAP.datadictionary import dataDictionary
@@ -564,7 +565,8 @@ class propFilter:
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'tmp_fileidAlloweddbtbl= {tmp_fileidAlloweddbtbl:s}')
+            logging.debug ( \
+                f'tmp_fileidAlloweddbtbl= {tmp_fileidAlloweddbtbl:s}')
 
         try:
 
@@ -682,8 +684,10 @@ class propFilter:
                                   maxrec=self.maxrec,
                                   coldesc=self.coldesc,
                                   racol=self.racol,
-                                  deccol=self.deccol,
-                                  debug=self.debug)
+                                  deccol=self.deccol)
+                                  
+                                  #deccol=self.deccol,
+                                  #debug=self.debug)
 
         except Exception as e:
 
@@ -693,32 +697,127 @@ class propFilter:
 
             raise Exception(str(e))
 
+        finally:
+            cursor.close()
+
+            if self.debug:
+                logging.debug('')
+                logging.debug(f'writeResult cursor closed')
+
+
         self.outpath = wresult.outpath
         self.ntot = wresult.ntot
 
         #
-        #  Drop all tmp DB tables
+        #  Drop all tmp DB tables for oracle because oracle v.12.xxx's
+        #  global temporary table is permanent, not really temporary 
         #
 
-        try:
-            self.__dropDbtbl__(tmp_fileidAlloweddbtbl)
-        except Exception as e:
-            pass
-
-        if self.debug:
-            logging.debug('')
-            logging.debug('tmp_fileidAlloweddbtbl dropped')
-
-        if(len(self.userid) > 0):
-
+        if (self.dbms.lower() == 'oracle'):
+            
             try:
-                self.__dropDbtbl__(tmp_accessiddbtbl)
+                self.conn.close()
+            
+                if self.debug:
+                    logging.debug ('')
+                    logging.debug ('returned from oracle conn.close()')
+
             except Exception as e:
-                pass
+
+                if self.debug:
+                    logging.debug ('')
+                    logging.debug (f'conn.close exception: {str(e):s}')
+            
+        #
+        #  re-connect
+        #
+            time.sleep (2.0) 
+                
+            userid = self.connectInfo['userid']
+            dbserver = self.connectInfo['dbserver']
+            password = self.connectInfo['password']
+
+
 
             if self.debug:
+                logging.debug ('')
+                logging.debug (f'xxx0')
+                logging.debug (f'userid= {userid:s}')
+                logging.debug (f'password= {password:s}')
+                logging.debug (f'dbserver= {dbserver:s}')
+           
+            try:
+                self.conn = cx_Oracle.connect ( \
+                    userid, \
+                    password, \
+                    dbserver)
+
+                if self.debug:
+                    logging.debug('')
+                    logging.debug('re-connected to Oracle, database ' +
+                                  dbserver)
+                    logging.debug('')
+                    logging.debug( \
+                        f'tmp_fileidAlloeddbtbl= {tmp_fileidAlloweddbtbl:s}')
+
+            except Exception as e:
+
+                self.status = 'error'
+                self.msg = 'Failed to re-connect to cx_Oracle'
+
+                if self.debug:
+                    logging.debug('')
+                    logging.debug('Failed to re-connected to Oracle ')
+                    logging.debug(f'e= {str(e):s}')
+                
+                pass 
+            
+            try:
+                self.__dropDbtbl__(tmp_fileidAlloweddbtbl)
+                
+                if self.debug:
+                    logging.debug('')
+                    logging.debug( \
+                        'returned dropDbtbl: tmp_fileidAlloweddbtbl')
+
+            except Exception as e:
+                
+                if self.debug:
+                    logging.debug('')
+                    logging.debug( \
+                        f'drop fileidAlloweddbtbl exception: {str(e):s}')
+                pass
+        
+            if self.debug:
                 logging.debug('')
-                logging.debug('tmp_accessiddbtbl dropped')
+                logging.debug('tmp_fileidAlloweddbtbl dropped')
+
+            if(len(self.userid) > 0):
+
+                if self.debug:
+                    logging.debug('')
+                    logging.debug( \
+                        f'tmp_accessiddbtbl= {tmp_accessiddbtbl:s}')
+
+                try:
+                    self.__dropDbtbl__(tmp_accessiddbtbl)
+                
+                    if self.debug:
+                        logging.debug('')
+                        logging.debug( \
+                            'returned dropDbtbl: tmp_accessiddbtbl')
+
+                except Exception as e:
+                
+                    if self.debug:
+                        logging.debug('')
+                        logging.debug( \
+                            f'drop accessiddbtbl exception: {str(e):s}')
+                    pass
+
+                if self.debug:
+                    logging.debug('')
+                    logging.debug('tmp_accessiddbtbl dropped')
 
         return
 
@@ -1450,29 +1549,16 @@ class propFilter:
 
         if(self.propfilter == 'koa'):
 
-            if(self.instrument.lower() == 'hires'):
+            if(len(self.userid) > 0):
 
-                if(len(self.userid) > 0):
+                access_constraint = \
+                    "((current_date > add_months(date_obs, propint))" + \
+                    " or(lower(" + accessid + ") in(select " + \
+                    accessid + " from " + tmp_accessiddbtbl + ")))"
 
-                    access_constraint = \
-                        "((current_date > add_months(date_obs, propmin))" + \
-                        " or(lower(" + accessid + ") in(select " + \
-                        accessid + " from " + tmp_accessiddbtbl + ")))"
-
-                else:
-                    access_constraint = \
-                        "(current_date > add_months(date_obs, propmin))"
             else:
-                if(len(self.userid) > 0):
-
-                    access_constraint = \
-                        "((current_date > add_months(date_obs, propint))" + \
-                        " or(lower(" + accessid + ") in(select " + \
-                        accessid + " from " + tmp_accessiddbtbl + ")))"
-
-                else:
-                    access_constraint = \
-                        "(current_date > add_months(date_obs, propint))"
+                access_constraint = \
+                    "(current_date > add_months(date_obs, propint))"
 
             if self.debug:
                 logging.debug('')
@@ -1558,6 +1644,9 @@ class propFilter:
                 logging.debug(f'{self.msg:s}')
 
             raise Exception(self.msg)
+        
+        finally:
+            cursor.close()
 
         sql = "insert into " + tmp_fileiddbtbl + \
             "(" + selectstr + ")"
@@ -1580,6 +1669,9 @@ class propFilter:
                 logging.debug(f'{self.msg:s}')
 
             raise Exception(self.msg)
+
+        finally:
+            cursor.close()
 
         #
         # Select accessid from tmp_fileiddbtbl: just to verify
@@ -1622,6 +1714,8 @@ class propFilter:
 
             raise Exception(self.msg)
 
+        finally:
+            cursor.close()
 
         return
 
