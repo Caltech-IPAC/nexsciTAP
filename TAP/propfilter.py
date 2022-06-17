@@ -680,6 +680,7 @@ class propFilter:
             wresult = writeResult(cursor,
                                   self.userworkdir,
                                   self.dd,
+                                  dbms=self.dbms,
                                   format=self.format,
                                   maxrec=self.maxrec,
                                   coldesc=self.coldesc,
