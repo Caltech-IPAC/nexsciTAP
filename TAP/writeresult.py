@@ -70,6 +70,7 @@ class writeResult:
 
         kwargs inputs:
 
+            output(char),  [output file for command-line mode]
             format(char),
             maxrec(int),
             racol,
@@ -96,6 +97,9 @@ class writeResult:
         self.dd = dd
 
         self.ncols_dd = len(self.dd.colname)
+
+        if('output' in kwargs):
+            self.output = kwargs['output']
 
         if('racol' in kwargs):
             self.racol = kwargs['racol']
@@ -140,19 +144,23 @@ class writeResult:
         # open querypath for output
         #
 
-        resulttbl = ''
-        if(self.format == 'votable'):
-            resulttbl = 'result.xml'
-        elif(self.format == 'ipac'):
-            resulttbl = 'result.tbl'
-        elif(self.format == 'csv'):
-            resulttbl = 'result.csv'
-        elif(self.format == 'tsv'):
-            resulttbl = 'result.tsv'
-        elif(self.format == 'json'):
-            resulttbl = 'result.json'
+        if(kwargs['output'] != None):
+            self.outpath = kwargs['output']
 
-        self.outpath = self.workdir + '/' + resulttbl
+        else:
+            resulttbl = ''
+            if(self.format == 'votable'):
+                resulttbl = 'result.xml'
+            elif(self.format == 'ipac'):
+                resulttbl = 'result.tbl'
+            elif(self.format == 'csv'):
+                resulttbl = 'result.csv'
+            elif(self.format == 'tsv'):
+                resulttbl = 'result.tsv'
+            elif(self.format == 'json'):
+                resulttbl = 'result.json'
+
+            self.outpath = self.workdir + '/' + resulttbl
 
         if self.debug:
             logging.debug('')
