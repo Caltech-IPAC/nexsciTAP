@@ -449,12 +449,18 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
     open filepath to write header
 */
     fp = (FILE *)NULL;
-    if (ishdr) {
-        fp = fopen (filepath, "w+");
-        chmod(filepath, 0664);
-    }
-    else {
-        fp = fopen (filepath, "a");
+
+    if(strlen(filepath) == 0)
+       fp = stdout;
+    else
+    {
+       if (ishdr) {
+           fp = fopen (filepath, "w+");
+           chmod(filepath, 0664);
+       }
+       else {
+           fp = fopen (filepath, "a");
+       }
     }
 
     if (fp == (FILE *)NULL) {
@@ -671,7 +677,9 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
                fprintf (fp, "]\n");
            }
            fflush (fp);
-           fclose (fp);
+
+           if(fp != stdout)
+              fclose (fp);
 
            istatus = 0;    
            return PyLong_FromLong (istatus);
@@ -1196,7 +1204,9 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
     }
 
     fflush (fp);
-    fclose (fp);
+
+    if(fp != stdout)
+       fclose (fp);
     
 
 /*

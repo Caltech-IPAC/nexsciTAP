@@ -1,4 +1,4 @@
-# Copyright (c) 2020, Caltech IPAC.
+
 # This code is released with a BSD 3-clause license. License information is at
 #   https://github.com/Caltech-IPAC/nexsciTAP/blob/master/LICENSE
 
@@ -29,6 +29,13 @@ from TAP.configparam import configParam
 from TAP.propfilter import propFilter
 from TAP.tablenames import TableNames
 from TAP.vositables import vosiTables 
+
+from enum import Enum
+
+class Tap_mode(Enum):
+    webserver   = 0
+    commandline = 1
+    interactive = 3
 
 
 class Tap:
@@ -78,7 +85,6 @@ class Tap:
 
     pid = os.getpid()
     form = cgi.FieldStorage()
-
 
     debug = 0
 
@@ -154,18 +160,27 @@ class Tap:
         # { tap.init()
         #
 
-        if('debug' in self.form):
+        self.tapmode = Tap_mode.webserver
+
+        if kwargs is not None and len(kwargs) != 0:
+            self.tapmode = Tap_mode.commandline
+
+
+        # Debug is a nuisance since we want get it early
+
+        if(self.tapmode == Tap_mode.webserver and 'debug' in self.form):
             self.debug = 1
 
-        if(self.debug):
+        if(self.tapmode == Tap_mode.commandline and 'debug' in kwargs):
+            self.debug = kwargs['debug']
 
+        if(self.debug):
             logging.basicConfig(filename=self.debugfname,
                                 format='%(levelname)-8s %(relativeCreated)d>  '
                                 '%(filename)s %(lineno)d  '
                                 '(%(funcName)s):   %(message)s',
                                 level=logging.DEBUG)
 
-        if self.debug:
             logging.debug(f'Enter Tap.init(): pid= {self.pid:d}')
 
         #
@@ -206,45 +221,88 @@ class Tap:
         self.token = ''
         self.query = ''
         self.phase = ''
+        self.output = ''
 
         self.uwsheader = '<uws:job xmlns:uws="http://www.ivoa.net/xml/UWS/v1.0" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema" xsi:schemaLocation="http://www.ivoa.net/xml/UWS/v1.0 http://www.ivoa.net/xml/UWS/v1.0">'
 
-        for key in self.form:
-            if self.debug:
-                logging.debug(f'      key: {key:<15}   val: {self.form[key].value:s}')
+        if(self.tapmode == Tap_mode.webserver):
 
-            if(key.lower() == 'propflag'):
-                self.propflag = int(self.form[key].value)
+            for key in self.form:
 
-            if(key.lower() == 'lang'):
-                self.lang = self.form[key].value
-                self.param['lang'] = self.form[key].value
-            
-            if(key.lower() == 'request'):
-                self.param['request'] = self.form[key].value
+                if(key.lower() == 'propflag'):
+                    self.propflag = int(self.form[key].value)
 
-            if(key.lower() == 'phase'):
-                self.phase = self.form[key].value.strip()
-                self.param['phase'] = self.form[key].value.strip()
+                if(key.lower() == 'lang'):
+                    self.lang = self.form[key].value
+                    self.param['lang'] = self.form[key].value
+                
+                if(key.lower() == 'request'):
+                    self.param['request'] = self.form[key].value
 
-            if(key.lower() == 'query'):
-                self.query = self.form[key].value.strip()
-                self.param['query'] = self.form[key].value.strip()
-                self.querykey = 1
+                if(key.lower() == 'phase'):
+                    self.phase = self.form[key].value.strip()
+                    self.param['phase'] = self.form[key].value.strip()
 
-            if(key.lower() == 'format'):
-                self.format = self.form[key].value.strip()
-                self.param['format'] = self.form[key].value.strip()
+                if(key.lower() == 'query'):
+                    self.query = self.form[key].value.strip()
+                    self.param['query'] = self.form[key].value.strip()
+                    self.querykey = 1
 
-            if(key.lower() == 'responseformat'):
-                self.format = self.form[key].value.strip()
-                self.param['format'] = self.form[key].value.strip()
+                if(key.lower() == 'format'):
+                    self.format = self.form[key].value.strip()
+                    self.param['format'] = self.form[key].value.strip()
 
-            if(key.lower() == 'maxrec'):
-                self.maxrecstr = self.form[key].value
+                if(key.lower() == 'responseformat'):
+                    self.format = self.form[key].value.strip()
+                    self.param['format'] = self.form[key].value.strip()
 
-            if(key.lower() == 'token'):
-                self.token = self.form[key].value
+                if(key.lower() == 'maxrec'):
+                    self.maxrecstr = self.form[key].value
+
+                if(key.lower() == 'token'):
+                    self.token = self.form[key].value
+
+
+        if(self.tapmode == Tap_mode.commandline):
+
+            for key in kwargs:
+
+                if(key == 'query'):
+                    self.query = kwargs[key]
+                    
+                    if(type(self.query) == str):
+                        self.query = self.query.strip()
+
+                    if(';' in self.query):
+                        self.query = self.query.split(';')[0]
+
+                    self.param['query'] = self.query
+                    self.querykey = 1
+
+
+                if(key == 'format'):
+                    self.format = kwargs[key]
+                    
+                    if(self.format == None):
+                       self.format = 'ipac'
+
+                    if(type(self.format) == str):
+                        self.format = self.format.strip()
+
+                    self.param['format'] = self.format
+
+
+                if(key == 'output'):
+                    self.output = kwargs[key]
+                    
+                    if(self.output == None):
+                        self.output = ''
+
+                    if(type(self.output) == str):
+                        self.output = self.output.strip()
+
+                    self.param['output'] = self.output
+
 
         self.nparam = len(self.param)
 
@@ -300,52 +358,61 @@ class Tap:
             logging.debug(f'lang= {self.lang:s}')
 
 
-        if("PATH_INFO" in os.environ):
-            self.pathinfo = os.environ["PATH_INFO"]
+        # We will treat all "commandline" interaction as "synchronous"
+
+        if(self.tapmode == Tap_mode.commandline):
+            self.tapcontext = 'sync'
+            narr = 1
+
         else:
-            self.pathinfo = ''
 
-        if(len(self.pathinfo) == 0):
-            self.msg = 'PATH_INFO: sync or async not found.'
-            self.__printError__('votable', self.msg, errcode='404')
+            if("PATH_INFO" in os.environ):
+                self.pathinfo = os.environ["PATH_INFO"]
+            else:
+                self.pathinfo = ''
 
-        if(self.pathinfo[0] == '/'):
-            self.pathinfo = self.pathinfo[1:]
+            if(len(self.pathinfo) == 0):
+                self.msg = 'PATH_INFO: sync or async not found.'
+                self.__printError__('votable', self.msg, errcode='404')
 
-        if self.debug:
-            logging.debug('')
-            logging.debug(f'pathinfo = {self.pathinfo:s}')
+            if(self.pathinfo[0] == '/'):
+                self.pathinfo = self.pathinfo[1:]
 
-        arr = self.pathinfo.split('/')
-        narr = len(arr)
-
-
-        # Special check for config filename 'extension' to allow
-        # multiple config files for the same server
-
-        if(narr > 1 and arr[0] != 'async' and arr[0] != 'sync' and \
-                arr[0] != 'availability' and arr[0] != 'capabilities' and \
-                arr[0] != 'tables'):
-            self.configext = arr[0]
-            arr = arr[1:]
-            narr = len(arr)
-            
             if self.debug:
                 logging.debug('')
-                logging.debug(f'id= {self.id:s} configext= {self.configext:s}')
-            
+                logging.debug(f'pathinfo = {self.pathinfo:s}')
 
-        if(arr[0] == 'async'):
-            self.tapcontext = 'async'
-        elif(arr[0] == 'sync'):
-            self.tapcontext = 'sync'
-        elif (arr[0] == 'availability'):
-            self.tapcontext = 'availability'
-        elif (arr[0] == 'capabilities'):
-            self.tapcontext = 'capabilities'
-        elif (arr[0] == 'tables'):
-            self.tapcontext = 'tables'
+            arr = self.pathinfo.split('/')
+            narr = len(arr)
+
+
+            # Special check for config filename 'extension' to allow
+            # multiple config files for the same server
+
+            if(narr > 1 and arr[0] != 'async' and arr[0] != 'sync' and \
+                    arr[0] != 'availability' and arr[0] != 'capabilities' and \
+                    arr[0] != 'tables'):
+                self.configext = arr[0]
+                arr = arr[1:]
+                narr = len(arr)
+                
+                if self.debug:
+                    logging.debug('')
+                    logging.debug(f'id= {self.id:s} configext= {self.configext:s}')
+                
+
+            if(arr[0] == 'async'):
+                self.tapcontext = 'async'
+            elif(arr[0] == 'sync'):
+                self.tapcontext = 'sync'
+            elif (arr[0] == 'availability'):
+                self.tapcontext = 'availability'
+            elif (arr[0] == 'capabilities'):
+                self.tapcontext = 'capabilities'
+            elif (arr[0] == 'tables'):
+                self.tapcontext = 'tables'
          
+
         if (len(self.tapcontext) == 0):
             self.msg = 'PATH_INFO: sync or async not found.'
             self.__printError__('votable', self.msg, errcode='404')
@@ -492,7 +559,6 @@ class Tap:
             logging.debug(f'phase      = {self.param["phase"]:s}')
 
 
-
         #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
         #
         #  Special case:  HTTP DELETE.  We only need 
@@ -542,95 +608,103 @@ class Tap:
 
         self.statdict['resulturl'] = ''
 
-        #
-        # sync or async without input workspace id: make workspace,
-        # otherwise retrieve workspace from getstatus id
-        #
 
-        if ((self.tapcontext == 'tables') or \
-            (self.tapcontext == 'sync') or \
-            ((self.tapcontext == 'async') and \
-            (self.getstatus == 0) and \
-            (self.setstatus == 0))):
+        # Note: We don't use a workspace if we are in command-line mode
+
+        if(self.tapmode == Tap_mode.commandline):
+            self.userWorkdir = '/tmp'
+
+        if(self.tapmode == Tap_mode.webserver):
 
             #
-            # {  Make workspace:
-            #    make TAP subdir if it doesn't exist, 
-            #    make a workspace name with unique id
+            # sync or async without input workspace id: make workspace,
+            # otherwise retrieve workspace from getstatus id
             #
+
+            if ((self.tapcontext == 'tables') or \
+                (self.tapcontext == 'sync') or \
+                ((self.tapcontext == 'async') and \
+                (self.getstatus == 0) and \
+                (self.setstatus == 0))):
+
+                #
+                # {  Make workspace:
+                #    make TAP subdir if it doesn't exist, 
+                #    make a workspace name with unique id
+                #
+
+                if self.debug:
+                    logging.debug('')
+                    logging.debug('Async without workspace id: make workspace')
+
+                tapdir = self.workdir + '/TAP'
+
+                try:
+                    os.makedirs(tapdir, exist_ok=True)
+                    os.chmod(tapdir, 0o775)
+
+                except Exception as e:
+                    self.msg = 'Failed to create ' + tapdir + ': ' + str(e)
+                    self.__printError__('votable', self.msg, errcode='500')
+
+                if self.debug:
+                    logging.debug('')
+                    logging.debug(f'tapdir: {tapdir:s} created')
+
+
+                try:
+                    self.userWorkdir = tempfile.mkdtemp(prefix='tap_', dir=tapdir)
+
+                except Exception as e:
+                    self.msg = 'tempfile.mkdtemp exception: ' + str(e)
+                    self.__printError__('votable', self.msg, errcode='500')
+
+                ind = self.userWorkdir.rfind('/')
+                if(ind > 0):
+                    self.workspace = self.userWorkdir[ind + 1:]
+
+                try:
+                    os.makedirs(self.userWorkdir, exist_ok=True)
+                    os.chmod(self.userWorkdir, 0o775)
+
+                except Exception as e:
+
+                    self.msg = 'os.makedir exception: ' + str(e)
+                    self.__printError__('votable', self.msg, errcode='500')
+
+                if self.debug:
+                    logging.debug(f'userWorkdir: {self.userWorkdir:s} created')
+                #
+                # } end of make workspace
+                #
+
+            else:
+                #
+                # { input jobid exists:  
+                #   Retrieve workspace from id
+                #
+
+                self.workspace = self.id
+                self.userWorkdir = self.workdir + '/TAP/' + self.workspace
+
+
+                #
+                #    check if workspace exists
+                #
+                isExist = os.path.exists(self.userWorkdir)
+
+                if (isExist == 0):
+                    self.msg = 'work directory based on input jobid does not exist.'
+                    self.__printError__('votable', self.msg, '500')
+
+                #
+                # } end of retrieve workspace
+                #
 
             if self.debug:
                 logging.debug('')
-                logging.debug('Async without workspace id: make workspace')
-
-            tapdir = self.workdir + '/TAP'
-
-            try:
-                os.makedirs(tapdir, exist_ok=True)
-                os.chmod(tapdir, 0o775)
-
-            except Exception as e:
-                self.msg = 'Failed to create ' + tapdir + ': ' + str(e)
-                self.__printError__('votable', self.msg, errcode='500')
-
-            if self.debug:
-                logging.debug('')
-                logging.debug(f'tapdir: {tapdir:s} created')
-
-
-            try:
-                self.userWorkdir = tempfile.mkdtemp(prefix='tap_', dir=tapdir)
-
-            except Exception as e:
-                self.msg = 'tempfile.mkdtemp exception: ' + str(e)
-                self.__printError__('votable', self.msg, errcode='500')
-
-            ind = self.userWorkdir.rfind('/')
-            if(ind > 0):
-                self.workspace = self.userWorkdir[ind + 1:]
-
-            try:
-                os.makedirs(self.userWorkdir, exist_ok=True)
-                os.chmod(self.userWorkdir, 0o775)
-
-            except Exception as e:
-
-                self.msg = 'os.makedir exception: ' + str(e)
-                self.__printError__('votable', self.msg, errcode='500')
-
-            if self.debug:
-                logging.debug(f'userWorkdir: {self.userWorkdir:s} created')
-            #
-            # } end of make workspace
-            #
-
-        else:
-            #
-            # { input jobid exists:  
-            #   Retrieve workspace from id
-            #
-
-            self.workspace = self.id
-            self.userWorkdir = self.workdir + '/TAP/' + self.workspace
-
-
-            #
-            #    check if workspace exists
-            #
-            isExist = os.path.exists(self.userWorkdir)
-
-            if (isExist == 0):
-                self.msg = 'work directory based on input jobid does not exist.'
-                self.__printError__('votable', self.msg, '500')
-
-            #
-            # } end of retrieve workspace
-            #
-
-        if self.debug:
-            logging.debug('')
-            logging.debug(f'workspace   = {self.workspace:s}')
-            logging.debug(f'userWorkdir = {self.userWorkdir:s}')
+                logging.debug(f'workspace   = {self.workspace:s}')
+                logging.debug(f'userWorkdir = {self.userWorkdir:s}')
 
         #
         #{ if tapcontext is one of vosiEnpoint, take care of take care of VOSI
@@ -996,15 +1070,21 @@ class Tap:
         elif(self.format == 'json'):
             self.resulttbl = 'result.json'
 
-        self.resultpath = self.userWorkdir + '/' + self.resulttbl
-        self.resulturl = self.httpurl + self.workurl + '/TAP/' + \
-            self.workspace + '/' + self.resulttbl
+        if(self.tapmode == Tap_mode.webserver):
+            self.resultpath = self.userWorkdir + '/' + self.resulttbl
+            self.resulturl = self.httpurl + self.workurl + '/TAP/' + \
+                self.workspace + '/' + self.resulttbl
+
+        else:
+            self.resulttbl = self.output 
+            self.resultpath = self.output 
+            self.resulturl = ''
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'format      = {self.format:s}')
-            logging.debug(f'resultpath  = {self.resultpath:s}')
-            logging.debug(f'resulturl   = {self.resulturl:s}')
+            logging.debug(f'format      = ' + str(self.format))
+            logging.debug(f'resultpath  = ' + str(self.resultpath))
+            logging.debug(f'resulturl   = ' + str(self.resulturl))
 
 
         if (self.tapcontext == 'async'):
@@ -1408,10 +1488,7 @@ class Tap:
             logging.debug(f'nparam = {self.nparam:d}')
 
             for key in self.param:
-                if(key == 'maxrec'):
-                    logging.debug(f'key= {key:<15} value = {self.param[key]:d}')
-                else:
-                    logging.debug(f'key= {key:<15} value = {self.param[key]:s}')
+                logging.debug(f'key= {key:<15} value = ' + str(self.param[key]))
 
         #
         #   if query is blank, return error
@@ -1600,6 +1677,7 @@ class Tap:
 
                 dbquery = runQuery(connectInfo=self.config.connectInfo,
                                    query=self.query,
+                                   output=self.output,
                                    workdir=self.userWorkdir,
                                    format=self.format,
                                    maxrec=self.maxrec,
@@ -1746,7 +1824,11 @@ class Tap:
                 logging.debug('')
                 logging.debug('Case: sync')
 
-            self.__printSyncResult__(self.resultpath, self.format)
+            if(self.tapmode == Tap_mode.webserver):
+                self.__printSyncResult__(self.resultpath, self.format)
+
+            elif(len(self.output) > 0):
+                print('[struct stat="OK", output="' + self.output + '", format="' + self.format + '", nrec=' + str(self.ntot) + ']')
 
         if self.debug:
             logging.debug('')
@@ -1896,12 +1978,14 @@ class Tap:
         # Header
         #
 
-        print("HTTP/1.1 200 OK\r")
+        if(self.tapmode == Tap_mode.webservice):
+            print("HTTP/1.1 200 OK\r")
 
         if(outtype == 'xml'):
 
-            print("Content-type: text/xml\r")
-            print("\r")
+            if(self.tapmode == Tap_mode.webservice):
+                print("Content-type: text/xml\r")
+                print("\r")
 
             print('<?xml version="1.0" encoding="UTF-8"?>')
            
@@ -1999,9 +2083,11 @@ class Tap:
 
         if(len(key) == 0):
 
-            print("HTTP/1.1 200 OK\r")
-            print("Content-type: text/xml\r")
-            print("\r")
+            if(self.tapmode == Tap_mode.webservice):
+                print("HTTP/1.1 200 OK\r")
+                print("Content-type: text/xml\r")
+                print("\r")
+
             print(data)
             sys.exit()
 
@@ -2251,15 +2337,16 @@ class Tap:
             else: 
                 self.__printError__(format, msg, '400')
 
-        print("HTTP/1.1 200 OK\r")
+        if(self.tapmode == Tap_mode.webservice):
+            print("HTTP/1.1 200 OK\r")
 
-        if(format == 'json'):
-            print("Content-type: application/json\r")
-        elif(format == 'votable'):
-            print("Content-type: text/xml\r")
-        else:
-            print("Content-type: text/plain\r")
-        print("\r")
+            if(format == 'json'):
+                print("Content-type: application/json\r")
+            elif(format == 'votable'):
+                print("Content-type: text/xml\r")
+            else:
+                print("Content-type: text/plain\r")
+            print("\r")
 
         try:
             while True:
@@ -2303,22 +2390,27 @@ class Tap:
 
         #print("HTTP/1.1 200 OK\r")
         
-        print(httphdr)
+        if(self.tapmode == Tap_mode.webserver):
 
-        print("Content-type: text/xml\r")
-        print("\r")
+            print(httphdr)
 
-        print('<?xml version="1.0" encoding="UTF-8"?>')
-        print('<VOTABLE version="1.4"'
-              ' xmlns="http://www.ivoa.net/xml/VOTable/v1.3">')
-        print('<RESOURCE type="results">')
-        print('<INFO name="QUERY_STATUS" value="ERROR">')
+            print("Content-type: text/xml\r")
+            print("\r")
 
-        print(errmsg)
+            print('<?xml version="1.0" encoding="UTF-8"?>')
+            print('<VOTABLE version="1.4"'
+                  ' xmlns="http://www.ivoa.net/xml/VOTable/v1.3">')
+            print('<RESOURCE type="results">')
+            print('<INFO name="QUERY_STATUS" value="ERROR">')
 
-        print('</INFO>')
-        print('</RESOURCE>')
-        print('</VOTABLE>')
+            print(errmsg)
+
+            print('</INFO>')
+            print('</RESOURCE>')
+            print('</VOTABLE>')
+
+        else:
+            print('[struct stat="ERROR", msg="' + errmsg + '"]')
 
         """
         if(fmt == 'votable'):
@@ -2415,7 +2507,8 @@ class Tap:
             logging.debug('Output lines:')
             logging.debug('-------------------------------------------------')
 
-        print("HTTP/1.1 200 OK\r")
+        if(self.tapmode == Tap_mode.webserver):
+            print("HTTP/1.1 200 OK\r")
 
         fp = None
         try:
@@ -2424,13 +2517,14 @@ class Tap:
             msg = 'Failed to open result file.'
             self.__printError__(msg)
 
-        if(format == 'json'):
-            print("Content-type: application/json\r")
-        elif(format == 'votable'):
-            print("Content-type: text/xml\r")
-        else:
-            print("Content-type: text/plain\r")
-        print("\r")
+        if(self.tapmode == Tap_mode.webserver):
+            if(format == 'json'):
+                print("Content-type: application/json\r")
+            elif(format == 'votable'):
+                print("Content-type: text/xml\r")
+            else:
+                print("Content-type: text/plain\r")
+            print("\r")
 
         while True:
 
@@ -2464,9 +2558,10 @@ class Tap:
 
         if(status == 'error'):
 
-            print("HTTP/1.1 200 OK\r")
-            print("Content-type: application/json\r")
-            print("\r")
+            if(self.tapmode == Tap_mode.webserver):
+                print("HTTP/1.1 200 OK\r")
+                print("Content-type: application/json\r")
+                print("\r")
 
             print("{")
             print('    "status": "error",')
@@ -2474,7 +2569,9 @@ class Tap:
             print("}")
 
         else:
-            print("HTTP/1.1 303 See Other\r")
+            if(self.tapmode == Tap_mode.webserver):
+                print("HTTP/1.1 303 See Other\r")
+
             print("Location: %s\r\n\r" % resulturl)
             print("Redirect Location: %s" % resulturl)
 
@@ -2788,9 +2885,10 @@ class Tap:
             msg = 'Failed to open vositable path: ' + vosipath
             self.__printError__('votable', msg, '400')
 
-        print("HTTP/1.1 200 OK\r")
-        print("Content-type: text/xml\r")
-        print("\r")
+        if(self.tapmode == Tap_mode.webserver):
+            print("HTTP/1.1 200 OK\r")
+            print("Content-type: text/xml\r")
+            print("\r")
 
         try:
             while True:

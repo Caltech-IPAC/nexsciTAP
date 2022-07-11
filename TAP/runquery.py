@@ -189,6 +189,10 @@ class runQuery:
             self.status = 'error'
             raise Exception(self.msg)
 
+        self.output = ''
+        if('output' in kwargs):
+            self.output = kwargs['output']
+            
         self.userworkdir = ''
         if('workdir' in kwargs):
             self.userworkdir = kwargs['workdir']
@@ -374,6 +378,7 @@ class runQuery:
             wresult = writeResult(cursor,
                                   self.userworkdir,
                                   self.dd,
+                                  output=self.output,
                                   format=self.format,
                                   maxrec=self.maxrec,
                                   arraysize=self.arraysize,
