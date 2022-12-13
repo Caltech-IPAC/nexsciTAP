@@ -40,6 +40,9 @@ class propFilter:
     instrument = ''
     datalevel = ''
 
+    tmp_accessiddbtbl = ''
+    tmp_fileidAlloweddbtbl = ''
+
     nfetch = 1000
     ninsert = 1000
 
@@ -212,8 +215,9 @@ class propFilter:
                     logging.debug( 'userid   = [Not shown for security reasons].')
                     logging.debug( 'password = [Not shown for security reasons].')
                 #   Change to the following to temporarily debug login
-                #   logging.debug(f'userid   = {self.userid:s}')
-                #   logging.debug(f'password = {self.password:s}')
+                    
+                    logging.debug(f'userid   = {self.userid:s}')
+                    logging.debug(f'password = {self.password:s}')
 
 
             if(self.dbms.lower() == 'sqlite3'):
@@ -525,11 +529,11 @@ class propFilter:
         # Create tmp_accessiddbtbl
         #
 
-        tmp_accessiddbtbl = 'tmp_' + self.accessid + str(os.getpid())
+        self.tmp_accessiddbtbl = 'tmp_' + self.accessid + str(os.getpid())
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'tmp_accessiddbtbl = {tmp_accessiddbtbl:s}')
+            logging.debug(f'tmp_accessiddbtbl = {self.tmp_accessiddbtbl:s}')
 
         if(len(self.userid) > 0):
 
@@ -538,7 +542,7 @@ class propFilter:
             #
 
             try:
-                self.__createTmpAccessiddb__(tmp_accessiddbtbl,
+                self.__createTmpAccessiddb__(self.tmp_accessiddbtbl,
                                              self.userid, self.accessid,
                                              self.accesstbl)
             except Exception as e:
@@ -561,19 +565,19 @@ class propFilter:
         # Create tmp_fileidAlloweddbtbl
         #
 
-        tmp_fileidAlloweddbtbl = 'tmp_fileidallowed' + str(os.getpid())
+        self.tmp_fileidAlloweddbtbl = 'tmp_fileidallowed' + str(os.getpid())
 
         if self.debug:
             logging.debug('')
             logging.debug ( \
-                f'tmp_fileidAlloweddbtbl= {tmp_fileidAlloweddbtbl:s}')
+                f'tmp_fileidAlloweddbtbl= {self.tmp_fileidAlloweddbtbl:s}')
 
         try:
 
-            self.__createTmpFileiddb__(tmp_fileidAlloweddbtbl,
+            self.__createTmpFileiddb__(self.tmp_fileidAlloweddbtbl,
                                        self.fileid, self.fileid_allowed,
                                        self.dbtable, self.wherestr,
-                                       self.accessid, tmp_accessiddbtbl)
+                                       self.accessid, self.tmp_accessiddbtbl)
         except Exception as e:
 
             self.msg = str(e)
@@ -590,7 +594,7 @@ class propFilter:
 
         sql = self.selectstr + " from " + self.dbtable + \
             " where " + self.fileid + " in(select " + self.fileid_allowed + \
-            " from " + tmp_fileidAlloweddbtbl + ")"
+            " from " + self.tmp_fileidAlloweddbtbl + ")"
 
         if self.debug:
             logging.debug('')
@@ -759,7 +763,7 @@ class propFilter:
                                   dbserver)
                     logging.debug('')
                     logging.debug( \
-                        f'tmp_fileidAlloeddbtbl= {tmp_fileidAlloweddbtbl:s}')
+                        f'tmp_fileidAlloeddbtbl= {self.tmp_fileidAlloweddbtbl:s}')
 
             except Exception as e:
 
@@ -774,7 +778,7 @@ class propFilter:
                 pass 
             
             try:
-                self.__dropDbtbl__(tmp_fileidAlloweddbtbl)
+                self.__dropDbtbl__(self.tmp_fileidAlloweddbtbl)
                 
                 if self.debug:
                     logging.debug('')
@@ -798,10 +802,10 @@ class propFilter:
                 if self.debug:
                     logging.debug('')
                     logging.debug( \
-                        f'tmp_accessiddbtbl= {tmp_accessiddbtbl:s}')
+                        f'tmp_accessiddbtbl= {self.tmp_accessiddbtbl:s}')
 
                 try:
-                    self.__dropDbtbl__(tmp_accessiddbtbl)
+                    self.__dropDbtbl__(self.tmp_accessiddbtbl)
                 
                     if self.debug:
                         logging.debug('')
@@ -1419,18 +1423,24 @@ class propFilter:
 
     def __createTmpAccessiddb__(self, tmp_accessiddbtbl, userid, accessid,
                                 accesstbl, **kwargs):
-
+    #
+    # { createTmpAccessiddb
+    #
         #
-        # {
-        #
-
-        # Create tmp_accessiddbtbl, but first drop tmp_accessiddbtbl just in case
-        # it might already exist
+        # first drop tmp_accessiddbtbl in case table with the same name 
+        # might already exist
         #
 
         try:
             self.__dropDbtbl__(tmp_accessiddbtbl)
 
+            #self.__dropDbtbl__('TMP_SEMIDXXX')
+
+            if self.debug:
+                logging.debug('')
+                logging.debug('returned dropDbtbl')
+                logging.debug(f'dbtbl TMP_SEMIDXXX dropped')
+        
         except Exception as e:
 
             self.msg = 'Failed to create tmp_accessiddbtbl: ' + str(e)
@@ -1458,6 +1468,9 @@ class propFilter:
                 logging.debug('')
                 logging.debug(f'{self.msg:s}')
             raise Exception(self.msg)
+        
+        finally:
+            cursor.close()
 
         if self.debug:
             logging.debug('')
@@ -1489,28 +1502,37 @@ class propFilter:
 
             raise Exception(self.msg)
 
+        finally:
+            cursor.close()
+
         return
 
-        #
-        # } end of createTmpAccessiddb def
-        #
+    #
+    # } end createTmpAccessiddb def
+    #
 
 
     def __createTmpFileiddb__(self, tmp_fileiddbtbl, fileid, fileid_allowed,
                               dbtable, wherestr, accessid, tmp_accessiddbtbl,
                               **kwargs):
-
+    #
+    # { createTmpFileiddb
+    #
         #
-        # {
-        #
-
-        # Create tmp_fileiddbtbl, but first drop tmp_fileiddbtbl just in case
-        # it might already existed
+        # first drop tmp_fileiddbtbl in case table with the same name
+        # already existed
         #
 
         try:
             self.__dropDbtbl__(tmp_fileiddbtbl)
+            
+            #self.__dropDbtbl__('TMP_FILEIDXXX')
 
+            if self.debug:
+                logging.debug('')
+                logging.debug('returned dropDbtbl')
+                logging.debug(f'dbtbl TMP_FILEIDXXX dropped')
+        
         except Exception as e:
 
             self.msg = 'Failed to create tmp_fileiddbtbl: ' + str(e)
@@ -1538,6 +1560,9 @@ class propFilter:
                 logging.debug('')
                 logging.debug(f'{self.msg:s}')
             raise Exception(self.msg)
+
+        finally:
+            cursor.close()
 
         #
         # Insert into tmp_fileiddbtbl: select koaid_allowed from dbtable with
@@ -1645,7 +1670,7 @@ class propFilter:
                 logging.debug(f'{self.msg:s}')
 
             raise Exception(self.msg)
-        
+
         finally:
             cursor.close()
 
@@ -1836,11 +1861,13 @@ class propFilter:
                 logging.debug(f'table {dbtable:s} successfully dropped')
 
         except Exception as e:
-            pass
-
+            
             if self.debug:
                 logging.debug('')
                 logging.debug(f'drop table exception: {str(e):s}')
+            
+            pass
+    
         return
 
         #
