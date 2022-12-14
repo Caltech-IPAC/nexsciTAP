@@ -103,7 +103,7 @@ class dataDictionary:
         except Exception as e:
 
             self.status = 'error'
-            self.msg = 'Failed to execute [' + sql + ']'
+            self.msg = 'Failed to execute [' + sql + ']: \n' + str(e)
 
             if self.debug:
                 logging.debug('')

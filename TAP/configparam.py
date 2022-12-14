@@ -244,7 +244,72 @@ class configParam:
                 logging.debug ("password= [Not shown for security reasons.]")
                 
                 
+        if(dbms == 'postgresql'):
+
+            self.connectInfo['hostname'] = None 
+            if('HOSTNAME' in confobj[dbms]):
+                self.connectInfo['hostname'] = confobj[dbms]['HOSTNAME']
+
+            if self.debug:
+                logging.debug('')
+                logging.debug(f'hostname= ')
+                logging.debug(self.connectInfo['hostname'])
             
+            self.connectInfo['database'] =  None
+            if('DATABASE' in confobj[dbms]):
+                self.connectInfo['database'] = confobj[dbms]['DATABASE']
+
+            if self.debug:
+                logging.debug('')
+                logging.debug(f'database= ')
+                logging.debug(self.connectInfo['database'])
+            
+                
+            if (self.connectInfo['hostname'] is None): \
+                self.status = 'error'
+                self.msg = \
+                    'Failed to find PostgrSQL HOSTNAME in config_file'
+                raise Exception(self.msg)
+
+            if (self.connectInfo['database'] is None):
+                
+                self.status = 'error'
+                self.msg = \
+                    'Failed to find PostgrSQL DATABASE keyword in config_file'
+                raise Exception(self.msg)
+
+            self.connectInfo['userid'] = None 
+            if('USERNAME' in confobj[dbms]):
+                self.connectInfo['username'] = confobj[dbms]['USERNAME']
+
+            if (self.connectInfo['username'] is None):
+                self.status = 'error'
+                self.msg = 'Failed to find DBMS username in config_file'
+                raise Exception(self.msg)
+
+            self.connectInfo['password'] = None 
+            if ('Password' in confobj[dbms]):
+                self.connectInfo['password'] = confobj[dbms]['Password']
+
+            if (self.connectInfo['password'] is None):
+                self.status = 'error'
+                self.msg = 'Failed to find db password in config_file'
+                raise Exception(self.msg)
+
+            if self.debug:
+                logging.debug('')
+                logging.debug ('hostname= ')
+                logging.debug (hostname)
+                logging.debug('')
+                logging.debug ('database= ')
+                logging.debug (database)
+                logging.debug('')
+                logging.debug ('username= ')
+                logging.debug (username)
+                logging.debug('')
+                logging.debug ('password= ')
+                logging.debug (password)
+                
         self.adqlparam = {}
 
         #
