@@ -153,6 +153,56 @@ class runQuery:
                     logging.debug(f'password = {self.password:s}')
                     logging.debug(f'dbserver = {self.dbserver:s}')
 
+            
+            if(self.dbms.lower() == 'postgresql'):
+            
+                import psycopg2
+
+                self.hostname = None
+                self.database = None
+                self.username = None
+                self.password = None
+
+                self.hostname = None 
+                if ('hostname' in self.connectInfo):
+                    self.hostname = self.connectInfo['hostname']
+
+                if (self.hostnameb is None):
+                    self.msg = 'Failed to retrieve required input parameter'\
+                               ' [hostnameb]'
+                    self.status = 'error'
+                    raise Exception(self.msg)
+
+                self.database = None 
+                if ('database' in self.connectInfo):
+                    self.database = self.connectInfo['database']
+
+                if (self.databaseb is None):
+                    self.msg = 'Failed to retrieve required input parameter'\
+                               ' [databaseb]'
+                    self.status = 'error'
+                    raise Exception(self.msg)
+
+                self.username = None 
+                if ('username' in self.connectInfo):
+                    self.username = self.connectInfo['username']
+
+                if (self.usernameb is None):
+                    self.msg = 'Failed to retrieve required input parameter'\
+                               ' [usernameb]'
+                    self.status = 'error'
+                    raise Exception(self.msg)
+
+                self.password = None 
+                if ('password' in self.connectInfo):
+                    self.password = self.connectInfo['password']
+
+                if (self.passwordb is None):
+                    self.msg = 'Failed to retrieve required input parameter'\
+                               ' [passwordb]'
+                    self.status = 'error'
+                    raise Exception(self.msg)
+
 
             if(self.dbms.lower() == 'sqlite3'):
 
@@ -350,6 +400,27 @@ class runQuery:
 
                 self.status = 'error'
                 self.msg = 'Failed to connect to cx_Oracle'
+
+                raise Exception(self.msg)
+
+        elif(self.dbms.lower() == 'postgresql'):
+
+            try:
+                self.conn = psycopg2.connect (
+                    host=self.hostname, \
+                    database=self.database, \
+                    user=self.username, \
+                    password=self.password
+                )
+
+                if self.debug:
+                    logging.debug('')
+                    logging.debug('connected to postgresql DB ' + self.hostname)
+
+            except Exception as e:
+
+                self.status = 'error'
+                self.msg = 'Failed to connect to postgresql: ' + str(e)
 
                 raise Exception(self.msg)
 
