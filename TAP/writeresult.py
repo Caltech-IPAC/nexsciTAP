@@ -8,6 +8,7 @@
 import logging
 
 import datetime
+import decimal
 
 from TAP import writerecs
 
@@ -100,6 +101,12 @@ class writeResult:
         self.cursor = cursor
         self.workdir = workdir
         self.dd = dd
+
+        curr_rowcnt = cursor.rowcount
+        if self.debug:
+            logging.debug('')
+            logging.debug(f'curr_rowcnt= {curr_rowcnt:d}')
+        
 
         self.ncols_dd = 0
         if (self.dd != None):
@@ -197,7 +204,7 @@ class writeResult:
         # columns that are not in out data dictionary
         #
 
-        self.ncol = len(self.cursor.description)
+        self.ncol = len (self.cursor.description)
 
         if self.debug:
             logging.debug('')
@@ -270,10 +277,10 @@ class writeResult:
 
         self.cursor.arraysize = nfetch
 
-        #if self.debug:
-        #    logging.debug('')
-        #    logging.debug(f'cursor.description:')
-        #    logging.debug(self.cursor.description)
+        if self.debug:
+            logging.debug('')
+            logging.debug(f'cursor.description:')
+            logging.debug(self.cursor.description)
         
         i = 0
         for col in self.cursor.description:
@@ -321,7 +328,6 @@ class writeResult:
                 logging.debug('')
                 logging.debug(f'analyze description array:')
                 logging.debug(f'dbms= {self.dbms:s}')
-
 
             if (self.dbms.lower() == 'oracle'):
             #
@@ -378,6 +384,64 @@ class writeResult:
             #
             # } end oracle datatype
             #
+            
+            elif (self.dbms.lower() == 'pgsql'):
+            #
+            # { pgsql datatype from descriptor
+            #    
+                if self.debug:
+                    logging.debug('')
+                    logging.debug('pgsql:')
+                    logging.debug('col[1]:')
+                    logging.debug(col[1])
+
+                oid = col[1]
+
+                if self.debug:
+                    logging.debug('')
+                    logging.debug('oid=')
+                    logging.debug(oid)
+                              
+                if (oid == 1043):
+                    dbdatatype = 'VARCHAR'
+                
+                if (oid == 1082):
+                    dbdatatype = 'date'
+
+                if (oid == 1083):
+                    dbdatatype = 'time'
+
+                #if (oid == 1083):
+                #    dbdatatype = 'DATETIME'
+
+                if (oid == 1114):
+                    dbdatatype = 'TIMESTAMP'
+
+                if (oid == 23):
+                    dbdatatype = 'integer'
+                
+                if (oid == 21):
+                    dbdatatype = 'smallint'
+
+                if (oid == 20):
+                    dbdatatype = 'bigint'
+
+                if (oid == 700):
+                    dbdatatype = 'real'
+                
+                if (oid == 701):
+                    dbdatatype = 'double'
+                
+                if (oid == 1700):
+                    dbdatatype = 'numeric'
+
+                if self.debug:
+                    logging.debug('')
+                    logging.debug(f'dbdatatype = {dbdatatype:s}')
+            #
+            # } end postgresql datatype
+            #
+            
             elif (self.dbms.lower() == 'mysql'):
             #
             # { mysql datatype from descriptor
@@ -427,6 +491,12 @@ class writeResult:
             
                 if self.debug:
                     logging.debug(f'size= {size:d}')
+
+            if(col[3] is not None):
+                internal_size = int(col[3])
+            
+                if self.debug:
+                    logging.debug(f'internal_size= {internal_size:d}')
 
             if(col[4] is not None):
                 precision = int(col[4])
@@ -661,7 +731,8 @@ class writeResult:
                     # } end dbdatatype == NATIVE_FLOAT
                     #
 
-                elif(dbdatatype == 'NUMBER'):
+                elif ((dbdatatype == 'NUMBER') and \
+                    (self.dbms.lower() == 'oracle')):
 
                     #
                     # { dbdatatype == NUMBER: this is Oracle special dtype
@@ -764,7 +835,7 @@ class writeResult:
             i = i + 1
 
             #
-            # } end of for loop for analysing dd's cursor description
+            # } end of for loop for analysing cursor description
             #
 
         #
@@ -809,6 +880,9 @@ class writeResult:
         #
         # If maxrec == 0: write header and exit
         #
+        if self.debug:
+            logging.debug('')
+            logging.debug(f'self.maxrec= {self.maxrec:d}')
 
         if(self.maxrec == 0):
 
@@ -865,6 +939,8 @@ class writeResult:
 
 
         self.cursor.arraysize = nfetch
+        curr_rowcnt = cursor.rowcount
+
 
         ibatch = 0
 
@@ -913,7 +989,9 @@ class writeResult:
             # to scan until we find some value for every column.
 
             if ((ibatch == 0) and (self.dbms.lower() == 'sqlite')):
-                
+            #
+            # { sqlite special treatment block
+            #
                 for ll in range(0, nrec):
 
                     row = rows[ll]
@@ -924,8 +1002,8 @@ class writeResult:
                             
                             dtype = type(row[i]).__name__
 
-                            if(dtype != None
-                                and (dbtypearr[i] == '' or typearr[i] == '')):
+                            if ((dtype != None) and \
+                                (dbtypearr[i] == '' or typearr[i] == '')):
 
                                 if dtype.lower() == 'int':
                                     dbtypearr[i] = 'NUMBER'
@@ -940,7 +1018,7 @@ class writeResult:
                                     typearr[i] = 'char'
 
             #
-            # end special treatment for sqlite datatype assignment
+            # } end special treatment for sqlite datatype assignment
             #
 
 
@@ -950,15 +1028,14 @@ class writeResult:
                 # { Beginning ll loop: one row
                 #
 
-                row = rows[ll]
-
                 if self.debug:
-                    
-                    if (ll < 2):
-                        logging.debug('')
-                        logging.debug(f'll= {ll:d} row:')
-                        logging.debug(row)
-
+                    logging.debug('')
+                    logging.debug('here0-0')
+                
+                row = rows[ll]
+                dtype_row = type (row).__name__
+                            
+                #row_pgsql = []
 
                 rowlist = []
 
@@ -983,8 +1060,57 @@ class writeResult:
 
                         rowlist.append(str(row[i]))
                     else:
-                        rowlist.append(row[i])
-     
+                        if (self.dbms.lower() == 'pgsql'):
+                        #
+                        # {if pgsql dbtype = 'numeric', dtype will be decimal,
+                        # make it integer or float depending on the python type
+                        # of typearr value 
+                        #
+                            dtype = type (row[i]).__name__
+                            
+                            if self.debug:
+                                logging.debug('')
+                                logging.debug('pgsql numeric type')
+                                logging.debug(f'i = {i:d} dtype= {dtype}')
+
+                            if (dtype.lower() == 'decimal'):
+                                x = float(row[i])
+
+                                if self.debug:
+                                    logging.debug('')
+                                    logging.debug('convert row[i] to float')
+                                    logging.debug(f'x = {x}')
+                                    logging.debug ( \
+                                        f'i = {i:d} typearr[i]= {typearr[i]}')
+                                    logging.debug ( \
+                                        f'dbtypearr[i]= {dbtypearr[i]}')
+                         
+                                if (typearr[i] == 'int'):
+                                    dbtypearr[i] = 'integer'
+                                    rowlist.append (int(x))
+
+                                elif (typearr[i].lower() == 'double'):
+                                    dbtypearr[i] = 'float'
+                                    rowlist.append (x)
+                                else:
+                                    typearr[i] = 'char'
+                                    rowlist.append (str(x))
+                            
+                            else:
+                                rowlist.append (row[i])
+
+                            if self.debug:
+                                logging.debug('')
+                                logging.debug('final pgsql result')
+                                logging.debug(f'typearr= {typearr[i]}')
+                                logging.debug(f'dbtypearr= {dbtypearr[i]}')
+                            #
+                            # } end pgsql decimal number treatment
+                            #
+                        else:
+                            rowlist.append(row[i])
+                        
+
                         #
                         # For DBMSs like Oracle that store numbers as generic 
                         # NUMBER type, we need to try to distinguish between
@@ -1015,6 +1141,10 @@ class writeResult:
                     #
 
                 if self.debug:
+                    logging.debug('')
+                    logging.debug(f'irow= {irow:d} rowlist: ')
+                    logging.debug(f'typearr= {typearr}')
+                    logging.debug(f'dbtypearr= {dbtypearr}')
                     logging.debug(rowlist)
 
                 rowslist.append(rowlist)
