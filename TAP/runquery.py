@@ -52,9 +52,9 @@ class runQuery:
 
     def __init__(self, **kwargs):
 
-        #
-        # {
-        #
+    #
+    # {
+    #
 
         """
         runQuery provides a basic search interface for database tables.
@@ -65,18 +65,19 @@ class runQuery:
 
         Required keyword input parameters:
 
-            connectInfo:        Dictionary containing the info needed
-                                to make a "connection".  These parameters
-                                are different depending on the DBMS.
-            query(char):       the sql query to be executed,
-            workdir(char):     user work directory
+            connectInfo:   Dictionary containing the info needed
+                           to make a "connection".  These parameters
+                           are different depending on the DBMS.
+            
+            query(char):   the sql query to be executed,
+            
+            workdir(char): user work directory
 
         Optional keyword input parameters:
 
-            outpath(char):     output file path,
             racol(char):       decimal RA column name,
             deccol(char):      decimal DEC column name,
-            maxrec(int):       number of records to return(default: all)
+            maxrec(int):       default -1 meaning return all records,
             format(char):      return table format(default: votable)
 
         Usage:
@@ -103,11 +104,17 @@ class runQuery:
         if('arraysize' in kwargs):
             self.arraysize = kwargs['arraysize']
 
+        if (self.arraysize < 1):
+            self.arraysize = 10000
+
         #
-        # Get keyword parameters
+        # { Get keyword parameters
         #
 
         if('connectInfo' in kwargs):
+        #
+        #  { get dbms info
+        #
 
             self.connectInfo = kwargs['connectInfo']
 
@@ -154,7 +161,7 @@ class runQuery:
                     logging.debug(f'dbserver = {self.dbserver:s}')
 
             
-            if(self.dbms.lower() == 'postgresql'):
+            if(self.dbms.lower() == 'pgsql'):
             
                 import psycopg2
 
@@ -167,9 +174,9 @@ class runQuery:
                 if ('hostname' in self.connectInfo):
                     self.hostname = self.connectInfo['hostname']
 
-                if (self.hostnameb is None):
+                if (self.hostname is None):
                     self.msg = 'Failed to retrieve required input parameter'\
-                               ' [hostnameb]'
+                               ' [hostname]'
                     self.status = 'error'
                     raise Exception(self.msg)
 
@@ -177,9 +184,9 @@ class runQuery:
                 if ('database' in self.connectInfo):
                     self.database = self.connectInfo['database']
 
-                if (self.databaseb is None):
+                if (self.database is None):
                     self.msg = 'Failed to retrieve required input parameter'\
-                               ' [databaseb]'
+                               ' [database]'
                     self.status = 'error'
                     raise Exception(self.msg)
 
@@ -187,9 +194,9 @@ class runQuery:
                 if ('username' in self.connectInfo):
                     self.username = self.connectInfo['username']
 
-                if (self.usernameb is None):
+                if (self.username is None):
                     self.msg = 'Failed to retrieve required input parameter'\
-                               ' [usernameb]'
+                               ' [username]'
                     self.status = 'error'
                     raise Exception(self.msg)
 
@@ -197,9 +204,9 @@ class runQuery:
                 if ('password' in self.connectInfo):
                     self.password = self.connectInfo['password']
 
-                if (self.passwordb is None):
+                if (self.password is None):
                     self.msg = 'Failed to retrieve required input parameter'\
-                               ' [passwordb]'
+                               ' [password]'
                     self.status = 'error'
                     raise Exception(self.msg)
 
@@ -304,7 +311,10 @@ class runQuery:
                     logging.debug(f'db   = {self.db:s}')
                     logging.debug(f'userid   = {self.userid:s}')
                     logging.debug(f'password = {self.password:s}')
-        
+        #
+        # } end get dbms info
+        #
+
         self.sql = None 
         if('query' in kwargs):
             self.sql = kwargs['query']
@@ -324,12 +334,6 @@ class runQuery:
             self.status = 'error'
             raise Exception(self.msg)
 
-        if self.debug:
-            logging.debug('')
-            logging.debug(f'userworkdir= {self.userworkdir:s}')
-            logging.debug(f'sql= {self.sql:s}')
-
-
         self.racol =  'ra'
         if('racol' in kwargs):
             self.racol = kwargs['racol']
@@ -340,8 +344,6 @@ class runQuery:
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'racol= {self.racol:s}')
-            logging.debug(f'deccol= {self.deccol:s}')
         
 
         if('format' in kwargs):
@@ -361,9 +363,16 @@ class runQuery:
 
         if self.debug:
             logging.debug('')
+            logging.debug(f'sql= {self.sql:s}')
+            logging.debug(f'userworkdir= {self.userworkdir:s}')
+            logging.debug(f'racol= {self.racol:s}')
+            logging.debug(f'deccol= {self.deccol:s}')
             logging.debug(f'format= {self.format:s}')
             logging.debug(f'maxrec= {self.maxrec:d}')
 
+        #
+        # } done get keyword parameters
+        #
 
         #
         # Extract DB table name from query
@@ -381,8 +390,9 @@ class runQuery:
             logging.debug('')
             logging.debug(f'dbtable= [{self.dbtable:s}]')
 
+        
         #
-        # Connect to DBMS
+        # { Connect to DBMS
         #
 
         if(self.dbms.lower() == 'oracle'):
@@ -403,7 +413,7 @@ class runQuery:
 
                 raise Exception(self.msg)
 
-        elif(self.dbms.lower() == 'postgresql'):
+        elif(self.dbms.lower() == 'pgsql'):
 
             try:
                 self.conn = psycopg2.connect (
@@ -420,7 +430,7 @@ class runQuery:
             except Exception as e:
 
                 self.status = 'error'
-                self.msg = 'Failed to connect to postgresql: ' + str(e)
+                self.msg = 'Failed to connect to pgsql: ' + str(e)
 
                 raise Exception(self.msg)
 
@@ -505,7 +515,12 @@ class runQuery:
             raise Exception(self.msg)
 
         #
-        # Retrieve dd table
+        # } end connect to dbms
+        #
+
+
+        #
+        # Retrieve dd table from TAP_SCHEMA
         #
 
         self.dd = None
@@ -562,21 +577,21 @@ class runQuery:
             logging.debug('returned executeSql')
 
 
-    #
-    # Call writeResult
-    #
+        #
+        # Call writeResult which prepares data and send to a C routine
+        # to write result table.
+        #
 
         try:
             wresult = writeResult(cursor,
                                   self.userworkdir,
                                   self.dd,
+                                  dbms=self.dbms,
                                   format=self.format,
                                   maxrec=self.maxrec,
-                                  arraysize=self.arraysize,
                                   coldesc=self.coldesc,
                                   racol=self.racol,
                                   deccol=self.deccol,
-                                  dbms=self.dbms, \
                                   debug=self.debug)
 
         except Exception as e:
@@ -597,16 +612,16 @@ class runQuery:
             logging.debug('')
             logging.debug(f'outpath = {self.outpath:s}')
 
-        #
-        # } end of init def
-        #
+    #
+    # } end of init def
+    #
 
 
     def __executeSql__(self, cursor, sql, **kwargs):
 
-        #
-        # {
-        #
+    #
+    # {
+    #
 
         debug = 0
 
@@ -631,9 +646,9 @@ class runQuery:
             # raise Exception(str(e))
             raise Exception(msg)
 
-        #
-        # } end of executeSql def
-        #
+    #
+    # } end of executeSql def
+    #
 
 
 def main():

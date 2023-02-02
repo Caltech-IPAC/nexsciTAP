@@ -33,6 +33,8 @@ class propFilter:
 
     propfilter = ''
 
+    dbms = None
+
     conn = None
     dd = None
 
@@ -82,9 +84,9 @@ class propFilter:
 
     def __init__(self, **kwargs):
 
-        #
-        # {
-        #
+    #
+    # {
+    #
 
         """
         propFilter filters out the proprietary data from the input table.
@@ -101,29 +103,21 @@ class propFilter:
 
         Optional keyword parameters(for accessing proprietary data):
 
-            cookiename(char):  cookie name for the HTTP server,
+            format(char):     output format(default votable),
+            maxrec(int):      default -1 meaning return all records,
+            racol(char):      decimal RA column name,
+            deccol(char):     decimal Dec column name,
 
+            cookiename(char):  cookie name for the HTTP server,
             cookiestr(char):   cookie string extracted from input HTTP cookie
                                 containing KOA userid and encoded password,
-
             usertbl(char):     DB table containing the userid and
                                 encoded password
-
             accesstbl(char):   DB table containing the user access info
-
             accessid(char):   column name in accesstbl represent the user
                                access info
-
             fileid(char):     column name in result represent the unique
                                filename
-
-            format(char):     output format(default votable),
-
-            maxrec(int):      default -1 meaning return all records,
-
-            racol(char):      RA column name,
-
-            deccol(char):     Dec column name,
 
         Usage:
 
@@ -151,10 +145,6 @@ class propFilter:
             logging.debug('Enter propFilter.init')
 
 
-        #
-        # { Get input parameters
-        #
-
         self.arraysize = 10000
 
         if('arraysize' in kwargs):
@@ -163,12 +153,14 @@ class propFilter:
         if self.arraysize < 1:
             self.arraysize = 10000
 
-
+        #
+        # { Get keyword parameters
+        #
         if('connectInfo' in kwargs):
 
-            #
-            #  { dbms info
-            #
+        #
+        #  { dbms info
+        #
 
             self.connectInfo = kwargs['connectInfo']
 
@@ -178,83 +170,135 @@ class propFilter:
 
                 import cx_Oracle
 
-                self.dbserver = ''
+                self.dbserver = None 
                 if('dbserver' in self.connectInfo):
                     self.dbserver = self.connectInfo['dbserver']
 
-                if(len(self.dbserver) == 0):
-                    self.msg = \
-                        'Failed to retrieve required input parameter [dbserver]'
+                if (self.dbserver is None):
+                    self.msg = 'Failed to retrieve required input parameter'\
+                               ' [dbserver]'
                     self.status = 'error'
                     raise Exception(self.msg)
 
-                self.userid = ''
-                if('userid' in self.connectInfo):
+                self.userid = None 
+                if ('userid' in self.connectInfo):
                     self.userid = self.connectInfo['userid']
 
-                if(len(self.userid) == 0):
-                    self.msg = \
-                        'Failed to retrieve required input parameter [userid]'
+                if (self.userid is None):
+                    self.msg = 'Failed to retrieve required input parameter'\
+                               ' [userid]'
                     self.status = 'error'
                     raise Exception(self.msg)
 
-                self.password = ''
-                if('password' in self.connectInfo):
+                self.password =  None
+                if ('password' in self.connectInfo):
                     self.password = self.connectInfo['password']
 
-                if(len(self.password) == 0):
-                    self.msg = \
-                        'Failed to retrieve required input parameter [password]'
+                if (self.password is None):
+                    self.msg = 'Failed to retrieve required input parameter'\
+                               ' [password]'
                     self.status = 'error'
                     raise Exception(self.msg)
 
                 if self.debug:
                     logging.debug('')
-                    logging.debug(f'dbms     = {self.dbms:s}')
-                    logging.debug(f'dbserver = {self.dbserver:s}')
-                    logging.debug( 'userid   = [Not shown for security reasons].')
-                    logging.debug( 'password = [Not shown for security reasons].')
-                #   Change to the following to temporarily debug login
-                    
                     logging.debug(f'userid   = {self.userid:s}')
                     logging.debug(f'password = {self.password:s}')
+                    logging.debug(f'dbserver = {self.dbserver:s}')
 
 
+            if(self.dbms.lower() == 'pgsql'):
+            
+                import psycopg2
+
+                self.hostname = None
+                self.database = None
+                self.username = None
+                self.password = None
+
+                self.hostname = None 
+                if ('hostname' in self.connectInfo):
+                    self.hostname = self.connectInfo['hostname']
+
+                if (self.hostname is None):
+                    self.msg = 'Failed to retrieve required input parameter'\
+                               ' [hostname]'
+                    self.status = 'error'
+                    raise Exception(self.msg)
+
+                self.database = None 
+                if ('database' in self.connectInfo):
+                    self.database = self.connectInfo['database']
+
+                if (self.database is None):
+                    self.msg = 'Failed to retrieve required input parameter'\
+                               ' [database]'
+                    self.status = 'error'
+                    raise Exception(self.msg)
+
+                self.username = None 
+                if ('username' in self.connectInfo):
+                    self.username = self.connectInfo['username']
+
+                if (self.username is None):
+                    self.msg = 'Failed to retrieve required input parameter'\
+                               ' [username]'
+                    self.status = 'error'
+                    raise Exception(self.msg)
+
+                self.password = None 
+                if ('password' in self.connectInfo):
+                    self.password = self.connectInfo['password']
+
+                if (self.password is None):
+                    self.msg = 'Failed to retrieve required input parameter'\
+                               ' [password]'
+                    self.status = 'error'
+                    raise Exception(self.msg)
+          
+            
             if(self.dbms.lower() == 'sqlite3'):
 
                 import sqlite3
 
-                self.db = ''
-                if('db' in self.connectInfo):
-                    self.db  = self.connectInfo['db']
+                self.db = None 
+                if ('db' in self.connectInfo):
+                    self.db = self.connectInfo['db']
 
-                if(len(self.db) == 0):
-                    self.msg = \
-                        'Failed to retrieve required input parameter [db]'
+                if (self.db is None):
+                    self.msg = 'Failed to retrieve required input parameter'\
+                               ' [db]'
                     self.status = 'error'
                     raise Exception(self.msg)
 
-
-                self.tap_schema = ''
+                self.tap_schema = None 
                 if('tap_schema' in self.connectInfo):
-                    self.tap_schema  = self.connectInfo['tap_schema']
+                    self.tap_schema = self.connectInfo['tap_schema']
 
-                if(len(self.tap_schema) == 0):
-                    self.msg = \
-                        'Failed to retrieve required input parameter [tap_schema]'
+                if (self.tap_schema is None):
+                    self.msg = 'Failed to retrieve required input parameter'\
+                               ' [tap_schema]'
                     self.status = 'error'
                     raise Exception(self.msg)
-
 
                 if self.debug:
                     logging.debug('')
-                    logging.debug(f'dbms = {self.dbms:s}')
-                    logging.debug(f'db = {self.db:s}')
-                    logging.debug(f'tap_schema = {self.tap_schema:s}')
+                    logging.debug(f'db= {self.db:s}')
+                    logging.debug(f'tap_schema= {self.tap_schema:s}')
 
-            #
-            # } dbms info
-            #
+        #
+        # } dbms info
+        #
+
+        self.query_in = ''
+        if('query' in kwargs):
+            self.query_in  = kwargs['query']
+
+        if(len(self.query_in) == 0):
+            self.msg = 'Failed to retrieve required input parameter [query]'
+            raise Exception(self.msg)
+        
+        self.query = self.query_in
 
         self.userWorkdir = ''
         if('workdir' in kwargs):
@@ -307,14 +351,6 @@ class propFilter:
         if('deccol' in kwargs):
             self.deccol  = kwargs['deccol']
 
-        self.query_in = ''
-        if('query' in kwargs):
-            self.query_in  = kwargs['query']
-
-        if(len(self.query_in) == 0):
-            self.msg = 'Failed to retrieve required input parameter [query]'
-            raise Exception(self.msg)
-
         if('format' in kwargs):
             self.format = kwargs['format']
 
@@ -330,12 +366,16 @@ class propFilter:
                     maxrecstr + "] to integer."
                 raise Exception(self.msg)
 
-        self.query = self.query_in
 
         if self.debug:
             logging.debug('')
             logging.debug('kwargs:')
+            logging.debug(f'      query = {self.query:s}')
             logging.debug(f'      userworkdir = {self.userworkdir:s}')
+            logging.debug(f'      racol = {self.racol:s}')
+            logging.debug(f'      deccol = {self.deccol:s}')
+            logging.debug(f'      format = {self.format:s}')
+            logging.debug(f'      maxrec = {self.maxrec:d}')
             logging.debug(f'      cookiestr = {self.cookiestr:s}')
             logging.debug(f'      usertbl = {self.usertbl:s}')
             logging.debug(f'      accesstbl = {self.accesstbl:s}')
@@ -343,15 +383,9 @@ class propFilter:
             logging.debug(f'      fileid_allowed = {self.fileid_allowed:s}')
             logging.debug(f'      accessid = {self.accessid:s}')
             logging.debug(f'      propfilter = {self.propfilter:s}')
-            logging.debug(f'      racol = {self.racol:s}')
-            logging.debug(f'      deccol = {self.deccol:s}')
-            logging.debug(f'      format = {self.format:s}')
-            logging.debug(f'      maxrec = {self.maxrec:d}')
-            logging.debug(f'      query = {self.query:s}')
-
 
         #
-        # } done get input param
+        # } done get  param
         #
 
         #
@@ -375,6 +409,27 @@ class propFilter:
 
                 self.status = 'error'
                 self.msg = 'Failed to connect to cx_Oracle'
+
+                raise Exception(self.msg)
+
+        elif(self.dbms.lower() == 'pgsql'):
+
+            try:
+                self.conn = psycopg2.connect (
+                    host=self.hostname, \
+                    database=self.database, \
+                    user=self.username, \
+                    password=self.password
+                )
+
+                if self.debug:
+                    logging.debug('')
+                    logging.debug('connected to pgsql DB ' + self.hostname)
+
+            except Exception as e:
+
+                self.status = 'error'
+                self.msg = 'Failed to connect to pgsql: ' + str(e)
 
                 raise Exception(self.msg)
 
@@ -424,25 +479,25 @@ class propFilter:
         # Use Oracle function to check query syntax
         #
 
-        if(self.dbms.lower() == 'oracle'):
+        #if(self.dbms.lower() == 'oracle'):
 
-            try:
-                cursor = self.conn.cursor()
+        #    try:
+        #        cursor = self.conn.cursor()
 
-                self.__parseSql__(cursor, self.query)
+        #        self.__parseSql__(cursor, self.query)
 
-            except Exception as e:
+        #    except Exception as e:
 
-                errmsg = \
-                    f'Input query [{self.query:s}] syntax error: {str(e):s}'
+        #        errmsg = \
+        #            f'Input query [{self.query:s}] syntax error: {str(e):s}'
 
-                if self.debug:
-                    logging.debug('')
-                    logging.debug(f'Exception __parseSql: {str(e):s}')
+        #        if self.debug:
+        #            logging.debug('')
+        #            logging.debug(f'Exception __parseSql: {str(e):s}')
 
-                self.__encodeSqlerrmsg__(errmsg)
+        #        self.__encodeSqlerrmsg__(errmsg)
 
-                raise Exception(self.msg)
+        #        raise Exception(self.msg)
 
         #
         # Extract dbtable name from input query
@@ -466,7 +521,10 @@ class propFilter:
             logging.debug(f'dbtable = [{self.dbtable:s}]')
 
         #
-        # Parse query: to extract query pieces for propfilter
+        # The following are necessary for inserting the proprietary filtering
+        # clauses into the query.
+        #
+        # 1. Parse query: to extract query pieces for propfilter:
         #
 
         self.__parseQuery__(self.query)
@@ -480,7 +538,7 @@ class propFilter:
             logging.debug(f'      selectstr = {self.selectstr:s}')
 
         #
-        # Validate user
+        # 2. Validate user
         #
 
         ind = -1
@@ -537,14 +595,23 @@ class propFilter:
 
         if(len(self.userid) > 0):
 
-            #
-            # {
-            #
+        #
+        # {
+        #
 
             try:
+                if self.debug:
+                    logging.debug('')
+                    logging.debug('call createTmpAccessiddb')
+
                 self.__createTmpAccessiddb__(self.tmp_accessiddbtbl,
                                              self.userid, self.accessid,
                                              self.accesstbl)
+                
+                if self.debug:
+                    logging.debug('')
+                    logging.debug('returned createTmpAccessiddb')
+
             except Exception as e:
 
                 self.msg = 'Failed to create tmp_accessiddbtbl: ' + str(e)
@@ -557,9 +624,10 @@ class propFilter:
                 logging.debug('')
                 logging.debug('{tmp_accessiddbtbl created}')
 
-            #
-            # }   End create tmp_accessiddbtbl block: only used if userid exists
-            #
+        #
+        # }   End create tmp_accessiddbtbl block: only used if userid exists
+        #
+
 
         #
         # Create tmp_fileidAlloweddbtbl
@@ -573,11 +641,19 @@ class propFilter:
                 f'tmp_fileidAlloweddbtbl= {self.tmp_fileidAlloweddbtbl:s}')
 
         try:
+            if self.debug:
+                logging.debug('')
+                logging.debug('call createTmpFileiddb')
 
             self.__createTmpFileiddb__(self.tmp_fileidAlloweddbtbl,
                                        self.fileid, self.fileid_allowed,
                                        self.dbtable, self.wherestr,
                                        self.accessid, self.tmp_accessiddbtbl)
+                
+            if self.debug:
+                logging.debug('')
+                logging.debug('returned createTmpFileiddb')
+
         except Exception as e:
 
             self.msg = str(e)
@@ -593,7 +669,7 @@ class propFilter:
         #
 
         sql = self.selectstr + " from " + self.dbtable + \
-            " where " + self.fileid + " in(select " + self.fileid_allowed + \
+            " where " + self.fileid + " in (select " + self.fileid_allowed + \
             " from " + self.tmp_fileidAlloweddbtbl + ")"
 
         if self.debug:
@@ -602,6 +678,10 @@ class propFilter:
                 f'select(before adding groupby and orderby: sql= {sql:s}')
             logging.debug(f'groupbystr = {self.groupbystr:s}')
             logging.debug(f'orderbystr = {self.orderbystr:s}')
+
+        if self.debug:
+            logging.debug('')
+            logging.debug(f'orderby added: sql = {sql:s}')
 
         #
         # Add group by clause
@@ -647,13 +727,24 @@ class propFilter:
             logging.debug('')
             logging.debug(f'orderby added: sql = {sql:s}')
 
+        #
+        # submit final jointed query
+        #
         cursor = self.conn.cursor()
 
         try:
             if self.debug:
+                logging.debug('')
+                logging.debug('call __executeSql')
+
+            if self.debug:
                 self.__executeSql__(cursor, sql, debug=1)
             else:
                 self.__executeSql__(cursor, sql)
+
+            if self.debug:
+                logging.debug('')
+                logging.debug('returned __executeSql')
 
         except Exception as e:
 
@@ -673,14 +764,15 @@ class propFilter:
             logging.debug(f'ncol = {ncol:d} exclcol= {exclcol:d}')
 
         #
-        # Call writeResult
+        # Call writeResult which prepares data and send to a C routine
+        # to write result table.
         #
 
-        if self.debug:
-            logging.debug('')
-            logging.debug('call writeResultfile')
-
         try:
+            if self.debug:
+                logging.debug('')
+                logging.debug('call writeResultfile')
+
             wresult = writeResult(cursor,
                                   self.userworkdir,
                                   self.dd,
@@ -689,10 +781,14 @@ class propFilter:
                                   maxrec=self.maxrec,
                                   coldesc=self.coldesc,
                                   racol=self.racol,
-                                  deccol=self.deccol)
+                                  deccol=self.deccol,
+                                  debug=self.debug)
                                   
-                                  #deccol=self.deccol,
-                                  #debug=self.debug)
+                                  #deccol=self.deccol)
+
+            if self.debug:
+                logging.debug('')
+                logging.debug('returned writeResultfile')
 
         except Exception as e:
 
@@ -713,13 +809,12 @@ class propFilter:
         self.outpath = wresult.outpath
         self.ntot = wresult.ntot
 
+        if (self.dbms.lower() == 'oracle'):
+        
         #
-        #  Drop all tmp DB tables for oracle because oracle v.12.xxx's
+        # { Drop all tmp DB tables for oracle because oracle v.12.xxx's
         #  global temporary table is permanent, not really temporary 
         #
-
-        if (self.dbms.lower() == 'oracle'):
-            
             try:
                 self.conn.close()
             
@@ -733,9 +828,9 @@ class propFilter:
                     logging.debug ('')
                     logging.debug (f'conn.close exception: {str(e):s}')
             
-        #
-        #  re-connect
-        #
+            #
+            #  re-connect
+            #
             time.sleep (2.0) 
                 
             userid = self.connectInfo['userid']
@@ -823,20 +918,25 @@ class propFilter:
                 if self.debug:
                     logging.debug('')
                     logging.debug('tmp_accessiddbtbl dropped')
+        
+        #
+        # } end drop orable tmp DB tables; this block could be eliminated 
+        # if/when oracle is updated to the newer version (> 2017?)
+        #
 
         return
 
-        #
-        # } end of init def
-        #
+    #
+    # } end of init def
+    #
 
 
     def __parseQuery__(self, query, **kwargs):
 
-        # Assume that group by and order by cannot be in the same query
-        #
-        # {
-
+    # Assume that group by and order by cannot be in the same query
+    #
+    # { parseQuery
+    #
         if self.debug:
             logging.debug('')
             logging.debug(f'Enter parseQuery: query = [{query:s}]')
@@ -887,9 +987,9 @@ class propFilter:
 
         if(self.propfilter.lower() == 'koa'):
 
-            #
-            # { Retrieve instrument
-            #
+        #
+        # { Retrieve instrument
+        #
 
             ninst = len(instrume)
 
@@ -914,16 +1014,16 @@ class propFilter:
 
             ninst = len(instrume)
 
-            #
-            # } end retrieve instrument
-            #
+        #
+        # } end retrieve instrument
+        #
 
 
         if(self.propfilter.lower() == 'neid'):
 
-            #
-            # { Retrieve datalevel and modify fileid
-            #
+        #
+        # { Retrieve datalevel and modify fileid
+        #
 
             nlevel = len(level)
 
@@ -959,9 +1059,9 @@ class propFilter:
                 logging.debug('')
                 logging.debug(f'fileid = {self.fileid:s}')
                 logging.debug(f'fileid_allowed = {self.fileid_allowed:s}')
-            #
-            # }
-            #
+        #
+        # }
+        #
 
         #
         # Extract where constraint, order by, and group by clause
@@ -980,9 +1080,9 @@ class propFilter:
 
         if(len(substr) > 0):
 
-            #
-            # { where clause exists
-            #
+        #
+        # { where clause exists
+        #
 
             ind1 = -1
             ind2 = -1
@@ -1013,15 +1113,15 @@ class propFilter:
 
             else:
                 wherestr = substr
-            #
-            # }
-            #
+        #
+        # }
+        #
 
         else:
 
-            #
-            # { where clause doesn't exists
-            #
+        #
+        # { where clause doesn't exists
+        #
 
             ind1 = -1
             ind2 = -1
@@ -1048,9 +1148,9 @@ class propFilter:
 
                 groupbystr = query[ind2:]
 
-            #
-            # } end where clause doesn't exist
-            #
+        #
+        # } end where clause doesn't exist
+        #
 
         self.selectstr = selectstr
         self.wherestr = wherestr
@@ -1122,17 +1222,17 @@ class propFilter:
 
         return
 
-        #
-        # } end of parseQuery def
-        #
+    #
+    # } end of parseQuery def
+    #
 
 
     def __validateUser__(self, cookiename, cookiestr, propfilter,
                          usertbl, **kwargs):
 
-        #
-        # {
-        #
+    #
+    # { validateUser
+    #
 
         #
         #  If cookiestr exists: validate userid/encodedpass
@@ -1253,16 +1353,16 @@ class propFilter:
         self.status = 'ok'
         return
 
-        #
-        # } end of validateUser def
-        #
+    #
+    # } end of validateUser def
+    #
 
 
     def __singleValueResult__(self, cursor, keyword, **kwargs):
 
-        #
-        # {
-        #
+    #
+    # { singleValueResult
+    #
 
         # Retrieve single row data containing single column password from cursor
         #
@@ -1308,16 +1408,16 @@ class propFilter:
 
         return(keyval)
 
-        #
-        # } end of singleValueResult def
-        #
+    #
+    # } end of singleValueResult def
+    #
 
 
     def __writeSinglecolResult__(self, cursor, outpath, colwidth, **kwargs):
 
-        #
-        # {
-        #
+    #
+    # { writesinglecolResult
+    #
 
         # Open outpath for write
         #
@@ -1416,9 +1516,9 @@ class propFilter:
 
         return
 
-        #
-        # } end of writeSinglecolResult def
-        #
+    #
+    # } end of writeSinglecolResult def
+    #
 
 
     def __createTmpAccessiddb__(self, tmp_accessiddbtbl, userid, accessid,
@@ -1426,32 +1526,18 @@ class propFilter:
     #
     # { createTmpAccessiddb
     #
-        #
-        # first drop tmp_accessiddbtbl in case table with the same name 
-        # might already exist
-        #
+        if self.debug:
+            logging.debug('')
+            logging.debug(f'Enter createTmpAccessiddb')
 
-        try:
-            self.__dropDbtbl__(tmp_accessiddbtbl)
+        if (self.dbms.lower() == 'pgsql'):
+            
+            sql = "create temporary table " + tmp_accessiddbtbl + \
+                " (" + accessid + " varchar(22)) on commit preserve rows"
 
-            #self.__dropDbtbl__('TMP_SEMIDXXX')
-
-            if self.debug:
-                logging.debug('')
-                logging.debug('returned dropDbtbl')
-                logging.debug(f'dbtbl TMP_SEMIDXXX dropped')
-        
-        except Exception as e:
-
-            self.msg = 'Failed to create tmp_accessiddbtbl: ' + str(e)
-            if self.debug:
-                logging.debug('')
-                logging.debug(f'{self.msg:s}')
-            pass
-
-
-        sql = "create global temporary table " + tmp_accessiddbtbl + \
-            "(" + accessid + " varchar(22)) on commit preserve rows"
+        else: 
+            sql = "create global temporary table " + tmp_accessiddbtbl + \
+                " (" + accessid + " varchar(22)) on commit preserve rows"
 
         if self.debug:
             logging.debug('')
@@ -1469,8 +1555,8 @@ class propFilter:
                 logging.debug(f'{self.msg:s}')
             raise Exception(self.msg)
         
-        finally:
-            cursor.close()
+        #finally:
+        #    cursor.close()
 
         if self.debug:
             logging.debug('')
@@ -1489,7 +1575,7 @@ class propFilter:
             logging.debug('')
             logging.debug(f'temp table insert sql= {sql:s}')
 
-        cursor = self.conn.cursor()
+        #cursor = self.conn.cursor()
         try:
             self.__executeSql__(cursor, sql)
 
@@ -1502,8 +1588,37 @@ class propFilter:
 
             raise Exception(self.msg)
 
-        finally:
-            cursor.close()
+        #
+        #  check rowcount in tmp_accessiddbtbl 
+        #
+        sql = "select * from " + tmp_accessiddbtbl
+
+        if self.debug:
+            logging.debug('')
+            logging.debug(f'temp table select sql= {sql:s}')
+
+        #cursor = self.conn.cursor()
+        try:
+            self.__executeSql__(cursor, sql)
+
+        except Exception as e:
+
+            self.msg = 'Failed to insert data to tmp_accessiddbtbl: ' + str(e)
+            if self.debug:
+                logging.debug('')
+                logging.debug(f'{self.msg:s}')
+
+            raise Exception(self.msg)
+        
+        #finally:
+        #    cursor.close()
+
+        rowcnt_tmpaccessid = cursor.rowcount 
+        
+        if self.debug:
+            logging.debug('')
+            logging.debug(f'rowcnt_tmpaccessid= {rowcnt_tmpaccessid:d}')
+
 
         return
 
@@ -1523,27 +1638,17 @@ class propFilter:
         # already existed
         #
 
-        try:
-            self.__dropDbtbl__(tmp_fileiddbtbl)
+        if self.debug:
+            logging.debug('')
+            logging.debug(f'Enter createTmpFileiddb')
+
+        if (self.dbms.lower() == 'pgsql'):
             
-            #self.__dropDbtbl__('TMP_FILEIDXXX')
-
-            if self.debug:
-                logging.debug('')
-                logging.debug('returned dropDbtbl')
-                logging.debug(f'dbtbl TMP_FILEIDXXX dropped')
-        
-        except Exception as e:
-
-            self.msg = 'Failed to create tmp_fileiddbtbl: ' + str(e)
-            if self.debug:
-                logging.debug('')
-                logging.debug(f'{self.msg:s}')
-            pass
-
-
-        sql = "create global temporary table " + tmp_fileiddbtbl + \
-            "(" + fileid_allowed + " varchar(35)) on commit preserve rows"
+            sql = "create temporary table " + tmp_fileiddbtbl + \
+                "(" + fileid_allowed + " varchar(35)) on commit preserve rows"
+        else:
+            sql = "create global temporary table " + tmp_fileiddbtbl + \
+                "(" + fileid_allowed + " varchar(35)) on commit preserve rows"
 
         if self.debug:
             logging.debug('')
@@ -1561,9 +1666,6 @@ class propFilter:
                 logging.debug(f'{self.msg:s}')
             raise Exception(self.msg)
 
-        finally:
-            cursor.close()
-
         #
         # Insert into tmp_fileiddbtbl: select koaid_allowed from dbtable with
         # input where condition and the accessid constraint
@@ -1576,16 +1678,33 @@ class propFilter:
         if(self.propfilter == 'koa'):
 
             if(len(self.userid) > 0):
+                
+                if (self.dbms.lower() == 'oracle'):
 
-                access_constraint = \
-                    "((current_date > add_months(date_obs, propint))" + \
-                    " or(lower(" + accessid + ") in(select " + \
-                    accessid + " from " + tmp_accessiddbtbl + ")))"
+                    access_constraint = \
+                        "((current_date > add_months(date_obs, propint))" + \
+                        " or(lower(" + accessid + ") in(select " + \
+                        accessid + " from " + tmp_accessiddbtbl + ")))"
+                
+                elif (self.dbms.lower() == 'pgsql'):
 
+                    access_constraint = "((current_date > " + \
+                        "(date_obs + (propint * '1 month'::interval)))" + \
+                        " or (lower(" + accessid + ") in (select " + \
+                        accessid + " from " + tmp_accessiddbtbl + ")))"
+                
             else:
-                access_constraint = \
-                    "(current_date > add_months(date_obs, propint))"
+                if (self.dbms.lower() == 'oracle'):
 
+                    access_constraint = \
+                        "(current_date > add_months(date_obs, propint))"
+
+                elif (self.dbms.lower() == 'pgsql'):
+
+                    access_constraint = "(current_date > " + \
+                        "(date_obs + (propint * '1 month'::interval)))"
+
+                    
             if self.debug:
                 logging.debug('')
                 logging.debug(
@@ -1602,37 +1721,89 @@ class propFilter:
 
                 if(len(self.userid) > 0):
 
-                    access_constraint = \
-                        "((current_date > add_months(obsdate, l0propint))" + \
-                        " or(lower(" + accessid + ") in(select " + \
-                        accessid + " from " + tmp_accessiddbtbl + ")))"
+                    if (self.dbms.lower() == 'oracle'):
+
+                        access_constraint = "((current_date > " + \
+                            "add_months(obsdate, l0propint))" + \
+                            " or(lower(" + accessid + ") in(select " + \
+                            accessid + " from " + tmp_accessiddbtbl + ")))"
+                
+                    elif (self.dbms.lower() == 'pgsql'):
+
+                        access_constraint = "((current_date > " + \
+                            "(obsdate + (l0propint * '1 month'::interval)))" + \
+                            " or (lower(" + accessid + ") in (select " + \
+                            accessid + " from " + tmp_accessiddbtbl + ")))"
+                
                 else:
-                    access_constraint = \
-                        "(current_date > add_months(obsdate, l0propint))"
+                    if (self.dbms.lower() == 'oracle'):
+
+                        access_constraint = \
+                            "(current_date > add_months(obsdate, l0propint))"
+                
+                    elif (self.dbms.lower() == 'pgsql'):
+
+                        access_constraint = "(current_date > " + \
+                            "(obsdate + (l0propint * '1 month'::interval)))"
+
 
             elif(self.datalevel.lower() == 'l1'):
 
                 if(len(self.userid) > 0):
 
-                    access_constraint = \
-                        "((current_date > add_months(obsdate, l1propint))" + \
-                        " or(lower(" + accessid + ") in(select " + \
-                        accessid + " from " + tmp_accessiddbtbl + ")))"
+                    if (self.dbms.lower() == 'oracle'):
+
+                        access_constraint = "((current_date > " + \
+                            "add_months(obsdate, l1propint))" + \
+                            " or(lower(" + accessid + ") in(select " + \
+                            accessid + " from " + tmp_accessiddbtbl + ")))"
+                
+                    elif (self.dbms.lower() == 'pgsql'):
+
+                        access_constraint = "((current_date > " + \
+                            "(obsdate + (l1propint * '1 month'::interval)))" + \
+                            " or (lower(" + accessid + ") in (select " + \
+                            accessid + " from " + tmp_accessiddbtbl + ")))"
+                
                 else:
-                    access_constraint = \
-                        "(current_date > add_months(obsdate, l1propint))"
+                    if (self.dbms.lower() == 'oracle'):
+
+                        access_constraint = \
+                            "(current_date > add_months(obsdate, l1propint))"
+                
+                    elif (self.dbms.lower() == 'pgsql'):
+
+                        access_constraint = "(current_date > " + \
+                            "(obsdate + (l1propint * '1 month'::interval)))"
 
             elif(self.datalevel.lower() == 'l2'):
 
                 if(len(self.userid) > 0):
 
-                    access_constraint = \
-                        "((current_date > add_months(obsdate, l2propint))" + \
-                        " or(lower(" + accessid + ") in(select " + \
-                        accessid + " from " + tmp_accessiddbtbl + ")))"
+                    if (self.dbms.lower() == 'oracle'):
+
+                        access_constraint = "((current_date > " + \
+                            "add_months(obsdate, l2propint))" + \
+                            " or(lower(" + accessid + ") in(select " + \
+                            accessid + " from " + tmp_accessiddbtbl + ")))"
+                
+                    elif (self.dbms.lower() == 'pgsql'):
+
+                        access_constraint = "((current_date > " + \
+                            "(obsdate + (l2propint * '1 month'::interval)))" + \
+                            " or (lower(" + accessid + ") in (select " + \
+                            accessid + " from " + tmp_accessiddbtbl + ")))"
+                
                 else:
-                    access_constraint = \
-                        "(current_date > add_months(obsdate, l2propint))"
+                    if (self.dbms.lower() == 'oracle'):
+
+                        access_constraint = \
+                            "(current_date > add_months(obsdate, l2propint))"
+                
+                    elif (self.dbms.lower() == 'pgsql'):
+
+                        access_constraint = "(current_date > " + \
+                            "(obsdate + (l2propint * '1 month'::interval)))"
 
             if self.debug:
                 logging.debug('')
@@ -1650,13 +1821,13 @@ class propFilter:
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'selectstr = {selectstr:s}')
+            logging.debug(f'conditional selectstr = {selectstr:s}')
 
         #
         # Test the selectstr
         #
 
-        cursor = self.conn.cursor()
+        #cursor = self.conn.cursor()
         try:
             self.__executeSql__(cursor, selectstr)
 
@@ -1670,9 +1841,15 @@ class propFilter:
                 logging.debug(f'{self.msg:s}')
 
             raise Exception(self.msg)
+        
+        rowcnt_conditional = cursor.rowcount
+        if self.debug:
+            logging.debug('')
+            logging.debug(f'rowcnt_conditional= {rowcnt_conditional:d}')
 
-        finally:
-            cursor.close()
+
+        #finally:
+        #    cursor.close()
 
         sql = "insert into " + tmp_fileiddbtbl + \
             "(" + selectstr + ")"
@@ -1682,7 +1859,7 @@ class propFilter:
             logging.debug(f'fileid temp table insert sql= {sql:s}')
 
 
-        cursor = self.conn.cursor()
+        #cursor = self.conn.cursor()
 
         try:
             self.__executeSql__(cursor, sql)
@@ -1696,8 +1873,8 @@ class propFilter:
 
             raise Exception(self.msg)
 
-        finally:
-            cursor.close()
+        #finally:
+        #    cursor.close()
 
         #
         # Select accessid from tmp_fileiddbtbl: just to verify
@@ -1709,7 +1886,7 @@ class propFilter:
             logging.debug('')
             logging.debug(f'fileid temp table select sql = {sql:s}')
 
-        cursor = self.conn.cursor()
+        #cursor = self.conn.cursor()
         try:
             self.__executeSql__(cursor, sql)
 
@@ -1721,6 +1898,12 @@ class propFilter:
                 logging.debug(f'{self.msg:s}')
 
             raise Exception(self.msg)
+
+        rowcnt_tmpfileid = cursor.rowcount
+        if self.debug:
+            logging.debug('')
+            logging.debug(f'rowcnt_tmpfileid = {rowcnt_tmpfileid:d}')
+
 
         fileidpath = self.userworkdir + '/' + tmp_fileiddbtbl + '.tbl'
 
@@ -1740,21 +1923,21 @@ class propFilter:
 
             raise Exception(self.msg)
 
-        finally:
-            cursor.close()
+        #finally:
+        #    cursor.close()
 
         return
 
-        #
-        # } end of createTmpFileiddb def
-        #
+    #
+    # } end of createTmpFileiddb def
+    #
 
 
     def __executeSql__(self, cursor, sql, **kwargs):
 
-        #
-        # {
-        #
+    #
+    # { executeSql
+    #
 
         try:
             cursor.execute(sql)
@@ -1774,16 +1957,16 @@ class propFilter:
 
             raise Exception(self.msg)
 
-        #
-        # } end of executeSql def
-        #
+    #
+    # } end of executeSql def
+    #
 
 
     def __parseSql__(self, cursor, sql, **kwargs):
 
-        #
-        # {
-        #
+    #
+    # { parseSql
+    #
 
         try:
             cursor.parse(sql)
@@ -1796,16 +1979,16 @@ class propFilter:
 
             raise Exception(str(e))
 
-        #
-        # } end of parseSql def
-        #
+    #
+    # } end of parseSql def
+    #
 
 
     def __encodeSqlerrmsg__(self, errmsg, **kwargs):
 
-        #
-        # {
-        #
+    #
+    # { encodeSqlerrmsg
+    #
 
         # Oracle error might contain characters that needs fixing for
         # xml structure
@@ -1835,16 +2018,16 @@ class propFilter:
 
         return
 
-        #
-        # } end of encodeSqlerrmsg def
-        #
+    #
+    # } end of encodeSqlerrmsg def
+    #
 
 
     def __dropDbtbl__(self, dbtable, **kwargs):
 
-        #
-        # {
-        #
+    #
+    # { dropDbtbl
+    #
 
         cursor_drop = self.conn.cursor()
         dropsql = 'drop table ' + dbtable
@@ -1866,10 +2049,10 @@ class propFilter:
                 logging.debug('')
                 logging.debug(f'drop table exception: {str(e):s}')
             
-            pass
-    
+            
+        self.conn.commit()
         return
 
-        #
-        # } end of dropDbtbl def
-        #
+    #
+    # } end of dropDbtbl def
+    #
