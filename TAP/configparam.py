@@ -244,11 +244,11 @@ class configParam:
                 logging.debug ("password= [Not shown for security reasons.]")
                 
                 
-        if(dbms == 'postgresql'):
+        if(dbms == 'pgsql'):
 
             self.connectInfo['hostname'] = None 
-            if('HOSTNAME' in confobj[dbms]):
-                self.connectInfo['hostname'] = confobj[dbms]['HOSTNAME']
+            if('HostName' in confobj[dbms]):
+                self.connectInfo['hostname'] = confobj[dbms]['HostName']
 
             if self.debug:
                 logging.debug('')
@@ -256,8 +256,8 @@ class configParam:
                 logging.debug(self.connectInfo['hostname'])
             
             self.connectInfo['database'] =  None
-            if('DATABASE' in confobj[dbms]):
-                self.connectInfo['database'] = confobj[dbms]['DATABASE']
+            if('DataBase' in confobj[dbms]):
+                self.connectInfo['database'] = confobj[dbms]['DataBase']
 
             if self.debug:
                 logging.debug('')
@@ -265,22 +265,22 @@ class configParam:
                 logging.debug(self.connectInfo['database'])
             
                 
-            if (self.connectInfo['hostname'] is None): \
+            if (self.connectInfo['hostname'] is None):
                 self.status = 'error'
                 self.msg = \
-                    'Failed to find PostgrSQL HOSTNAME in config_file'
+                    'Failed to find PostgrSQL HostName in config_file'
                 raise Exception(self.msg)
 
             if (self.connectInfo['database'] is None):
                 
                 self.status = 'error'
                 self.msg = \
-                    'Failed to find PostgrSQL DATABASE keyword in config_file'
+                    'Failed to find PostgrSQL DataBase keyword in config_file'
                 raise Exception(self.msg)
 
-            self.connectInfo['userid'] = None 
-            if('USERNAME' in confobj[dbms]):
-                self.connectInfo['username'] = confobj[dbms]['USERNAME']
+            self.connectInfo['username'] = None 
+            if('UserName' in confobj[dbms]):
+                self.connectInfo['username'] = confobj[dbms]['UserName']
 
             if (self.connectInfo['username'] is None):
                 self.status = 'error'
@@ -299,16 +299,16 @@ class configParam:
             if self.debug:
                 logging.debug('')
                 logging.debug ('hostname= ')
-                logging.debug (hostname)
+                logging.debug (self.connectInfo['hostname'])
                 logging.debug('')
                 logging.debug ('database= ')
-                logging.debug (database)
+                logging.debug (self.connectInfo['database'])
                 logging.debug('')
                 logging.debug ('username= ')
-                logging.debug (username)
+                logging.debug (self.connectInfo['username'])
                 logging.debug('')
                 logging.debug ('password= ')
-                logging.debug (password)
+                logging.debug (self.connectInfo['password'])
                 
         self.adqlparam = {}
 

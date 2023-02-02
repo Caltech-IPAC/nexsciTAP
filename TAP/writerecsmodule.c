@@ -737,7 +737,8 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
                 fprintf (fp_debug, "i= [%d] namearr= [%s]\n", i, namearr[i]);
                 fflush (fp_debug);
                 
-                fprintf (fp_debug, "PyObject type:[%s], typearr[i]: [%s]\n", coltype, typearr[i]);
+                fprintf (fp_debug, "PyObject type:[%s], typearr[i]: [%s]\n", 
+                    coltype, typearr[i]);
                 fflush (fp_debug);
             }
 

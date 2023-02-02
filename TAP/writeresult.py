@@ -2,8 +2,14 @@
 # This code is released with a BSD 3-clause license. License information is at
 #   https://github.com/Caltech-IPAC/nexsciTAP/blob/master/LICENSE
 
-
-#    writeResult class
+#
+# writeResult class write query result to an output file:
+#
+# 1. This routine extracts the dbdatatypes from the cursor description, using
+#    them to determine the datatypes of the output columns.
+#
+# 2. In order to increase the speed of I/O, the real output of data is done
+#    in a C routine.
 #
 import logging
 
@@ -28,7 +34,7 @@ class writeResult:
     cursor = None
     workdir = None
     dd = None
-    dbms = ''
+    dbms = None 
 
     ncols_dd = 0
     ind_racol = -1
@@ -58,38 +64,49 @@ class writeResult:
 
     def __init__(self, cursor, workdir, dd, **kwargs):
 
-        #
-        # {
-        #
+    #
+    # { writeResult.init
+    #
 
         """
-        cursor:       oracle query returned cursor containing data stream,
-        workdir:      work directory for output files,
-        dd:           data dictionary for the output columns,
-        coldes(0/1): indictes whether to include column descriptions in the
-                  output file header
+        positional inputs (required):
 
-        kwargs inputs:
+        cursor:       DBMS query (oracle, pgsql, mysql, sqlite are implemented)
+                      returned cursor containing data stream,
+        workdir:      work directory for output file,
+        dd:           data dictionary for the output columns (maybe None),
 
-            format(char),
-            maxrec(int),
-            racol,
-            deccol,
-            exclcol(int): exclude column index
+        kwargs inputs (required):
 
-        Usage:
+            dbms (char):    DBMS (oracle, pgsql, mysql, or sqlite)
+            racol (double): ra column in deg; this column is specified in
+                            the congif file TAP.ini,  
+            deccol(double): dec column in deg; this column is specified in
+                            the congif file TAP.ini
+        
+        kwargs inputs (optional):
+
+            format (char),
+            coldes (0/1):   flag indicting whether to include column 
+                            descriptions in the output file header,
+            maxrec (int):   max records to ouput,
+            exclcol (int):  exclude column index (this only happens in a join
+                            operation that contains redundant columns)
+
+        Usage example:
 
             wresult = writeResult(cursor, \
                 workdir, \
                 dd, \
+                dbms=dbms, \
+                racol=racol, \
+                deccol=sdeccol, \
                 format=format, \
                 maxrec=maxrec, \
-                coldesc=coldesc, \
-                racol=racol, \
-                deccol=sdeccol)
+                coldesc=coldesc)
         """
 
-        if('debug' in kwargs):
+        if ('debug' in kwargs):
             self.debug = kwargs['debug']
 
         if self.debug:
@@ -102,11 +119,10 @@ class writeResult:
         self.workdir = workdir
         self.dd = dd
 
-        curr_rowcnt = cursor.rowcount
+        curr_rowcnt = self.cursor.rowcount
         if self.debug:
             logging.debug('')
             logging.debug(f'curr_rowcnt= {curr_rowcnt:d}')
-        
 
         self.ncols_dd = 0
         if (self.dd != None):
@@ -116,28 +132,28 @@ class writeResult:
             logging.debug('')
             logging.debug(f'ncols_dd= {self.ncols_dd:d}')
         
-        if('racol' in kwargs):
-            self.racol = kwargs['racol']
-
-            if (self.dd != None):
-                self.ind_racol = self.__getDDIndex__(self.dd, self.racol)
-
-        if('deccol' in kwargs):
-            self.deccol = kwargs['deccol']
-            
-            if (self.dd != None):
-                self.ind_deccol = self.__getDDIndex__(self.dd, self.deccol)
-
-        if('exclcol' in kwargs):
-            self.ind_exclcol = kwargs['exclcol']
-
-        if('dbms' in kwargs):
+        if ('dbms' in kwargs):
             self.dbms = kwargs['dbms']
         
         if self.debug:
             logging.debug('')
             logging.debug(f'dbms= {self.dbms:s}')
         
+        if ('racol' in kwargs):
+            self.racol = kwargs['racol']
+
+            if (self.dd != None):
+                self.ind_racol = self.__getDDIndex__(self.dd, self.racol)
+
+        if ('deccol' in kwargs):
+            self.deccol = kwargs['deccol']
+            
+            if (self.dd != None):
+                self.ind_deccol = self.__getDDIndex__(self.dd, self.deccol)
+
+        if ('exclcol' in kwargs):
+            self.ind_exclcol = kwargs['exclcol']
+
         
         if('format' in kwargs):
             self.format = kwargs['format']
@@ -145,10 +161,6 @@ class writeResult:
         if('maxrec' in kwargs):
             self.maxrec = kwargs['maxrec']
 
-        if self.debug:
-            logging.debug('')
-            logging.debug('here0-2')
-        
         self.coldesc = 0
         if('coldesc' in kwargs):
             self.coldesc = kwargs['coldesc']
@@ -259,14 +271,24 @@ class writeResult:
         descarr = []
 
         #
-        # For non-dd column and dbtype == NUMBER, check data to see if
-        # it is int or float: if any number in the fltcntarr, consider it float
+        # -- column exist in dd, use dd's data type as typearr for output;
+        #
+        # -- column not in dd: examine the dbtype in cursor description
+        #    to determine ouput data type;
+        #
+        #    varchr, sting -- char,
+        #    int, integer, long, etc.. -- int (32bit),
+        #
+        #    oracle: dbtype == NUMBER, check first batch of data to see if 
+        #        it is int or float: if any number in this batch is float, 
+        #        consider the column dtype as double 
+        #
+        #    pgsql: dbtype == decimal, assume it is double
         #
 
         isddcolarr = []
         intcntarr = []
         fltcntarr = []
-
 
         dbdatatype = None
         precision = None 
@@ -274,7 +296,6 @@ class writeResult:
         size = None 
 
         nfetch = self.arraysize
-
         self.cursor.arraysize = nfetch
 
         if self.debug:
@@ -284,14 +305,15 @@ class writeResult:
         
         i = 0
         for col in self.cursor.description:
-
-            #
-            # { For loop for cursor description:
-            #   cursor description is a list with ncols tuples:
-            #   each tuple
-            #   contains each output colname's name, datatype,
-            #   dbdatatype, size, etc...
-            #
+        #
+        # { cursor description for loop:
+        # 
+        #   cursor description is a list with ncols tuples:
+        #   each tuple contains each output colname's name, datatype,
+        #   dbdatatype, size, precision, scale but most DBMSs' 
+        #   implementation are incomplete, only name and dbdatatype 
+        #   are reliably implemented.
+        #
 
             if self.debug:
                 logging.debug('')
@@ -301,7 +323,7 @@ class writeResult:
 
             #
             # Extract colname, dbdatatype, size, precision, scale from
-            # col array
+            # a columns's cursor description.
             #
 
             colname = str(col[0]).lower()
@@ -320,8 +342,7 @@ class writeResult:
 
             #
             # { Extract dbdatatype, display_size, precision, scale from
-            # col_array:
-            #   col[1], col[2], col[4], and col[5]
+            # col_array: col[1], col[2], col[4], and col[5]
             #
 
             if self.debug:
@@ -538,9 +559,9 @@ class writeResult:
 
             if(ind != -1):
 
-                #
-                # { col in dd
-                #
+            #
+            # { col in dd
+            #
 
                 width = self.dd.colwidth[colname]
 
@@ -568,7 +589,7 @@ class writeResult:
 
                     if self.debug:
                         logging.debug('')
-                        logging.debug(f'here0: char type col in dd')
+                        logging.debug(f'char type col in dd')
                         logging.debug('size=')
                         logging.debug(size)
                     
@@ -621,66 +642,70 @@ class writeResult:
                 #   description dbtype
                 #
 
-                #
-                # } end col in dd
-                #
+            #
+            # } end col in dd
+            #
 
             else:
 
-                #
-                # { col Not in dd
-                #
+            #
+            # { col Not in dd
+            #
 
-                if(dbdatatype == 'STRING') or (dbdatatype == 'VARCHAR'):
+                if ((dbdatatype.lower() == 'string') or \
+                    (dbdatatype.lower() == 'varchar')):
 
-                    #
-                    # { dbdatatype == string
-                    #
+                #
+                # { dbdatatype == string, varchar
+                #
 
                     width = 80
                     if ((size is not None) and (size > 0)):
                         width = size
   
-                    if(len(colname) > width):
+                    if (len(colname) > width):
                         width = len(colname)
 
                     coltype = 'char'
                     dbtype = dbdatatype
                     fmt = str(width) + 's'
 
-                    #
-                    # } end dbdatatype == STRING
-                    #
+                #
+                # } end dbdatatype == varchar 
+                #
 
-                elif((dbdatatype == 'DATE')
-                        or (dbdatatype == 'DATETIME')
-                        or (dbdatatype == 'TIMESTAMP')):
+                elif ((dbdatatype.lower() == 'date') or \
+                    (dbdatatype.lower() == 'time') or \
+                    (dbdatatype.lower() == 'datetime') or \
+                    (dbdatatype.lower() == 'timestamp')):
 
-                    #
-                    #
-                    # { dbdatatype == DATE, TIMESTAMP
-                    #
-                    #    timestamp etc. are not included in the above
-                    #    but most of them should come out as STRING
-                    #
+                #
+                #
+                # { dbdatatype == DATE, datetime, TIMESTAMP
+                #
+                #  written as 'char'
+                #
 
                     coltype = 'char'
                     dbtype  = dbdatatype
                     width   = 30
 
-                    if(len(colname) > width):
+                    if (len(colname) > width):
                         width = len(colname)
                     fmt = str(width) + 's'
 
-                    #
-                    # } end dbdatatype == DATE, TIMESTAMP
-                    #
+                #
+                # } end dbdatatype == DATE, datetime, TIMESTAMP
+                #
 
-                elif ((dbdatatype == 'LONG') or \
-                    (dbdatatype == 'INT')):
-                    #
-                    # { dbdatatype == LONG or INT
-                    #
+                elif ((dbdatatype.lower() == 'long') or \
+                    (dbdatatype.lower() == 'int') or \
+                    (dbdatatype.lower() == 'integer') or \
+                    (dbdatatype.lower() == 'smallint')):
+                #
+                #
+                # { dbdatatype <= 32 bits integer
+                #
 
                     coltype = 'int'
                     dbtype = 'long'
@@ -690,16 +715,17 @@ class writeResult:
                         width = len(colname)
                     fmt = str(width) + 'd'
 
+                #
+                # } end dbdatatype == integer <= 32 bits
+                #
+
+                elif ((dbdatatype.lower() == 'longlong') or \
+                    (dbdatatype.lower() == 'bigint')):
                     #
-                    # } end dbdatatype == LONG or INT
+                    # { dbdatatype == 64 bits integer
                     #
 
-                elif (dbdatatype == 'LONGLONG'):
-                    #
-                    # { dbdatatype == LONGLONG
-                    #
-
-                    coltype = 'long'
+                    coltype = 'longlong'
                     dbtype = 'longlong'
 
                     width = 24
@@ -711,12 +737,13 @@ class writeResult:
                     # } end dbdatatype == LONGLONG
                     #
 
-                elif ((dbdatatype == 'FLOAT') or \
-                    (dbdatatype == 'DOUBLE')):
+                elif ((dbdatatype.lower() == 'float') or \
+                    (dbdatatype.lower() == 'real') or \
+                    (dbdatatype.lower() == 'double')):
 
-                    #
-                    # { dbdatatype == NATIVE_FLOAT
-                    #
+                #
+                # { dbdatatype == NATIVE_FLOAT
+                #
 
                     coltype = 'double'
                     dbtype = 'float'
@@ -727,16 +754,16 @@ class writeResult:
                         width = len(colname)
                     fmt = str(width) + '.14e'
 
-                    #
-                    # } end dbdatatype == NATIVE_FLOAT
-                    #
+                #
+                # } end dbdatatype == NATIVE_FLOAT
+                #
 
-                elif ((dbdatatype == 'NUMBER') and \
+                elif ((dbdatatype.lower() == 'number') and \
                     (self.dbms.lower() == 'oracle')):
 
-                    #
-                    # { dbdatatype == NUMBER: this is Oracle special dtype
-                    #
+                #
+                # { dbdatatype == NUMBER: this is Oracle special dtype
+                #
 
                     if (scale is None):
 
@@ -758,15 +785,36 @@ class writeResult:
                             width = len(colname)
                         fmt = str(width) + '.14e'
 
-                    #
-                    # } end dbdatatype == NUMBER
-                    #
+                #
+                # } end dbdatatype == NUMBER
+                #
+
+                elif ((dbdatatype.lower() == 'numeric') and \
+                    (self.dbms.lower() == 'pgsql')):
+
+                #
+                # { dbdatatype == numeric: this is pgsql oid=1700 special dtype,
+                #  if no dd, then we assume it is a double number, although
+                #  this dbdatatype is often used to represent a large integer.
+                # 
+
+                    coltype = 'double'
+                    dbtype = dbdatatype
+
+                    width = 22
+                    if(len(colname) > width):
+                        width = len(colname)
+                    fmt = str(width) + '.14e'
+
+                #
+                # } end dbdatatype == numeric 
+                #
 
                 else:
 
-                    #
-                    # { unknown type: default to char
-                    #
+                #
+                # { unknown type: default to char (80)
+                #
 
                     coltype = 'char'
                     dbtype = dbdatatype
@@ -776,9 +824,9 @@ class writeResult:
                         width = len(colname)
                     fmt = str(width) + 's'
 
-                    #
-                    # } end unknown type
-                    #
+                #
+                # } end unknown type
+                #
 
                 #
                 # Special cases: if colname == 'RA' or 'DEC' use 
@@ -820,9 +868,9 @@ class writeResult:
                 intcntarr.append(0)
                 fltcntarr.append(0)
 
-                #
-                # } end col Not in dd
-                #
+            #
+            # } end col Not in dd
+            #
 
             namearr.append(colname)
             typearr.append(coltype)
@@ -834,9 +882,9 @@ class writeResult:
 
             i = i + 1
 
-            #
-            # } end of for loop for analysing cursor description
-            #
+        #
+        # } end of analysing cursor description for loop
+        #
 
         #
         # At this point the namearr, typearr, dbtypearr, widtharr of
@@ -885,16 +933,15 @@ class writeResult:
             logging.debug(f'self.maxrec= {self.maxrec:d}')
 
         if(self.maxrec == 0):
-
-            #
-            # {
-            #
+        #
+        # {
+        #
 
             self.ishdr = 1
             self.overflow = 1
             self.istail = 1
 
-            self.status = None
+            self.status = '' 
             rowslist = []
             try:
 
@@ -919,9 +966,9 @@ class writeResult:
 
             return
 
-            #
-            # } end maxrec == 0
-            #
+        #
+        # } end maxrec == 0
+        #
 
         if self.debug:
             logging.debug('')
@@ -934,12 +981,16 @@ class writeResult:
 
         nfetch = self.arraysize
         if self.debug:
-            logging.debug(f'nfetch = {nfetch:d}')
             logging.debug('')
+            logging.debug(f'nfetch = {nfetch:d}')
 
 
         self.cursor.arraysize = nfetch
         curr_rowcnt = cursor.rowcount
+
+        if self.debug:
+            logging.debug('')
+            logging.debug(f'total rowcnt in cursor: {curr_rowcnt:d}')
 
 
         ibatch = 0
@@ -949,23 +1000,25 @@ class writeResult:
         self.ntot = 0
 
         #
-        #    set maxrec to 20 for debug
+        # set maxrec to 20 for debug
         #
         #self.maxrec = 20
         #
         while True:
 
-            #
-            # { start of while loop for fetching data lines;
-            #   max 10000 lines at a time
-            #
+        #
+        # { start of while loop for fetching data lines;
+        #   each batch is set to 10000 lines by nfetch = 10000
+        #
 
-            if (self.dbms.lower() == 'mysql'):
-                rows = cursor.fetchmany (self.cursor.arraysize)
-            else: 
-                rows = cursor.fetchmany(self.cursor.arraysize)
+            #if (self.dbms.lower() == 'mysql'):
+            #    rows = cursor.fetchmany (self.cursor.arraysize)
+            #else: 
+            #    rows = cursor.fetchmany(self.cursor.arraysize)
+            
+            rows = cursor.fetchmany (self.cursor.arraysize)
 
-            nrec = len(rows)
+            nrec = len (rows)
 
             if self.debug:
                 logging.debug(f'nrec = {nrec:d}')
@@ -996,7 +1049,7 @@ class writeResult:
 
                     row = rows[ll]
 
-                    rowlist = []
+                    #rowlist = []
 
                     for i in range(0, len(row)):
                             
@@ -1024,41 +1077,38 @@ class writeResult:
 
             for ll in range(0, nrec):
 
-                #
-                # { Beginning ll loop: one row
-                #
+            #
+            # { Beginning ll loop: one row
+            #
 
                 if self.debug:
                     logging.debug('')
-                    logging.debug('here0-0')
+                    logging.debug('start processing each row of data')
                 
                 row = rows[ll]
-                dtype_row = type (row).__name__
-                            
-                #row_pgsql = []
 
                 rowlist = []
 
                 for i in range(0, len(row)):
 
-                    #
-                    # { Beginning i loop: one col
-                    #
+                #
+                # { Beginning i loop: each data col in this row
+                #
                    
                     if self.debug:
                         logging.debug('')
                         logging.debug(f'i = {i:d}')
-                        logging.debug('row[i]:')
-                        logging.debug(row[i])
+                        logging.debug(f'row[i]= {row[i]}')
 
                     if(i == self.ind_exclcol):
                         continue
 
                     if((dbtypearr[i].lower() == 'date') or \
+                        (dbtypearr[i].lower() == 'time') or \
                         (dbtypearr[i].lower() == 'datetime') or \
                         (dbtypearr[i].lower() == 'timestamp')):
 
-                        rowlist.append(str(row[i]))
+                        rowlist.append (str(row[i]))
                     else:
                         if (self.dbms.lower() == 'pgsql'):
                         #
@@ -1070,10 +1120,12 @@ class writeResult:
                             
                             if self.debug:
                                 logging.debug('')
-                                logging.debug('pgsql numeric type')
+                                logging.debug( \
+                                    'check if the datum is pgsql decimal type')
                                 logging.debug(f'i = {i:d} dtype= {dtype}')
 
                             if (dtype.lower() == 'decimal'):
+                                
                                 x = float(row[i])
 
                                 if self.debug:
@@ -1089,13 +1141,9 @@ class writeResult:
                                     dbtypearr[i] = 'integer'
                                     rowlist.append (int(x))
 
-                                elif (typearr[i].lower() == 'double'):
-                                    dbtypearr[i] = 'float'
-                                    rowlist.append (x)
                                 else:
-                                    typearr[i] = 'char'
-                                    rowlist.append (str(x))
-                            
+                                    dbtypearr[i] = 'double'
+                                    rowlist.append (x)
                             else:
                                 rowlist.append (row[i])
 
@@ -1136,9 +1184,9 @@ class writeResult:
                             else:
                                 fltcntarr[i] = fltcntarr[i] + 1
 
-                    #
-                    # } end of i loop
-                    #
+                #
+                # } end of i loop
+                #
 
                 if self.debug:
                     logging.debug('')
@@ -1160,9 +1208,9 @@ class writeResult:
                     self.overflow = 1
                     break
 
-                #
-                # } end of l loop
-                #
+            #
+            # } end of l loop
+            #
 
             if self.debug:
                 logging.debug('----------------------------------------')
@@ -1174,15 +1222,15 @@ class writeResult:
             #
             if ((self.dbms.lower() == 'oracle') and \
                 (ibatch == 0)):
-                #
-                # {
-                #
+            #
+            # {
+            #
 
                 for i in range(0, len(isddcolarr)):
 
-                    #
-                    # { check intcntarr and fltcntarr
-                    #
+                #
+                # { check intcntarr and fltcntarr
+                #
 
                     if((isddcolarr[i] == 0) and (dbtypearr[i] == 'NUMBER')):
 
@@ -1206,12 +1254,12 @@ class writeResult:
                                 widtharr[i] = len(namearr[i])
                             fmtarr[i] = str(widtharr[i]) + '.14e'
 
-                    #
-                    # } end checking intcntarr and fltcntarr
-                    #
                 #
-                # } end if ibatch == 0
+                # } end checking intcntarr and fltcntarr
                 #
+            #
+            # } end if ibatch == 0
+            #
 
             if self.debug:
                 logging.debug('got here0')
@@ -1272,22 +1320,22 @@ class writeResult:
 
             ibatch = ibatch + 1
 
-            #
-            # } end while loop for fetching data lines
-            #
+        #
+        # } end while loop for fetching data lines
+        #
 
         return
 
-        #
-        # } end of init
-        #
+    #
+    # } end of writeResult.init
+    #
 
 
     def __getArrIndex__(self, arr, name):
 
-        #
-        # {
-        #
+    #
+    # {
+    #
 
         ind = -1
 
@@ -1299,16 +1347,16 @@ class writeResult:
 
         return(ind)
 
-        #
-        # } end of getArrIndex def
-        #
+    #
+    # } end of getArrIndex def
+    #
 
 
     def __getDDIndex__(self, dd, name):
 
-        #
-        # {
-        #
+    #
+    # {
+    #
 
         ind = -1
 
@@ -1320,6 +1368,6 @@ class writeResult:
 
         return(ind)
 
-        #
-        # } end __getDDIndex
-        #
+    #
+    # } end __getDDIndex
+    #

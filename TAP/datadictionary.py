@@ -470,5 +470,6 @@ class dataDictionary:
             #
             # } end while loop
             #
+            cursor.close()
 
         return
