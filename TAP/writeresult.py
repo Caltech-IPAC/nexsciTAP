@@ -925,14 +925,17 @@ class writeResult:
             logging.debug(ddlist)
             logging.debug('-----------------------------------------------')
 
+        #curr_rowcnt = cursor.rowcount
+
         #
-        # If maxrec == 0: write header and exit
+        # If curr_rowcnt (i.e. no data retrieved) or maxrec == 0: 
+        # write header and exit
         #
         if self.debug:
             logging.debug('')
             logging.debug(f'self.maxrec= {self.maxrec:d}')
 
-        if(self.maxrec == 0):
+        if (self.maxrec == 0):
         #
         # {
         #
@@ -985,12 +988,12 @@ class writeResult:
             logging.debug(f'nfetch = {nfetch:d}')
 
 
-        self.cursor.arraysize = nfetch
-        curr_rowcnt = cursor.rowcount
+        #self.cursor.arraysize = nfetch
+        #curr_rowcnt = cursor.rowcount
 
-        if self.debug:
-            logging.debug('')
-            logging.debug(f'total rowcnt in cursor: {curr_rowcnt:d}')
+        #if self.debug:
+        #    logging.debug('')
+        #    logging.debug(f'total rowcnt in cursor: {curr_rowcnt:d}')
 
 
         ibatch = 0
@@ -1015,9 +1018,10 @@ class writeResult:
             #    rows = cursor.fetchmany (self.cursor.arraysize)
             #else: 
             #    rows = cursor.fetchmany(self.cursor.arraysize)
-            
-            rows = cursor.fetchmany (self.cursor.arraysize)
 
+            rowslist = []
+
+            rows = cursor.fetchmany (self.cursor.arraysize)
             nrec = len (rows)
 
             if self.debug:
@@ -1025,11 +1029,71 @@ class writeResult:
                 logging.debug('')
 
             if (nrec == 0):
-                break
+            #
+            # { nrec == 0
+            #
+                if (ibatch == 0):
+                #
+                # { if batch == 0: no data retrieved, write header and return
+                #
+                    if self.debug:
+                        logging.debug ( \
+                            f'nrec = {nrec:d} and ibatch = {ibatch:d}')
+                        logging.debug('')
 
-            rowslist = []
+                    self.ishdr = 1
+                    self.overflow = 1
+                    self.istail = 1
 
+                    self.status = '' 
+                    rowslist = []
+                    try:
 
+                        istatus = writerecs.writerecs(self.outpath, self.format,
+                              ddlist, rowslist, self.ishdr,
+                              self.coldesc, self.overflow,
+                              self.istail)
+
+                        if(istatus == 0):
+                            self.status = 'ok'
+
+                    except Exception as e:
+
+                        self.status = 'error'
+                        self.msg = str(e)
+
+                        if self.debug:
+                            logging.debug('')
+                            logging.debug(f'writerecs exception: {str(e):s}')
+
+                        raise Exception(str(e))
+
+                    if self.debug:
+                        logging.debug (f'return')
+                        logging.debug('')
+
+                    return
+                #
+                # } end batch == 0
+                #
+                else:
+                #
+                # { ibatch > 0: end of data
+                #
+                    if self.debug:
+                        logging.debug ( \
+                            f'nrec = {nrec:d} and ibatch = {ibatch:d}')
+                        logging.debug (f'break to write last batch of data')
+
+                    break
+
+                #
+                # } end batch > 0 
+                #
+            #
+            # } end nrec = 0
+            #
+            
             # This block was added for cases like SQLite, where
             # the column "description" block returned by the DBMS
             # does not give any datatypes.  For those cases where
@@ -1043,7 +1107,7 @@ class writeResult:
 
             if ((ibatch == 0) and (self.dbms.lower() == 'sqlite')):
             #
-            # { sqlite special treatment block
+            # { ibatch == 0, sqlite special treatment block
             #
                 for ll in range(0, nrec):
 
@@ -1190,9 +1254,16 @@ class writeResult:
 
                 if self.debug:
                     logging.debug('')
+                    logging.debug('xxx0')
                     logging.debug(f'irow= {irow:d} rowlist: ')
+                    logging.debug('')
+                    logging.debug('xxx1')
                     logging.debug(f'typearr= {typearr}')
+                    logging.debug('')
+                    logging.debug('xxx2')
                     logging.debug(f'dbtypearr= {dbtypearr}')
+                    logging.debug('')
+                    logging.debug('xxx3')
                     logging.debug(rowlist)
 
                 rowslist.append(rowlist)
@@ -1209,7 +1280,7 @@ class writeResult:
                     break
 
             #
-            # } end of l loop
+            # } end of ll loop
             #
 
             if self.debug:
@@ -1258,7 +1329,7 @@ class writeResult:
                 # } end checking intcntarr and fltcntarr
                 #
             #
-            # } end if ibatch == 0
+            # } end if ibatch == 0 oracle
             #
 
             if self.debug:
