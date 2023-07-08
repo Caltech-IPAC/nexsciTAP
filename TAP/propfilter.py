@@ -596,6 +596,9 @@ class propFilter:
             " where " + self.fileid + " in(select " + self.fileid_allowed + \
             " from " + self.tmp_fileidAlloweddbtbl + ")"
 
+        if(len(self.wherestr) > 0):                                            
+            sql = sql + ' and (' + self.wherestr[6:] + ')'        
+
         if self.debug:
             logging.debug('')
             logging.debug(

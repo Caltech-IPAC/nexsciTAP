@@ -362,6 +362,10 @@ class configParam:
         if('DECCOL' in confobj[self.server]):
             self.deccol = confobj[self.server]['DECCOL']
 
+        self.infomsg = ''                                                      
+        if('INFOMSG' in confobj[self.server]):                                 
+            self.infomsg = confobj[self.server]['INFOMSG']                     
+        
         if self.debug:
             logging.debug('')
             logging.debug(f'      workdir    = {self.workdir:s}')
