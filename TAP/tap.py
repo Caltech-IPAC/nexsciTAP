@@ -124,6 +124,8 @@ class Tap:
     cookiestr = ''
     cookiename = ''
 
+    infomsg = ''
+
     workdir = ''
     workurl = ''
     httpurl = ''
@@ -477,6 +479,8 @@ class Tap:
 
         self.cookiename = self.config.cookiename
 
+        self.infomsg = self.config.infomsg
+
         if self.workdir.endswith('/') == True:
             self.workdir = self.workdir[:-1]
 
@@ -488,6 +492,7 @@ class Tap:
             logging.debug(f'cgipgm     = {self.cgipgm:s}')
             logging.debug(f'arraysize  = {self.arraysize:d}')
             logging.debug(f'cookiename = {self.cookiename:s}')
+            logging.debug(f'infomsg    = {self.infomsg:s}')
             logging.debug(f'fileid     = {self.config.fileid:s}')
             logging.debug(f'accessid   = {self.config.accessid:s}')
             logging.debug(f'racol      = {self.config.racol:s}')
@@ -2457,6 +2462,12 @@ class Tap:
 
             print(errmsg)
 
+            if(len(self.infomsg) > 0):                                         
+                if(self.infomsg[-1] == '?'):                                   
+                    print(self.infomsg + 'dbtable=' + self.dbtable)            
+                else:                                                          
+                    print(self.infomsg)                                        
+
             print('</INFO>')
             print('</RESOURCE>')
             print('</VOTABLE>')
@@ -2465,6 +2476,13 @@ class Tap:
             print("Content-type: text/plain\r")
             print("\r")
             print (errmsg)
+                     
+            if(len(self.infomsg) > 0):                                         
+                if(self.infomsg[-1] == '?'):                                   
+                    print(self.infomsg + 'dbtable=' + self.dbtable)            
+                else:                                                          
+                    print(self.infomsg)                                        
+                   
 
         sys.stdout.flush()
         sys.exit()
