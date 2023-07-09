@@ -550,11 +550,18 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
         
                     fprintf (fp_debug, "i= [%d] namearr= [%s]\n",
                         i, namearr[i]);
+
                     fprintf (fp_debug, "widtharr= [%d] typearr= [%s]\n",
+
                         widtharr[i], typearr[i]);
+                    fprintf(fp, "descarr= [%s]\n", descarr[i]);
+
                     fflush (fp_debug);
                 }
             
+
+                // Char type
+                
                 if (strcasecmp (typearr[i], "char") == 0) {
 
                     if(strlen(descarr[i]) > 0)
@@ -596,18 +603,42 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
                     }
                 }
 
+
+                // Non-char columns
+                
                 else {
-                    if(strlen(unitsarr[i]) > 0)
+                    if(strlen(descarr[i]) > 0)
                     {
-                       fprintf (fp, 
-                           "    <FIELD ID=\"%s\" datatype=\"%s\" name=\"%s\" unit=\"%s\"/>\n", 
-                           namearr[i], typearr[i], namearr[i], unitsarr[i]);
+                       if(strlen(unitsarr[i]) > 0)
+                       {
+                          fprintf (fp, 
+                              "    <FIELD ID=\"%s\" datatype=\"%s\" name=\"%s\" unit=\"%s\">\n", 
+                              namearr[i], typearr[i], namearr[i], unitsarr[i]);
+                       }
+                       else
+                       {
+                          fprintf (fp, 
+                              "    <FIELD ID=\"%s\" datatype=\"%s\" name=\"%s\">\n", 
+                              namearr[i], typearr[i], namearr[i]);
+                       }
+
+                       fprintf (fp, "  <DESCRIPTION><![CDATA[ %s ]]></DESCRIPTION>\n", descarr[i]);
+                       fprintf (fp, "    </FIELD>\n>");
                     }
                     else
                     {
-                       fprintf (fp, 
-                           "    <FIELD ID=\"%s\" datatype=\"%s\" name=\"%s\"/>\n", 
-                           namearr[i], typearr[i], namearr[i]);
+                       if(strlen(unitsarr[i]) > 0)
+                       {
+                          fprintf (fp, 
+                              "    <FIELD ID=\"%s\" datatype=\"%s\" name=\"%s\" unit=\"%s\"/>\n", 
+                              namearr[i], typearr[i], namearr[i], unitsarr[i]);
+                       }
+                       else
+                       {
+                          fprintf (fp, 
+                              "    <FIELD ID=\"%s\" datatype=\"%s\" name=\"%s\"/>\n", 
+                              namearr[i], typearr[i], namearr[i]);
+                       }
                     }
                 }
             }

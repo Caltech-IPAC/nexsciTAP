@@ -2424,30 +2424,12 @@ class Tap:
         # {
         #
         
-        errcode = ''         
+        errcode = '200'         
         if ('errcode' in kwargs):
             errcode = kwargs['errcode']
 
         httphdr = "HTTP/1.1 " + str(errcode)  + " ERROR\r"
         print(httphdr)
-        print("\r")
-
-        """
-        print("Content-type: text/xml\r")
-        print("\r")
-
-        print('<?xml version="1.0" encoding="UTF-8"?>')
-        print('<VOTABLE version="1.4"'
-              ' xmlns="http://www.ivoa.net/xml/VOTable/v1.3">')
-        print('<RESOURCE type="results">')
-        print('<INFO name="QUERY_STATUS" value="ERROR">')
-
-        print(errmsg)
-
-        print('</INFO>')
-        print('</RESOURCE>')
-        print('</VOTABLE>')
-        """
 
         if(fmt == 'votable'):
 
