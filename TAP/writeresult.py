@@ -169,19 +169,27 @@ class writeResult:
         # open querypath for output
         #
 
-        resulttbl = ''
-        if(self.format == 'votable'):
-            resulttbl = 'result.xml'
-        elif(self.format == 'ipac'):
-            resulttbl = 'result.tbl'
-        elif(self.format == 'csv'):
-            resulttbl = 'result.csv'
-        elif(self.format == 'tsv'):
-            resulttbl = 'result.tsv'
-        elif(self.format == 'json'):
-            resulttbl = 'result.json'
+        self.filename = 'result'
 
-        self.outpath = self.workdir + '/' + resulttbl
+        if('filename' in kwargs):
+            self.filename = kwargs['filename']
+            
+            if(self.filename[0] != '/'):
+                self.outpath = self.workdir + '/' + self.filename
+ 
+        else:
+            if(self.format == 'votable'):
+                resulttbl = self.filename + '.xml'
+            elif(self.format == 'ipac'):
+                resulttbl = self.filename + '.tbl'
+            elif(self.format == 'csv'):
+                resulttbl = self.filename + '.csv'
+            elif(self.format == 'tsv'):
+                resulttbl = self.filename + '.tsv'
+            elif(self.format == 'json'):
+                resulttbl = self.filename + '.json'
+ 
+            self.outpath = self.workdir + '/' + resulttbl
 
         if self.debug:
             logging.debug('')
