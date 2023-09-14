@@ -274,9 +274,15 @@ class runQuery:
             self.status = 'error'
             raise Exception(self.msg)
 
+        self.filename =  None
+        if('filename' in kwargs):
+            self.filename = kwargs['filename']
+
+
         if self.debug:
             logging.debug('')
             logging.debug(f'userworkdir= {self.userworkdir:s}')
+            logging.debug(f'filename= {self.filename:s}')
             logging.debug(f'sql= {self.sql:s}')
 
 
@@ -499,6 +505,7 @@ class runQuery:
             wresult = writeResult(cursor,
                                   self.userworkdir,
                                   self.dd,
+                                  filename=self.filename,
                                   format=self.format,
                                   maxrec=self.maxrec,
                                   arraysize=self.arraysize,
