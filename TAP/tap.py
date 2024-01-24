@@ -207,6 +207,7 @@ class Tap:
         self.token = ''
         self.query = ''
         self.phase = ''
+        self.instance = ''
 
         self.uwsheader = '<uws:job xmlns:uws="http://www.ivoa.net/xml/UWS/v1.0" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema" xsi:schemaLocation="http://www.ivoa.net/xml/UWS/v1.0 http://www.ivoa.net/xml/UWS/v1.0">'
 
@@ -214,6 +215,9 @@ class Tap:
         for key in self.form:
             if self.debug:
                 logging.debug(f'      key: {key:<15}   val: {self.form[key].value:s}')
+
+            if(key.lower() == 'instance'):
+                self.instance = self.form[key].value
 
             if(key.lower() == 'propflag'):
                 self.propflag = int(self.form[key].value)
@@ -451,11 +455,12 @@ class Tap:
 
         self.config = None
         try:
-            self.config = configParam(self.configpath, debug=self.debug)
+            self.config = configParam(self.configpath, instance=self.instance, debug=self.debug)
         
             if self.debug:
                 logging.debug('')
-                logging.debug(f'returned configParam')
+                logging.debug(f'returned configParam:')
+                logging.debug('%s', self.config)
 
         except Exception as e:
 
@@ -474,6 +479,7 @@ class Tap:
         if self.debug:
             logging.debug('')
             logging.debug(f'workdir    = {self.workdir:s}')
+
         
         self.arraysize = self.config.arraysize
 
@@ -1610,6 +1616,18 @@ class Tap:
             #
 
             try:
+
+                if self.debug:
+                    logging.debug('')
+                    logging.debug(f'runQuery parameters:')
+                    logging.debug(f'query     = [{self.query:s}]')
+                    logging.debug(f'workdir   = [{self.userWorkdir:s}]')
+                    logging.debug(f'format    = [{self.format:s}]')
+                    logging.debug(f'maxrec    = [{self.maxrec:d}]')
+                    logging.debug(f'arraysize = [{self.arraysize:d}]')
+                    logging.debug(f'racol     = [{self.config.racol:s}]')
+                    logging.debug(f'deccol    = [{self.config.deccol:s}]')
+                    logging.debug('')
 
                 dbquery = runQuery(connectInfo=self.config.connectInfo,
                                    query=self.query,

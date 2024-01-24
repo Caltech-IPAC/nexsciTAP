@@ -12,8 +12,14 @@ import argparse
 import configobj
 
 from TAP.datadictionary import dataDictionary
-from TAP.writeresult import writeResult
-from TAP.tablenames import TableNames
+from TAP.writeresult    import writeResult
+from TAP.tablenames     import TableNames
+from TAP.configparam    import configParam
+
+from ADQL.adql import ADQL
+
+from spatial_index import SpatialIndex
+
 
 class runQuery:
 
@@ -84,6 +90,7 @@ class runQuery:
           runquery = runQuery(connectInfo=connectInfo,
                               query=query,
                               workdir=userworkdir,
+                              filename=filename,
                               maxrec=maxrec,
                               format=format,
                               racol=racol,
@@ -189,11 +196,11 @@ class runQuery:
                 import mysql.connector
             
                 self.dbserver = None 
-                self.port = 3306
-                self.socket =  None
-                self.db =  None
-                self.userid =  None
-                self.password =  None
+                self.port     = 3306
+                self.socket   = None
+                self.db       = None
+                self.userid   = None
+                self.password = None
                 
                 if ('dbserver' in self.connectInfo):
                     self.dbserver = self.connectInfo['dbserver']
@@ -269,20 +276,21 @@ class runQuery:
             self.userworkdir = kwargs['workdir']
 
         if (self.userworkdir is None):
-            self.msg = \
-                'Failed to retrieve required input parameter [userworkdir]'
-            self.status = 'error'
-            raise Exception(self.msg)
+            self.userworkdir = '.'
 
-        self.filename =  None
+        self.filename = None
         if('filename' in kwargs):
             self.filename = kwargs['filename']
-
 
         if self.debug:
             logging.debug('')
             logging.debug(f'userworkdir= {self.userworkdir:s}')
-            logging.debug(f'filename= {self.filename:s}')
+
+            if('filename' in kwargs):
+                logging.debug(f'filename= {self.filename:s}')
+            else:
+                logging.debug(f'filename= None')
+
             logging.debug(f'sql= {self.sql:s}')
 
 
@@ -574,92 +582,121 @@ class runQuery:
 
 def main():
 
+    pid = os.getpid()
+
     sys.tracebacklimit = 0
+
+    debugfname = '/tmp/tap_' + str(pid) + '.debug'
 
     parser = argparse.ArgumentParser(description='runQuery')
 
-    parser.add_argument('--dsn', required=True,
-                        help='Oracle database(DSN) to use.')
-
-    parser.add_argument('--table', required=True,
-                        help='Database table to query.')
-
-    parser.add_argument('--sql', required=True,
-                        help='SQL SELECT statement.')
-
-    parser.add_argument('--configpath', required=True,
-                        help='Configuration file specifying DSN'
-                             ' userid, passwd, and server.')
-
-    parser.add_argument('--workdir', required=True,
-                        help='workdir for the result.')
-
-    parser.add_argument('--debug', required=False,
-                        help='debugflag: 1/0.')
+    parser.add_argument('--configpath',    help='Configuration file specifying database userid, passwd, and server.')
+    parser.add_argument('--instance',      help='Configuration instance.')
+    parser.add_argument('--sql',           help='ADQL (SQL) SELECT statement.')
+    parser.add_argument('--filename',      help='Output filename.', default='results.tbl')
+    parser.add_argument('--format',        help='Format of output table.', default='ipac')
+    parser.add_argument('--maxrec',        help='Maximum number of records on output (default: all).', default='-1')
+    parser.add_argument('--debug',         help='Debug flag: 1/0.', default='0')
 
     args = parser.parse_args()
 
-    dsn_in = ''
-    table = ''
-    sql = ''
-    configpath = ''
-    workdir = ''
-    debug = 0
+    adql_string   = args.sql
+    configpath    = args.configpath
+    instance      = args.instance
+    format        = args.format
+    maxrec        = args.maxrec
+    filename      = args.filename
+    debug         = int(args.debug)
 
-    dsn_in = args.dsn
-    table = args.table
-    sql = args.sql
-    configpath = args.configpath
-    workdir = args.workdir
-    debug = args.debug
+    arraysize  = 10000
 
-    confobj = configobj.ConfigObj(configpath)
+    if configpath == None:
+        if 'TAP_CONF' in os.environ:
+            configpath = os.environ['TAP_CONF']
+        else:
+            print('[struct stat="ERROR", msg="No config file path given or in TAP_CONF environment variable."]')
+            exit(0)
 
-    dsn = ''
-    if dsn_in.upper() in confobj:
-        dsn = dsn_in.upper()
-    elif dsn_in.lower() in confobj:
-        dsn = dsn_in.lower()
+    if debug:
 
-    userid = ''
-    if('UserID' in confobj[dsn]):
-        userid = confobj[dsn]['UserID']
+        logging.basicConfig(filename=debugfname,
+                            format='%(levelname)-8s %(relativeCreated)d>  '
+                            '%(filename)s %(lineno)d  '
+                            '(%(funcName)s):   %(message)s',
+                            level=logging.DEBUG)
 
-    password = ''
-    if('Password' in confobj[dsn]):
-        password = confobj[dsn]['Password']
+    config = None
 
-    if('ServerName' in confobj[dsn]):
-        dbserver = confobj[dsn]['ServerName']
-
-    racol = ''
-    if('RACOL' in confobj['webserver']):
-        racol = confobj['webserver']['RACOL']
-
-    deccol = ''
-    if('DECCOL' in confobj['webserver']):
-        deccol = confobj['webserver']['DECCOL']
-
-    query = None
     try:
+        # ADQL/spatial-index config
 
-        query = runQuery(dbserver=dbserver,
-                         userid=userid,
-                         password=password,
-                         dbtable=table,
-                         query=sql,
-                         workdir=workdir,
-                         racol=racol,
-                         deccol=deccol,
-                         format='ipac',
-                         maxrec='10000',
-                         debug=debug)
+        config = configParam(configpath, instance=instance, debug=debug)
 
-        print(query.returnMsg)
+        if debug:
+            logging.debug('')
+            logging.debug('config:')
+            logging.debug('%s', config)
+
+        dbms    = config.dbms
+        xcol    = config.adqlparam['xcol']
+        ycol    = config.adqlparam['ycol']
+        zcol    = config.adqlparam['zcol']
+        racol   = config.racol
+        deccol  = config.deccol
+
+        level   = config.adqlparam['level']
+        colname = config.adqlparam['level']
+
+        encoding = SpatialIndex.BASE4
+        if(config.adqlparam['encoding'] == 'BASE10'):
+            encoding = SpatialIndex.BASE10
+
+        mode = SpatialIndex.HTM
+        if(config.adqlparam['mode'] == 'HPX'):
+            mode = SpatialIndex.HPX
+
+
+        # Set up ADQL translator
+
+        adql = ADQL(dbms=dbms, mode=mode, level=level, indxcol=colname,
+                    encoding=encoding, racol=racol, deccol=deccol,
+                    xcol=xcol, ycol=ycol, zcol=zcol)
 
     except Exception as e:
 
-        print(f'runQuery failed: {str(e):s}')
+        if debug:
+            logging.debug(f'config exception: {str(e):s}')
+
+        print('[struct stat="ERROR", msg="Config exception: ' + str(e) + '"]')
+        exit(0)
+
+    try:
+        sql_string = adql.sql(adql_string)
+
+        if debug:
+            logging.debug(f'ADQL string: {adql_string:s}')
+            logging.debug(f' SQL string: {sql_string:s}')
+
+        dbquery = runQuery(connectInfo=config.connectInfo,
+                           query=sql_string,
+                           filename=filename,
+                           format=format,
+                           maxrec=maxrec,
+                           arraysize=arraysize,
+                           racol=config.racol,
+                           deccol=config.deccol,
+                           debug=debug)
+
+        print('[struct stat="OK", msg="' + dbquery.returnMsg + '"]')
+        exit(0)
+
+    except Exception as e:
+
+        if debug:
+            logging.debug(f'runQuery failed: {str(e):s}')
+
+        print('[struct stat="ERROR", msg="Query failed: ' + str(e) + '"]')
+        exit(0)
 
 
 if __name__ == "__main__":

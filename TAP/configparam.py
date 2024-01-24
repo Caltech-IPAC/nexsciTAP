@@ -6,6 +6,7 @@
 import os
 import logging
 import configobj
+import pprint
 
 
 class configParam:
@@ -22,14 +23,39 @@ class configParam:
 
         debugloggername: a keyword input(i.e., debugloggername=loggername)
         where 'loggername' is defined in the calling program
+
+        instance:  configuration instance name for searching the config file
     """
 
     debug = 0
 
     def __init__(self, path, **kwargs):
 
+        pp = pprint.PrettyPrinter(indent=3)
+
+
+
+        # Initialize from kwargs
+
         if('debug' in kwargs):
             self.debug = kwargs['debug']
+
+        self.instance = None
+        if 'instance' in kwargs:
+            self.instance = kwargs['instance']
+
+        if self.debug:
+            logging.debug('')
+            logging.debug('      path:')
+            logging.debug('      %s', path)
+
+        if self.debug:
+            logging.debug('')
+            logging.debug('      kwargs:')
+            logging.debug('      %s', kwargs)
+
+
+        # Open config file
 
         self.configpath = path
 
@@ -43,213 +69,321 @@ class configParam:
             self.msg = 'Cannot find config file: ' + path
             raise Exception(self.msg)
 
-        #
-        # Instantiate configobj class
-        #
-
         confobj = configobj.ConfigObj(self.configpath)
+
+        if self.debug:
+            logging.debug('')
+            logging.debug('      confobj:')
+            logging.debug('      %s', confobj)
 
         if self.debug:
             logging.debug('')
             logging.debug('ConfigObj instantiated successfully')
 
-        #
-        # Extract config parameters of input server
-        #
+        
+        ### Web server config parameters ############
 
-        self.server = 'webserver'
+        self.web = 'WEB'
         if self.debug:
             logging.debug('')
-            logging.debug(f'      server = {self.server:s}')
-
-        dbms = None 
-        if('DBMS' in confobj[self.server]):
-            dbms = confobj[self.server]['DBMS']
-        self.dbms = dbms
-
-        if self.debug:
-            logging.debug('dbms=')
-            logging.debug(self.dbms)
+            logging.debug(f'      server = {self.web:s}')
 
 
-        if (self.dbms is None):
+        # TAP_WORKDIR
+
+        self.workdir =  None
+        if('TAP_WORKDIR' in confobj[self.web]):
+            self.workdir = confobj[self.web]['TAP_WORKDIR']
+
+        if (self.workdir is None):
             self.status = 'error'
-            self.msg = 'Failed to find database server name in config_file'
+            self.msg = 'Failed to find TAP_WORKDIR in config_file'
             raise Exception(self.msg)
 
 
-        arraysize = 10000
+        # TAP_WORKURL
 
-        if('ArraySize' in confobj[self.server]):
-            try:
-                arraysize = int(confobj[self.server]['ArraySize'])
-            except Exception as e:
-                arraysize = 10000
+        self.workurl =  None
+        if('TAP_WORKURL' in confobj[self.web]):
+            self.workurl = confobj[self.web]['TAP_WORKURL']
 
-        self.arraysize = arraysize
+        if (self.workurl is None):
+            self.status = 'error'
+            self.msg = 'Failed to find TAP_WORKURL in config_file'
+            raise Exception(self.msg)
 
 
-        self.connectInfo = {}
+        # HTTP_URL  (includingt HTTP_PORT)
 
-        self.connectInfo['dbms'] = dbms
+        self.httpurl = None 
+        if ('HTTP_URL' in confobj[self.web]):
+            self.httpurl = confobj[self.web]['HTTP_URL']
 
-        if(dbms == 'oracle'):
+        if (self.httpurl is None):
+            self.status = 'error'
+            self.msg = 'Failed to find HTTP_URL in config_file'
+            raise Exception(self.msg)
 
-            self.connectInfo['dbserver'] = None 
-            if('ServerName' in confobj[dbms]):
-                self.connectInfo['dbserver'] = confobj[dbms]['ServerName']
+        self.port = None 
+        if('HTTP_PORT' in confobj[self.web]):
+            self.port = confobj[self.web]['HTTP_PORT']
 
-            if (self.connectInfo['dbserver'] is None):
+            if ((self.port != '80') and (self.port != '443')):
+                self.httpurl = self.httpurl + ':' + self.port
+
+
+        # CGIPGM
+
+        self.cgipgm = None 
+        if ('CGI_PGM' in confobj[self.web]):
+            self.cgipgm = confobj[self.web]['CGI_PGM']
+
+
+        # ARRAYSIZE
+
+        self.arraysize = 10000 
+        if ('ArraySize' in confobj[self.web]):
+            self.arraysize = confobj[self.web]['ArraySize']
+
+
+        # INFOMSG
+
+        self.infomsg = ''                                                      
+        if('INFOMSG' in confobj[self.web]):                                 
+            self.infomsg = confobj[self.web]['INFOMSG']                     
+
+
+        
+        ### Configuration ###########################
+
+        # If there was an input configuration 'instance', read 'db_connection' 
+        # and 'sptind_config' section names from there.  Otherwise use the
+        # following defaults:
+
+        self.db_connection = 'DBMS'
+        self.sptind_config = 'SPTIND'
+
+
+        if self.instance:  # Set by kwargs above
+
+            self.db_connection =  None
+            if('DB_CONNECTION' in confobj[self.instance]):
+                self.db_connection = confobj[self.instance]['DB_CONNECTION']
+
+            if (self.db_connection is None):
                 self.status = 'error'
-                self.msg = 'Failed to find db server name in config_file'
+                self.msg = 'Failed to find DB_CONNECTION in config_file'
                 raise Exception(self.msg)
-
-            self.connectInfo['userid'] = None 
-            if('UserID' in confobj[dbms]):
-                self.connectInfo['userid'] = confobj[dbms]['UserID']
-
-            if (self.connectInfo['userid'] is None):
-                self.status = 'error'
-                self.msg = 'Failed to find DBMS user ID in config_file'
-                raise Exception(self.msg)
-
-            self.connectInfo['password'] = None 
-            if('Password' in confobj[dbms]):
-                self.connectInfo['password'] = confobj[dbms]['Password']
-
-            if (self.connectInfo['password'] is None):
-                self.status = 'error'
-                self.msg = 'Failed to find db password in config_file'
-                raise Exception(self.msg)
-
-            if self.debug:
-                logging.debug ('')
-                logging.debug ("dbserver=")
-                logging.debug (self.connectInfo['dbserver'])
-                logging.debug ("dbuser= [Not shown for security reasons.]")
-                logging.debug ("password= [Not shown for security reasons.]")
            
-            #
-            #   Change to below (temporarily) to debug login info.
-            # 
-            #   logging.debug ("dbuser=")
-            #   logging.debug (self.connectInfo['userid'])
-            #   logging.debug ("password=")
-            #   logging.debug (self.connectInfo['password'])
+
+            self.sptind_config =  None
+            if('SPTIND_CONFIG' in confobj[self.instance]):
+                self.sptind_config = confobj[self.instance]['SPTIND_CONFIG']
 
 
-        if (dbms == 'sqlite3'):
 
-            self.connectInfo['db'] = None 
-            if ('DB' in confobj[dbms]):
-                self.connectInfo['db'] = confobj[dbms]['DB']
+        ### Database Connection #####################
 
-            if (self.connectInfo['db'] is None):
+
+        self.dbms       = None
+        self.dbserver   = None
+        self.userid     = None
+        self.password   = None
+        self.db         = None
+        self.tap_schema = None
+        self.dbport     = None
+        self.socket     = None
+        self.dbschema   = None
+
+        self.cookiename = '' 
+        self.accesstbl  = '' 
+        self.usertbl    = '' 
+        self.propfilter = ''
+        self.fileid     = ''
+        self.accessid   = ''
+        self.racol      = 'ra'
+        self.deccol     = 'dec'
+
+
+        if self.db_connection:
+
+            # DBMS
+
+            if 'DBMS' in confobj[self.db_connection]:
+                self.dbms = confobj[self.db_connection]['DBMS']
+
+            if (self.dbms is None):
                 self.status = 'error'
-                self.msg = 'Failed to find DB in config_file'
+                self.msg = 'Failed to find DBMS in config_file'
                 raise Exception(self.msg)
+           
 
-            self.connectInfo['tap_schema'] =  None
-            if ('TAP_SCHEMA' in confobj[dbms]):
-                self.connectInfo['tap_schema'] = confobj[dbms]['TAP_SCHEMA']
+            # ORACLE Connection
 
-            if (self.connectInfo['tap_schema'] is None):
-                self.status = 'error'
-                self.msg = 'Failed to find TAP_SCHEMA password in config_file'
-                raise Exception(self.msg)
+            if self.dbms == 'oracle':
 
-            if self.debug:
-                logging.debug ('')
-                logging.debug ("db=")
-                logging.debug (self.connectInfo['db'])
-                logging.debug ("tap_schema=")
-                logging.debug (self.connectInfo['tap_schema'])
+                # SERVERNAME
+
+                if 'ServerName' in confobj[self.db_connection]:
+                    self.dbserver = confobj[self.db_connection]['ServerName']
+
+                if (self.dbserver is None):
+                    self.status = 'error'
+                    self.msg = 'Failed to find Oracle ServerName in config_file'
+                    raise Exception(self.msg)
 
 
-        if(dbms == 'mysql'):
+                # USERID
 
-            self.connectInfo['dbserver'] = None 
-            if('ServerName' in confobj[dbms]):
-                self.connectInfo['dbserver'] = confobj[dbms]['ServerName']
+                if 'UserID' in confobj[self.db_connection]:
+                    self.userid = confobj[self.db_connection]['UserID']
 
-            if self.debug:
-                logging.debug('')
-                logging.debug(f'dbserver= ')
-                logging.debug(self.connectInfo['dbserver'])
-            
-            self.connectInfo['port'] =  None
-            if('port' in confobj[dbms]):
-                self.connectInfo['port'] = confobj[dbms]['port']
+                if (self.userid is None):
+                    self.status = 'error'
+                    self.msg = 'Failed to find Oracle UserID in config_file'
+                    raise Exception(self.msg)
 
-            if self.debug:
-                logging.debug('')
-                logging.debug(f'port= ')
-                logging.debug(self.connectInfo['port'])
-            
-            self.connectInfo['socket'] = None
-            if ('socket' in confobj[dbms]):
-                self.connectInfo['socket'] = confobj[dbms]['socket']
-            
-            if self.debug:
-                logging.debug('')
-                logging.debug(f'socket= ')
-                logging.debug(self.connectInfo['socket'])
-            
-                
-            if ((self.connectInfo['dbserver'] is None) and \
-                (self.connectInfo['socket'] is None)):
-                
-                self.status = 'error'
-                self.msg = \
-                    'Failed to find db server OR socket info in config_file'
-                raise Exception(self.msg)
 
-            self.connectInfo['userid'] = None 
-            if('UserID' in confobj[dbms]):
-                self.connectInfo['userid'] = confobj[dbms]['UserID']
+                # PASSWORD
 
-            if (self.connectInfo['userid'] is None):
-                self.status = 'error'
-                self.msg = 'Failed to find DBMS user ID in config_file'
-                raise Exception(self.msg)
+                if 'Password' in confobj[self.db_connection]:
+                    self.password = confobj[self.db_connection]['Password']
 
-            self.connectInfo['password'] = None 
-            if ('Password' in confobj[dbms]):
-                self.connectInfo['password'] = confobj[dbms]['Password']
+                if (self.password is None):
+                    self.status = 'error'
+                    self.msg = 'Failed to find Oracle Password in config_file'
+                    raise Exception(self.msg)
 
-            if (self.connectInfo['password'] is None):
-                self.status = 'error'
-                self.msg = 'Failed to find db password in config_file'
-                raise Exception(self.msg)
 
-            self.connectInfo['dbschema'] = None 
-            if('dbschema' in confobj[dbms]):
-                self.connectInfo['dbschema'] = confobj[dbms]['dbschema']
+                # KOA Proprietary Access parameters
 
-            if (self.connectInfo['dbschema'] is None):
-                self.status = 'error'
-                self.msg = 'Failed to find DB schema in config_file'
-                raise Exception(self.msg)
+                self.cookiename = '' 
+                if('COOKIENAME' in confobj[self.db_connection]):
+                    self.cookiename = confobj[self.db_connection]['COOKIENAME']
 
-            if self.debug:
-                logging.debug('')
-                if (self.connectInfo['dbserver'] is not None):
-                    logging.debug (\
-                        f"dbserver= {self.connectInfo['dbserver']:s}")
-                if (self.connectInfo['socket'] is not None):
-                    logging.debug (f"socket= {self.connectInfo['socket']:s}")
-                if (self.connectInfo['dbschema'] is not None):
-                    logging.debug (f"db= {self.connectInfo['dbschema']:s}")
-                logging.debug ("userid= [Not shown for security reasons.]")
-                logging.debug ("password= [Not shown for security reasons.]")
-                
-                
-            
+                self.accesstbl = '' 
+                if('ACCESS_TBL' in confobj[self.db_connection]):
+                    self.accesstbl = confobj[self.db_connection]['ACCESS_TBL']
+
+                self.usertbl = '' 
+                if('USERS_TBL' in confobj[self.db_connection]):
+                    self.usertbl = confobj[self.db_connection]['USERS_TBL']
+
+                self.propfilter =  ''
+                if('PROPFILTER' in confobj[self.db_connection]):
+                    self.propfilter = confobj[self.db_connection]['PROPFILTER']
+
+                self.fileid =  ''
+                if('FILEID' in confobj[self.db_connection]):
+                    self.fileid = confobj[self.db_connection]['FILEID']
+
+                self.accessid = ''
+                if('ACCESSID' in confobj[self.db_connection]):
+                    self.accessid = confobj[self.db_connection]['ACCESSID']
+
+                self.racol = 'ra'
+                if('RACOL' in confobj[self.db_connection]):
+                    self.racol = confobj[self.db_connection]['RACOL']
+
+                self.deccol = 'dec'
+                if('DECCOL' in confobj[self.db_connection]):
+                    self.deccol = confobj[self.db_connection]['DECCOL']
+
+
+            # SQLITE Connection
+
+            if self.dbms == 'sqlite3':
+
+                # DB
+
+                if 'DB' in confobj[self.db_connection]:
+                    self.db = confobj[self.db_connection]['DB']
+
+                if (self.db is None):
+                    self.status = 'error'
+                    self.msg = 'Failed to find SQLite DB in config_file'
+                    raise Exception(self.msg)
+
+
+                # TAP_SCHEMA
+
+                if 'TAP_SCHEMA' in confobj[self.db_connection]:
+                    self.tap_schema = confobj[self.db_connection]['TAP_SCHEMA']
+
+                if (self.tap_schema is None):
+                    self.status = 'error'
+                    self.msg = 'Failed to find SQLite TAP_SCHEMA in config_file'
+                    raise Exception(self.msg)
+
+
+            # MYSQL Connection
+
+            if(self.dbms == 'mysql'):
+
+                # DBSERVER
+
+                if('ServerName' in confobj[self.db_connection]):
+                    self.dbserver = confobj[self.db_connection]['ServerName']
+
+
+                # PORT
+
+                if('port' in confobj[self.db_connection]):
+                    self.dbport = confobj[self.db_connection]['port']
+
+
+                # SOCKET
+
+                if ('socket' in confobj[self.db_connection]):
+                    self.socket = confobj[self.db_connection]['socket']
+
+
+                if ((self.dbserver is None) and \
+                    (self.socket is None)):
+
+                    self.status = 'error'
+                    self.msg = \
+                        'Failed to MySQL db server OR socket info in config_file'
+                    raise Exception(self.msg)
+
+
+                # USERID
+
+                if('UserID' in confobj[self.db_connection]):
+                    self.userid = confobj[self.db_connection]['UserID']
+
+                if (self.userid is None):
+                    self.status = 'error'
+                    self.msg = 'Failed to MySQL DBMS user ID in config_file'
+                    raise Exception(self.msg)
+
+ 
+                # PASSWORD
+
+                if ('Password' in confobj[self.db_connection]):
+                    self.password = confobj[self.db_connection]['Password']
+
+                if (self.password is None):
+                    self.status = 'error'
+                    self.msg = 'Failed to MySQL DB password in config_file'
+                    raise Exception(self.msg)
+
+
+                # DBSCHEMA
+
+                if('dbschema' in confobj[self.db_connection]):
+                    self.dbschema = confobj[self.db_connection]['dbschema']
+
+                if (self.dbschema is None):
+                    self.status = 'error'
+                    self.msg = 'Failed to MySQL DB schema in config_file'
+                    raise Exception(self.msg)
+
+
+
+        ### Spatial Index Configuration #############
+
         self.adqlparam = {}
-
-        #
-        # Default values
-        #
 
         self.adqlparam['mode']     = 'HTM'
         self.adqlparam['level']    =  7
@@ -259,127 +393,72 @@ class configParam:
         self.adqlparam['colname']  = 'spt_ind'
         self.adqlparam['encoding'] = 'BASE4'
 
-        if('ADQL_MODE' in confobj[self.server]):
-            self.adqlparam['mode'] = confobj[self.server]['ADQL_MODE']
+        if self.sptind_config:
 
-        if('ADQL_LEVEL' in confobj[self.server]):
-            self.adqlparam['level'] = confobj[self.server]['ADQL_LEVEL']
+            if('MODE' in confobj[self.sptind_config]):
+                self.adqlparam['mode'] = confobj[self.sptind_config]['MODE']
 
-        if(self.adqlparam['mode'] == 'HTM' and self.adqlparam['level'] != '7'):
-            self.adqlparam['colname'] = 'htm' + str(self.adqlparam['level'])
-            self.adqlparam['encoding'] = 'BASE10'
+            if('LEVEL' in confobj[self.sptind_config]):
+                self.adqlparam['level'] = confobj[self.sptind_config]['LEVEL']
 
-        if('ADQL_XCOL' in confobj[self.server]):
-            self.adqlparam['xcol'] = confobj[self.server]['ADQL_XCOL']
+            if(self.adqlparam['mode'] == 'HTM' and self.adqlparam['level'] != '7'):
+                self.adqlparam['colname'] = 'htm' + str(self.adqlparam['level'])
+                self.adqlparam['encoding'] = 'BASE10'
 
-        if('ADQL_YCOL' in confobj[self.server]):
-            self.adqlparam['ycol'] = confobj[self.server]['ADQL_YCOL']
+            if('COLNAME' in confobj[self.sptind_config]):
+                self.adqlparam['colname'] = confobj[self.sptind_config]['COLNAME']
 
-        if('ADQL_ZCOL' in confobj[self.server]):
-            self.adqlparam['zcol'] = confobj[self.server]['ADQL_ZCOL']
+            if('XCOL' in confobj[self.sptind_config]):
+                self.adqlparam['xcol'] = confobj[self.sptind_config]['XCOL']
 
-        if('ADQL_ENCODING' in confobj[self.server]):
-            self.adqlparam['encoding'] = confobj[self.server]['ADQL_ENCODING']
+            if('YCOL' in confobj[self.sptind_config]):
+                self.adqlparam['ycol'] = confobj[self.sptind_config]['YCOL']
+
+            if('ZCOL' in confobj[self.sptind_config]):
+                self.adqlparam['zcol'] = confobj[self.sptind_config]['ZCOL']
+
+            if('ENCODING' in confobj[self.sptind_config]):
+                self.adqlparam['encoding'] = confobj[self.sptind_config]['ENCODING']
 
 
-        self.workdir = None 
-        if('TAP_WORKDIR' in confobj[self.server]):
-            self.workdir = confobj[self.server]['TAP_WORKDIR']
-
-        if (self.workdir is None):
-            self.status = 'error'
-            self.msg = 'Failed to find TAP_WORKDIR in config_file'
-            raise Exception(self.msg)
-
-        self.workurl =  None
-        if('TAP_WORKURL' in confobj[self.server]):
-            self.workurl = confobj[self.server]['TAP_WORKURL']
-
-        if (self.workurl is None):
-            self.status = 'error'
-            self.msg = 'Failed to find TAP_WORKURL in config_file'
-            raise Exception(self.msg)
-
-        self.httpurl = None 
-        if ('HTTP_URL' in confobj[self.server]):
-            self.httpurl = confobj[self.server]['HTTP_URL']
-
-        if (self.httpurl is None):
-            self.status = 'error'
-            self.msg = 'Failed to find HTTP_URL in config_file'
-            raise Exception(self.msg)
-
-        self.port = None 
-        if('HTTP_PORT' in confobj[self.server]):
-            self.port = confobj[self.server]['HTTP_PORT']
-
-        if (self.port is None):
-            self.status = 'error'
-            self.msg = 'Failed to find HTTP_PORT in config_file'
-            raise Exception(self.msg)
-
-        if ((self.port != '80') and (self.port != '443')):
-            self.httpurl = self.httpurl + ':' + self.port
-
-        self.cgipgm = None 
-        if ('CGI_PGM' in confobj[self.server]):
-            self.cgipgm = confobj[self.server]['CGI_PGM']
-
-        if (self.cgipgm is None):
-            self.status = 'error'
-            self.msg = 'Failed to find CGI_PGM in config_file'
-            raise Exception(self.msg)
-
-        self.cookiename = '' 
-        if('COOKIENAME' in confobj[self.server]):
-            self.cookiename = confobj[self.server]['COOKIENAME']
-
-        self.accesstbl = '' 
-        if('ACCESS_TBL' in confobj[self.server]):
-            self.accesstbl = confobj[self.server]['ACCESS_TBL']
-
-        self.usertbl = '' 
-        if('USERS_TBL' in confobj[self.server]):
-            self.usertbl = confobj[self.server]['USERS_TBL']
-
-        self.propfilter =  ''
-        if('PROPFILTER' in confobj[self.server]):
-            self.propfilter = confobj[self.server]['PROPFILTER']
-
-        self.fileid =  ''
-        if('FILEID' in confobj[self.server]):
-            self.fileid = confobj[self.server]['FILEID']
-
-        self.accessid = ''
-        if('ACCESSID' in confobj[self.server]):
-            self.accessid = confobj[self.server]['ACCESSID']
-
-        self.racol = 'ra'
-        if('RACOL' in confobj[self.server]):
-            self.racol = confobj[self.server]['RACOL']
-
-        self.deccol = 'dec'
-        if('DECCOL' in confobj[self.server]):
-            self.deccol = confobj[self.server]['DECCOL']
-
-        self.infomsg = ''                                                      
-        if('INFOMSG' in confobj[self.server]):                                 
-            self.infomsg = confobj[self.server]['INFOMSG']                     
-        
         if self.debug:
             logging.debug('')
-            logging.debug(f'      workdir    = {self.workdir:s}')
-            logging.debug(f'      workurl    = {self.workurl:s}')
-            logging.debug(f'      httpurl    = {self.httpurl:s}')
-            logging.debug(f'      cgipgm     = {self.cgipgm:s}')
-            logging.debug(f'      port       = {self.port:s}')
-            logging.debug(f'      cookiename = {self.cookiename:s}')
-            logging.debug(f'      usertbl    = {self.usertbl:s}')
-            logging.debug(f'      accesstbl  = {self.accesstbl:s}')
-            logging.debug(f'      propfilter = {self.propfilter:s}')
-            logging.debug(f'      fileid     = {self.fileid:s}')
-            logging.debug(f'      accessid   = {self.accessid:s}')
-            logging.debug(f'      racol      = {self.racol:s}')
-            logging.debug(f'      deccol     = {self.deccol:s}')
+            logging.debug('adqlparam:')
+            logging.debug('%s', self.adqlparam)
+
+
+        self.connectInfo = {}
+
+        self.connectInfo['dbms']       = self.dbms
+        self.connectInfo['dbserver']   = self.dbserver
+        self.connectInfo['userid']     = self.userid
+        self.connectInfo['password']   = self.password
+        self.connectInfo['db']         = self.db
+        self.connectInfo['tap_schema'] = self.tap_schema
+        self.connectInfo['port']       = self.dbport
+        self.connectInfo['socket']     = self.socket
+        self.connectInfo['dbschema']   = self.dbschema
+
+        if self.debug:
+            logging.debug('')
+            logging.debug('connectInfo:')
+            logging.debug('%s', self.connectInfo)
+
+
+        if self.debug:
+            logging.debug('')
+            logging.debug('      workdir    = ' + str(self.workdir))
+            logging.debug('      workurl    = ' + str(self.workurl))
+            logging.debug('      httpurl    = ' + str(self.httpurl))
+            logging.debug('      cgipgm     = ' + str(self.cgipgm))
+            logging.debug('      port       = ' + str(self.dbport))
+            logging.debug('      cookiename = ' + str(self.cookiename))
+            logging.debug('      usertbl    = ' + str(self.usertbl))
+            logging.debug('      accesstbl  = ' + str(self.accesstbl))
+            logging.debug('      propfilter = ' + str(self.propfilter))
+            logging.debug('      fileid     = ' + str(self.fileid))
+            logging.debug('      accessid   = ' + str(self.accessid))
+            logging.debug('      racol      = ' + str(self.racol))
+            logging.debug('      deccol     = ' + str(self.deccol))
 
         return
