@@ -68,8 +68,8 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
     int inlen;
 
     char debugfname[1024];
-    int  debug  = 0;
-    int  debug1 = 0;
+    int  debug  = 1;
+    int  debug1 = 1;
 
     FILE *fp;
     FILE *fp_debug = (FILE *)NULL;
@@ -479,6 +479,7 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
 */
     strcpy (nullval, "");
     strcpy (nullval_ipac, "null");
+
     if (ishdr) {
         
         if (strcasecmp (outfmt, "ipac") == 0) {
@@ -727,7 +728,7 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
     for (l=0; l<nrows_data; l++) {
 
         if ((debug1) && (fp_debug != (FILE *)NULL)) {
-            fprintf (fp_debug, "\nxxxl= [%d]\n", l );
+            fprintf (fp_debug, "\nxxxl= [%d] (row counter)\n", l );
             fflush (fp_debug);
         }
         
@@ -992,7 +993,6 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
                     
                 strcpy (strval, "");
                 if (PyLong_Check (item)) {
-               
                     intval = PyLong_AsLong (item);
                     sprintf (strval, fmt, intval);
                 }

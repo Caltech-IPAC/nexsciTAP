@@ -64,6 +64,7 @@ class writeResult:
         """
         cursor:       oracle query returned cursor containing data stream,
         workdir:      work directory for output files,
+        filename:     output file name. 
         dd:           data dictionary for the output columns,
         coldes(0/1): indictes whether to include column descriptions in the
                   output file header
@@ -80,6 +81,7 @@ class writeResult:
 
             wresult = writeResult(cursor, \
                 workdir, \
+                filename, \
                 dd, \
                 format=format, \
                 maxrec=maxrec, \
@@ -153,7 +155,7 @@ class writeResult:
         if self.debug:
             logging.debug('')
             logging.debug('from kwargs:')
-            logging.debug(f'      dbms       = {self.dbms:s}')
+            logging.debug(f'      format     = {self.format:s}')
             logging.debug(f'      racol       = {self.racol:s}')
             logging.debug(f'      deccol      = {self.deccol:s}')
             logging.debug(f'      ind_racol   = {self.ind_racol:d}')
@@ -173,26 +175,41 @@ class writeResult:
 
         if('filename' in kwargs):
             self.filename = kwargs['filename']
+
+            if(self.filename == None):
+                self.filename = 'result'
+
+                if(self.format == 'votable'):
+                    self.filename = self.filename + '.xml'
+                elif(self.format == 'ipac'):
+                    self.filename = self.filename + '.tbl'
+                elif(self.format == 'csv'):
+                    self.filename = self.filename + '.csv'
+                elif(self.format == 'tsv'):
+                    self.filename = self.filename + '.tsv'
+                elif(self.format == 'json'):
+                    self.filename = self.filename + '.json'
             
             if(self.filename[0] != '/'):
                 self.outpath = self.workdir + '/' + self.filename
  
         else:
             if(self.format == 'votable'):
-                resulttbl = self.filename + '.xml'
+                self.filename = self.filename + '.xml'
             elif(self.format == 'ipac'):
-                resulttbl = self.filename + '.tbl'
+                self.filename = self.filename + '.tbl'
             elif(self.format == 'csv'):
-                resulttbl = self.filename + '.csv'
+                self.filename = self.filename + '.csv'
             elif(self.format == 'tsv'):
-                resulttbl = self.filename + '.tsv'
+                self.filename = self.filename + '.tsv'
             elif(self.format == 'json'):
-                resulttbl = self.filename + '.json'
+                self.filename = self.filename + '.json'
  
             self.outpath = self.workdir + '/' + resulttbl
 
         if self.debug:
             logging.debug('')
+            logging.debug(f'filename= {self.filename:s}')
             logging.debug(f'outpath= {self.outpath:s}')
 
         #
@@ -215,8 +232,8 @@ class writeResult:
             logging.debug(self.cursor.description)
             logging.debug('------------------------------------------------')
 
+        #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
         for desc in self.cursor.description:
-            
             name = desc[0]
             coltype = desc[1]
             dispsize = desc[2]
@@ -224,24 +241,8 @@ class writeResult:
             precision = desc[4]
             scale = desc[5] 
             nullok = desc[6]
-            
-            """
-            if self.debug:
-                logging.debug('')
-                logging.debug(f'name = {name:s}')
-                logging.debug(f'coltype:')
-                logging.debug(coltype)
-                logging.debug(f'dispsize:')
-                logging.debug(dispsize)
-                logging.debug(f'internalsz:')
-                logging.debug(internalsz)
-                logging.debug(f'precision:')
-                logging.debug(precision)
-                logging.debug(f'scale:')
-                logging.debug(scale)
-                logging.debug(f'nullok:')
-                logging.debug(nullok)
-            """
+        
+
 
         #
         # C interface list:
@@ -251,13 +252,13 @@ class writeResult:
 
         ddlist = []
 
-        namearr = []
-        typearr = []
+        namearr   = []
+        typearr   = []
         dbtypearr = []
-        fmtarr = []
-        unitsarr = []
-        widtharr = []
-        descarr = []
+        fmtarr    = []
+        unitsarr  = []
+        widtharr  = []
+        descarr   = []
 
         #
         # For non-dd column and dbtype == NUMBER, check data to see if
@@ -265,25 +266,17 @@ class writeResult:
         #
 
         isddcolarr = []
-        intcntarr = []
-        fltcntarr = []
+        intcntarr  = []
+        fltcntarr  = []
 
 
         dbdatatype = None
-        precision = None 
-        scale = None
-        size = None 
+        precision  = None 
+        scale      = None
+        size       = None 
 
-        nfetch = self.arraysize
-
-        self.cursor.arraysize = nfetch
-
-        #if self.debug:
-        #    logging.debug('')
-        #    logging.debug(f'cursor.description:')
-        #    logging.debug(self.cursor.description)
-        
         i = 0
+
         for col in self.cursor.description:
 
             #
@@ -386,6 +379,7 @@ class writeResult:
             #
             # } end oracle datatype
             #
+
             elif (self.dbms.lower() == 'mysql'):
             #
             # { mysql datatype from descriptor
@@ -425,10 +419,28 @@ class writeResult:
             # } end mysql datatype
             #
 
+            elif (self.dbms.lower() == 'sqlite3'):
+            #
+            # { mysql datatype from descriptor
+            #    
+                if self.debug:
+                    logging.debug('')
+                    logging.debug(f'sqlite3:')
+
+                dbdatatype = ''
+            #
+            # } end sqlite3 datatype
+            #
+
             if self.debug:
-                logging.debug(f'dbdatatype    = {dbdatatype:s}')
-                logging.debug('size=')
-                logging.debug(size)
+                try:
+                    logging.debug(f'dbdatatype = {dbdatatype:s}')
+                    logging.debug(f'size       = {size:d}')
+
+                except Exception as e:
+                    logging.debug(f'dbdatatype not set.')
+                    pass
+
 
             if(col[2] is not None):
                 size = int(col[2])
@@ -436,17 +448,20 @@ class writeResult:
                 if self.debug:
                     logging.debug(f'size= {size:d}')
 
+
             if(col[4] is not None):
                 precision = int(col[4])
 
                 if self.debug:
                     logging.debug(f'precision = {precision:d}')
 
+
             if(col[5] is not None):
                 scale = int(col[5])
 
                 if self.debug:
                     logging.debug(f'scale     = {scale:d}')
+
 
             #
             # } end  extract dbdatatype, display_size, precision,
@@ -467,30 +482,24 @@ class writeResult:
             if (self.dd != None):
                 ind = self.__getDDIndex__(self.dd, colname)
 
-            dbtype = ''
+            dbtype  = ''
             coltype = ''
-            units = ''
-            desc = ''
-            fmt = ''
-            width = 0
+            units   = ''
+            desc    = ''
+            fmt     = ''
+            width   = 0
 
             if(ind != -1):
 
                 #
                 # { col in dd
-                #
-
-                width = self.dd.colwidth[colname]
-
-                coltype = self.dd.coltype[colname]
-
-                dbtype = dbdatatype
-
-                units = self.dd.colunits[colname]
-
-                fmt = self.dd.colfmt[colname]
-
-                desc = self.dd.coldesc[colname]
+            #
+                dbtype  = dbdatatype
+                width   = self.dd.colwidth[colname]
+                coltype = self.dd.coltype [colname]
+                units   = self.dd.colunits[colname]
+                fmt     = self.dd.colfmt  [colname]
+                desc    = self.dd.coldesc [colname]
 
                 isddcolarr.append(1)
                 intcntarr.append(0)
@@ -501,21 +510,18 @@ class writeResult:
                 #    description dbtype
                 #
 
-                if ((dbtype.lower() == 'string') or \
-                    (dbtype.lower() == 'varchar')):
+                if dbtype == None:
+                    pass
+
+                elif ((dbtype.lower() == 'string') or \
+                      (dbtype.lower() == 'varchar')):
 
                     if self.debug:
                         logging.debug('')
                         logging.debug(f'here0: char type col in dd')
                         logging.debug('size=')
                         logging.debug(size)
-                    
-                    #if (size is not None):
-                    #    width = size
-  
-                    #if self.debug:
-                    #    logging.debug('')
-
+                
                     if (len(colname) > width):
                         width = len(colname)
 
@@ -568,8 +574,11 @@ class writeResult:
                 #
                 # { col Not in dd
                 #
+                if dbdatatype == None:
+                    pass
 
-                if(dbdatatype == 'STRING') or (dbdatatype == 'VARCHAR'):
+
+                elif(dbdatatype == 'STRING') or (dbdatatype == 'VARCHAR'):
 
                     #
                     # { dbdatatype == string
@@ -705,13 +714,10 @@ class writeResult:
                     # { unknown type: default to char
                     #
 
-                    coltype = 'char'
+                    coltype = 'unknown'
                     dbtype = dbdatatype
-
-                    width = 80
-                    if(len(colname) > width):
-                        width = len(colname)
-                    fmt = str(width) + 's'
+                    width = 0
+                    fmt = ''
 
                     #
                     # } end unknown type
@@ -784,21 +790,6 @@ class writeResult:
 
         len_arr = len(namearr)
 
-        if self.debug:
-
-            logging.debug('')
-            logging.debug('DD summary:')
-
-            for i in range(0, len_arr):
-                logging.debug('')
-                logging.debug(f'      name[{i:d}]   = [{namearr[i]:s}]')
-                logging.debug(f'      type[{i:d}]   = [{typearr[i]:s}]')
-                logging.debug(f'      dbtype[{i:d}] = [{dbtypearr[i]:s}]')
-                logging.debug(f'      fmt[{i:d}]    = [{fmtarr[i]:s}]')
-                logging.debug(f'      width[{i:d}]  = [{widtharr[i]:d}]')
-                logging.debug(f'      units[{i:d}]  = [{unitsarr[i]:s}]')
-                logging.debug(f'      desc[{i:d}]   = [{descarr[i]:s}]')
-
         ddlist.append(namearr)
         ddlist.append(typearr)
         ddlist.append(dbtypearr)
@@ -867,25 +858,30 @@ class writeResult:
         #
 
         nfetch = self.arraysize
+
         if self.debug:
             logging.debug(f'nfetch = {nfetch:d}')
             logging.debug('')
 
-
         self.cursor.arraysize = nfetch
 
-        ibatch = 0
-
+        ibatch        = 0
         self.overflow = 0
-        irow = 0
-        self.ntot = 0
+        irow          = 0
+        self.ntot     = 0
 
         #
         #    set maxrec to 20 for debug
         #
         #self.maxrec = 20
         #
+
         while True:
+
+            if self.debug:
+                logging.debug(f'batch = {ibatch:d}')
+                logging.debug('')
+
 
             #
             # { start of while loop for fetching data lines;
@@ -920,7 +916,7 @@ class writeResult:
             # So while we don't want to scan all the data, we have 
             # to scan until we find some value for every column.
 
-            if ((ibatch == 0) and (self.dbms.lower() == 'sqlite')):
+            if ((ibatch == 0) and (self.dbms.lower() == 'sqlite3')):
                 
                 for ll in range(0, nrec):
 
@@ -930,22 +926,50 @@ class writeResult:
 
                     for i in range(0, len(row)):
                             
-                            dtype = type(row[i]).__name__
+                        logging.debug('\n\n')
 
-                            if(dtype != None
-                                and (dbtypearr[i] == '' or typearr[i] == '')):
+                        dtype = type(row[i]).__name__
 
-                                if dtype.lower() == 'int':
-                                    dbtypearr[i] = 'NUMBER'
-                                    typearr[i] = 'int'
+                        coltype = ddlist[1][i]
 
-                                if dtype.lower() == 'float':
-                                    dbtypearr[i] = 'NUMBER'
-                                    typearr[i] = 'double'
+                        llen = len(ddlist[5][i])
 
-                                if dtype.lower() == 'str':
-                                    dbtypearr[i] = 'VARCHAR'
-                                    typearr[i] = 'char'
+                        if coltype == 'unknown':
+
+                            nwidth = len(ddlist[0][i])
+                            twidth = len(ddlist[1][i])
+                            uwidth = len(ddlist[4][i])
+
+                            newwidth = 22
+
+                            if nwidth > newwidth:
+                                newwidth = nwidth
+
+                            if twidth > newwidth:
+                                newwidth = twidth
+
+                            if uwidth > newwidth:
+                                newwidth = uwidth
+
+
+                            if dtype.lower() == 'int':
+                                ddlist[3][i] = '22d'
+                                ddlist[6][i] = newwidth
+                                dbtypearr[i] = 'NUMBER'
+                                typearr[i] = 'int'
+
+
+                            if dtype.lower() == 'float':
+
+                                ddlist[3][i] = '22.14e'
+                                ddlist[6][i] = newwidth
+                                dbtypearr[i] = 'NUMBER'
+                                typearr[i] = 'double'
+
+
+                            if dtype.lower() == 'str':
+                                dbtypearr[i] = 'VARCHAR'
+                                typearr[i] = 'char'
 
             #
             # end special treatment for sqlite datatype assignment
@@ -964,7 +988,8 @@ class writeResult:
                     
                     if (ll < 2):
                         logging.debug('')
-                        logging.debug(f'll= {ll:d} row:')
+                        logging.debug('----------')
+                        logging.debug(f'row {ll:d}:')
                         logging.debug(row)
 
 
@@ -978,9 +1003,9 @@ class writeResult:
                    
                     if self.debug:
                         logging.debug('')
-                        logging.debug(f'i = {i:d}')
-                        logging.debug('row[i]:')
+                        logging.debug(f'col {i:d}')
                         logging.debug(row[i])
+                        logging.debug(type(row[i]).__name__)
 
                     if(i == self.ind_exclcol):
                         continue
@@ -1113,6 +1138,10 @@ class writeResult:
 
                 if self.debug:
                     logging.debug('call writerecs.writerecs')
+
+                logging.debug('')
+                logging.debug('ddlist[3]:')
+                logging.debug(ddlist[3])
 
                 istatus = writerecs.writerecs(self.outpath, self.format,
                                               ddlist, rowslist, self.ishdr,
