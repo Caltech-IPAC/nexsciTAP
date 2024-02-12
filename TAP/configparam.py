@@ -185,24 +185,29 @@ class configParam:
         ### Database Connection #####################
 
 
-        self.dbms       = None
-        self.dbserver   = None
-        self.userid     = None
-        self.password   = None
-        self.db         = None
-        self.tap_schema = None
-        self.dbport     = None
-        self.socket     = None
-        self.dbschema   = None
+        self.dbms              = None
+        self.dbserver          = None
+        self.userid            = None
+        self.password          = None
+        self.db                = None
+        self.tap_schema        = 'TAP_SCHEMA'
+        self.schemas_table     = 'schemas'
+        self.tables_table      = 'tables'
+        self.columns_table     = 'columns'
+        self.keys_table        = 'keys'
+        self.key_columns_table = 'key_columns'
+        self.dbport            = None
+        self.socket            = None
+        self.dbschema          = None
 
-        self.cookiename = '' 
-        self.accesstbl  = '' 
-        self.usertbl    = '' 
-        self.propfilter = ''
-        self.fileid     = ''
-        self.accessid   = ''
-        self.racol      = 'ra'
-        self.deccol     = 'dec'
+        self.cookiename        = '' 
+        self.accesstbl         = '' 
+        self.usertbl           = '' 
+        self.propfilter        = ''
+        self.fileid            = ''
+        self.accessid          = ''
+        self.racol             = 'ra'
+        self.deccol            = 'dec'
 
 
         if self.db_connection:
@@ -255,6 +260,27 @@ class configParam:
                     raise Exception(self.msg)
 
 
+                # TAP_SCHEMA, schemas, tables, columns
+
+                if 'TAP_SCHEMA' in confobj[self.db_connection]:
+                    self.tap_schema = confobj[self.db_connection]['TAP_SCHEMA']
+
+                if 'SchemasTable' in confobj[self.db_connection]:
+                    self.schemas_table = confobj[self.db_connection]['SchemasTable']
+
+                if 'TablesTable' in confobj[self.db_connection]:
+                    self.tables_table = confobj[self.db_connection]['TablesTable']
+
+                if 'ColumnsTable' in confobj[self.db_connection]:
+                    self.columns_table = confobj[self.db_connection]['ColumnsTable']
+
+                if 'KeysTable' in confobj[self.db_connection]:
+                    self.keys_table = confobj[self.db_connection]['KeysTable']
+
+                if 'KeyColumnsTable' in confobj[self.db_connection]:
+                    self.key_columns_table = confobj[self.db_connection]['KeyColumnsTable']
+
+
                 # KOA Proprietary Access parameters
 
                 self.cookiename = '' 
@@ -305,7 +331,7 @@ class configParam:
                     raise Exception(self.msg)
 
 
-                # TAP_SCHEMA
+                # TAP_SCHEMA, schemas, tables, columns
 
                 if 'TAP_SCHEMA' in confobj[self.db_connection]:
                     self.tap_schema = confobj[self.db_connection]['TAP_SCHEMA']
@@ -314,6 +340,22 @@ class configParam:
                     self.status = 'error'
                     self.msg = 'Failed to find SQLite TAP_SCHEMA in config_file'
                     raise Exception(self.msg)
+
+                if 'schemas_table' in confobj[self.db_connection]:
+                    self.schemas_table = confobj[self.db_connection]['schemas_table']
+
+                if 'tables_table' in confobj[self.db_connection]:
+                    self.tables_table = confobj[self.db_connection]['tables_table']
+
+                if 'columns_table' in confobj[self.db_connection]:
+                    self.columns_table = confobj[self.db_connection]['columns_table']
+
+                if 'keys_table' in confobj[self.db_connection]:
+                    self.columns_table = confobj[self.db_connection]['keys_table']
+
+                if 'key_columns_table' in confobj[self.db_connection]:
+                    self.columns_table = confobj[self.db_connection]['key_columns_table']
+
 
 
             # MYSQL Connection
@@ -380,6 +422,27 @@ class configParam:
                     raise Exception(self.msg)
 
 
+                # TAP_SCHEMA, schemas, tables, columns
+
+                if 'TAP_SCHEMA' in confobj[self.db_connection]:
+                    self.tap_schema = confobj[self.db_connection]['TAP_SCHEMA']
+
+                if 'schemas_table' in confobj[self.db_connection]:
+                    self.schemas_table = confobj[self.db_connection]['schemas_table']
+
+                if 'tables_table' in confobj[self.db_connection]:
+                    self.tables_table = confobj[self.db_connection]['tables_table']
+
+                if 'columns_table' in confobj[self.db_connection]:
+                    self.columns_table = confobj[self.db_connection]['columns_table']
+
+                if 'keys_table' in confobj[self.db_connection]:
+                    self.columns_table = confobj[self.db_connection]['keys_table']
+
+                if 'key_columns_table' in confobj[self.db_connection]:
+                    self.columns_table = confobj[self.db_connection]['key_columns_table']
+
+
 
         ### Spatial Index Configuration #############
 
@@ -429,15 +492,20 @@ class configParam:
 
         self.connectInfo = {}
 
-        self.connectInfo['dbms']       = self.dbms
-        self.connectInfo['dbserver']   = self.dbserver
-        self.connectInfo['userid']     = self.userid
-        self.connectInfo['password']   = self.password
-        self.connectInfo['db']         = self.db
-        self.connectInfo['tap_schema'] = self.tap_schema
-        self.connectInfo['port']       = self.dbport
-        self.connectInfo['socket']     = self.socket
-        self.connectInfo['dbschema']   = self.dbschema
+        self.connectInfo['dbms']              = self.dbms
+        self.connectInfo['dbserver']          = self.dbserver
+        self.connectInfo['userid']            = self.userid
+        self.connectInfo['password']          = self.password
+        self.connectInfo['db']                = self.db
+        self.connectInfo['tap_schema']        = self.tap_schema
+        self.connectInfo['schemas_table']     = self.schemas_table
+        self.connectInfo['tables_table']      = self.tables_table
+        self.connectInfo['columns_table']     = self.columns_table
+        self.connectInfo['keys_table']        = self.keys_table
+        self.connectInfo['key_columns_table'] = self.key_columns_table
+        self.connectInfo['port']              = self.dbport
+        self.connectInfo['socket']            = self.socket
+        self.connectInfo['dbschema']          = self.dbschema
 
         if self.debug:
             logging.debug('')

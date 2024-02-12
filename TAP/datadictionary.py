@@ -36,7 +36,7 @@ class dataDictionary:
     nfetch = 1000
 
 
-    def __init__(self, conn, table, **kwargs):
+    def __init__(self, conn, table, connectInfo, **kwargs):
 
         """
         A dataDictionary specifies the following properites of each column in
@@ -56,10 +56,12 @@ class dataDictionary:
 
             table(char):      database table name,
 
+            connectInfo:      DBMS connection info,
+
 
         Usage:
 
-          dd = dataDictionary(conn, table)
+          dd = dataDictionary(conn, table, connectInfo)
 
         """
 
@@ -90,7 +92,7 @@ class dataDictionary:
             logging.debug('-------------------------------------------------')
 
 
-        sql = "select * from TAP_SCHEMA.columns where lower(table_name) = " + \
+        sql = "select * from " + self.connectInfo["tap_schema"] + "." self.connectInfo["columns_table"] + " where lower(table_name) = " + \
             "'" + self.dbtable + "'"
 
         if self.debug:
