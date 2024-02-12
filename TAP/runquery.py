@@ -120,6 +120,14 @@ class runQuery:
 
             self.dbms = self.connectInfo['dbms']
 
+            self.tap_schema_file   = self.connectInfo['tap_schema_file']
+            self.tap_schema        = self.connectInfo['tap_schema']
+            self.schemas_table     = self.connectInfo['schemas_table']
+            self.tables_table      = self.connectInfo['tables_table']
+            self.columns_table     = self.connectInfo['columns_table']
+            self.keys_table        = self.connectInfo['keys_table']
+            self.key_columns_table = self.connectInfo['key_columns_table']
+
             if(self.dbms.lower() == 'oracle'):
 
                 import cx_Oracle
@@ -376,7 +384,7 @@ class runQuery:
                     logging.debug('')
                     logging.debug('connected to SQLite3, database ' + self.db)
 
-                cmd = 'ATTACH DATABASE ? AS TAP_SCHEMA'
+                cmd = 'ATTACH DATABASE ? AS ' + self.tap_schema_file
 
                 dbspec = (self.tap_schema,)
 
@@ -454,7 +462,7 @@ class runQuery:
         self.dd = None
 
         try:
-            self.dd = dataDictionary(self.conn, self.dbtable, debug=self.debug)
+            self.dd = dataDictionary(self.conn, self.dbtable, self.connectInfo, debug=self.debug)
 
             if self.debug:
                 logging.debug('')

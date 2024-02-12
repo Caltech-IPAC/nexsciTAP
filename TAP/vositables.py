@@ -214,6 +214,14 @@ class vosiTables:
         #
         # { Connect to DBMS
         #
+        self.tap_schema_file   = self.connectInfo['tap_schema_file']
+        self.tap_schema        = self.connectInfo['tap_schema']
+        self.schemas_table     = self.connectInfo['schemas_table']
+        self.tables_table      = self.connectInfo['tables_table']
+        self.columns_table     = self.connectInfo['columns_table']
+        self.keys_table        = self.connectInfo['keys_table']
+        self.key_columns_table = self.connectInfo['key_columns_table']
+
         if(self.dbms.lower() == 'oracle'):
 
             import cx_Oracle
@@ -277,7 +285,7 @@ class vosiTables:
                     logging.debug('')
                     logging.debug('connected to SQLite3, database ' + self.db)
 
-                cmd = 'ATTACH DATABASE ? AS TAP_SCHEMA'
+                cmd = 'ATTACH DATABASE ? AS ' + self.tap_schema_file
 
                 dbspec = (self.tap_schema,)
 
@@ -364,10 +372,10 @@ class vosiTables:
         fp.flush()
 
         #
-        # Submit database query for TAP_SCHEMA.schemas
+        # Submit database query for TAP_SCHEMA.schemas (or aliased version)
         #
 
-        self.sql = "select schema_name, description from TAP_SCHEMA.schemas order by schema_index"
+        self.sql = "select schema_name, description from " + self.tap_schema + "." self.schemas_table + " order by schema_index"
 
         if self.debug:
             logging.debug('')
@@ -447,7 +455,7 @@ class vosiTables:
         #   2. execute table sql
         #
             self.sql = "select table_name, description, table_type " + \
-                "from TAP_SCHEMA.tables where schema_name='" + \
+                "from " + self.tap_schema + "." self.tables_table + " where schema_name='" + \
                 self.schema_namearr[ischema] + "' order by table_index"
 
             if self.debug:
@@ -548,7 +556,7 @@ class vosiTables:
                 
                 self.sql = "select column_name, datatype, arraysize, " + \
                     "xtype, description, utype, unit, ucd, indexed, " + \
-                    "principal, std, column_index from TAP_SCHEMA.columns " + \
+                    "principal, std, column_index from " + self.tap_schema + "." self.columns_table + " " + \
                     "where table_name='" + table_namearr[itable] + \
                     "' order by column_index"
                 
@@ -606,8 +614,8 @@ class vosiTables:
                     "target_table as targetTable,  " + \
                     "from_column as fromColumn, " + \
                     "target_column as targetColumn, description "  + \
-                    "from TAP_SCHEMA.keys " + \
-                    "NATURAL JOIN TAP_SCHEMA.key_columns " + \
+                    "from " + self.tap_schema + "." self.keys_table + " " + \
+                    "NATURAL JOIN " + self.tap_schema + "." self.key_columns_table + " " + \
                     "where from_table='" + table_namearr[itable] + "'"
                 
                 if self.debug:
