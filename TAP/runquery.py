@@ -27,7 +27,6 @@ class runQuery:
 
     debug = 0
 
-    debugfname = './runquery.debug'
     status = ''
     msg = ''
     returnMsg = ""

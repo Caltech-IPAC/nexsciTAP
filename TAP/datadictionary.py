@@ -92,7 +92,7 @@ class dataDictionary:
             logging.debug('-------------------------------------------------')
 
 
-        sql = "select * from " + self.connectInfo["tap_schema"] + "." self.connectInfo["columns_table"] + " where lower(table_name) = " + \
+        sql = "select * from " + self.connectInfo["tap_schema"] + "." + self.connectInfo["columns_table"] + " where lower(table_name) = " + \
             "'" + self.dbtable + "'"
 
         if self.debug:

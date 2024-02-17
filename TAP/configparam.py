@@ -191,6 +191,7 @@ class configParam:
         self.password          = None
         self.db                = None
         self.tap_schema        = 'TAP_SCHEMA'
+        self.tap_schema_file   = 'TAP_SCHEMA.db'
         self.schemas_table     = 'schemas'
         self.tables_table      = 'tables'
         self.columns_table     = 'columns'
@@ -333,13 +334,16 @@ class configParam:
 
                 # TAP_SCHEMA, schemas, tables, columns
 
+                if 'TAP_SCHEMA_FILE' in confobj[self.db_connection]:
+                    self.tap_schema_file = confobj[self.db_connection]['TAP_SCHEMA_FILE']
+
+                if (self.tap_schema_file is None):
+                    self.status = 'error'
+                    self.msg = 'Failed to find SQLite TAP_SCHEMA_FILE in config_file'
+                    raise Exception(self.msg)
+
                 if 'TAP_SCHEMA' in confobj[self.db_connection]:
                     self.tap_schema = confobj[self.db_connection]['TAP_SCHEMA']
-
-                if (self.tap_schema is None):
-                    self.status = 'error'
-                    self.msg = 'Failed to find SQLite TAP_SCHEMA in config_file'
-                    raise Exception(self.msg)
 
                 if 'schemas_table' in confobj[self.db_connection]:
                     self.schemas_table = confobj[self.db_connection]['schemas_table']
@@ -498,6 +502,7 @@ class configParam:
         self.connectInfo['password']          = self.password
         self.connectInfo['db']                = self.db
         self.connectInfo['tap_schema']        = self.tap_schema
+        self.connectInfo['tap_schema_file']   = self.tap_schema_file
         self.connectInfo['schemas_table']     = self.schemas_table
         self.connectInfo['tables_table']      = self.tables_table
         self.connectInfo['columns_table']     = self.columns_table
