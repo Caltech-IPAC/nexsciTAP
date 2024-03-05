@@ -454,11 +454,11 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
         chmod(filepath, 0664);
     }
     else {
-        fp = fopen (filepath, "a");
+        fp = fopen (filepath, "a+");
     }
 
     if (fp == (FILE *)NULL) {
-        sprintf (msg, "Failed to open filepath: [%s]", filepath);
+        sprintf (msg, "Failed to open filepath: [%s](errno:%d)", filepath, errno);
         
         if ((debug) && (fp_debug != (FILE *)NULL)) {
             fprintf (fp_debug, "msg= [%s]\n", msg);

@@ -542,7 +542,7 @@ class runQuery:
         self.outpath = wresult.outpath
         self.ntot = wresult.ntot
         self.returnMsg = \
-            f'runQuery completed: query result path: {self.outpath:s}'
+            f'Query completed.  Output: {self.outpath:s}'
 
         if self.debug:
             logging.debug('')
@@ -598,12 +598,12 @@ def main():
     parser = argparse.ArgumentParser(description='runQuery')
 
     parser.add_argument('--configpath',    help='Configuration file specifying database userid, passwd, and server.')
-    parser.add_argument('--instance',      help='Configuration instance.')
+    parser.add_argument('--instance',      help='Configuration instance (defaults to using predefined config).')
     parser.add_argument('--sql',           help='ADQL (SQL) SELECT statement.')
     parser.add_argument('--filename',      help='Output filename.', default='results.tbl')
     parser.add_argument('--format',        help='Format of output table.', default='ipac')
     parser.add_argument('--maxrec',        help='Maximum number of records on output (default: all).', default='-1')
-    parser.add_argument('--debug',         help='Debug flag: 1/0.', default='0')
+    parser.add_argument('--debug',         help='Debug flag: 1/0 (default: 0).', default='0')
 
     args = parser.parse_args()
 
@@ -615,6 +615,14 @@ def main():
     filename      = args.filename
     debug         = int(args.debug)
 
+    if debug:
+
+        logging.basicConfig(filename=debugfname,
+                            format='%(levelname)-8s %(relativeCreated)d>  '
+                            '%(filename)s %(lineno)d  '
+                            '(%(funcName)s):   %(message)s',
+                            level=logging.DEBUG)
+
     arraysize  = 10000
 
     if configpath == None:
@@ -624,13 +632,9 @@ def main():
             print('[struct stat="ERROR", msg="No config file path given or in TAP_CONF environment variable."]')
             exit(0)
 
-    if debug:
-
-        logging.basicConfig(filename=debugfname,
-                            format='%(levelname)-8s %(relativeCreated)d>  '
-                            '%(filename)s %(lineno)d  '
-                            '(%(funcName)s):   %(message)s',
-                            level=logging.DEBUG)
+    if adql_string == None:
+            print('[struct stat="ERROR", msg="Need at least the SQL string (and usually an ouput filname).  Run again with --help for details."]')
+            exit(0)
 
     config = None
 
@@ -674,7 +678,7 @@ def main():
         if debug:
             logging.debug(f'config exception: {str(e):s}')
 
-        print('[struct stat="ERROR", msg="Config exception: ' + str(e) + '"]')
+        print('[struct stat="ERROR", msg="Config exception: could not find section/parameter ' + str(e) + '"]')
         exit(0)
 
     try:

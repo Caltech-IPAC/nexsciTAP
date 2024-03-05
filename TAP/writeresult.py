@@ -171,45 +171,25 @@ class writeResult:
         # open querypath for output
         #
 
-        self.filename = 'result'
-
         if('filename' in kwargs):
-            self.filename = kwargs['filename']
+            self.outpath = kwargs['filename']
 
-            if(self.filename == None):
-                self.filename = 'result'
-
-                if(self.format == 'votable'):
-                    self.filename = self.filename + '.xml'
-                elif(self.format == 'ipac'):
-                    self.filename = self.filename + '.tbl'
-                elif(self.format == 'csv'):
-                    self.filename = self.filename + '.csv'
-                elif(self.format == 'tsv'):
-                    self.filename = self.filename + '.tsv'
-                elif(self.format == 'json'):
-                    self.filename = self.filename + '.json'
-            
-            if(self.filename[0] != '/'):
-                self.outpath = self.workdir + '/' + self.filename
- 
         else:
             if(self.format == 'votable'):
-                self.filename = self.filename + '.xml'
+                resulttbl = 'result.xml'
             elif(self.format == 'ipac'):
-                self.filename = self.filename + '.tbl'
+                resulttbl = 'result.tbl'
             elif(self.format == 'csv'):
-                self.filename = self.filename + '.csv'
+                resulttbl = 'result.csv'
             elif(self.format == 'tsv'):
-                self.filename = self.filename + '.tsv'
+                resulttbl = 'result.tsv'
             elif(self.format == 'json'):
-                self.filename = self.filename + '.json'
- 
+                resulttbl = 'result.json'
+        
             self.outpath = self.workdir + '/' + resulttbl
-
+ 
         if self.debug:
             logging.debug('')
-            logging.debug(f'filename= {self.filename:s}')
             logging.debug(f'outpath= {self.outpath:s}')
 
         #
@@ -232,7 +212,6 @@ class writeResult:
             logging.debug(self.cursor.description)
             logging.debug('------------------------------------------------')
 
-        #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
         for desc in self.cursor.description:
             name = desc[0]
             coltype = desc[1]
