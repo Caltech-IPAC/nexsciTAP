@@ -553,9 +553,9 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
                         i, namearr[i]);
 
                     fprintf (fp_debug, "widtharr= [%d] typearr= [%s]\n",
-
                         widtharr[i], typearr[i]);
-                    fprintf(fp, "descarr= [%s]\n", descarr[i]);
+
+                    fprintf(fp_debug, "descarr= [%s]\n", descarr[i]);
 
                     fflush (fp_debug);
                 }
