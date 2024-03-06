@@ -174,7 +174,7 @@ class writeResult:
         if('filename' in kwargs):
             self.outpath = kwargs['filename']
 
-        else:
+        if self.outpath == None or self.outpath == '':
             if(self.format == 'votable'):
                 resulttbl = 'result.xml'
             elif(self.format == 'ipac'):
@@ -189,8 +189,9 @@ class writeResult:
             self.outpath = self.workdir + '/' + resulttbl
  
         if self.debug:
+            pathstr = str(self.outpath)
             logging.debug('')
-            logging.debug(f'outpath= {self.outpath:s}')
+            logging.debug(f'outpath= {pathstr:s}')
 
         #
         # Cursor description contains a list of tuples, each tuple is a 7-item
