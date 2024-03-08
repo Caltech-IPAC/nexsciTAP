@@ -33,6 +33,8 @@ class dataDictionary:
     colunits = {}
     colwidth = {}
 
+    connectInfo = None
+
     nfetch = 1000
 
 
@@ -64,6 +66,8 @@ class dataDictionary:
           dd = dataDictionary(conn, table, connectInfo)
 
         """
+
+        self.connectInfo = connectInfo
 
         if('debug' in kwargs):
             self.debug = kwargs['debug']
