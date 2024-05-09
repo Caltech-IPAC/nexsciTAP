@@ -623,6 +623,9 @@ def main():
                             '(%(funcName)s):   %(message)s',
                             level=logging.DEBUG)
 
+        logging.debug('')
+        logging.debug('TAP version:  3Apr2024 with Oracle, PostgreSQL, SQLite and MySQL.')
+
     arraysize  = 10000
 
     if configpath == None:

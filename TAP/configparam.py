@@ -184,12 +184,16 @@ class configParam:
 
         ### Database Connection #####################
 
+        # Diffent subsets of these parameters are used for different DBMSs
 
         self.dbms              = None
         self.dbserver          = None
+        self.hostname          = None
         self.userid            = None
+        self.username          = None
         self.password          = None
         self.db                = None
+        self.database          = None
         self.tap_schema        = 'TAP_SCHEMA'
         self.tap_schema_file   = 'TAP_SCHEMA.db'
         self.schemas_table     = 'schemas'
@@ -448,6 +452,57 @@ class configParam:
 
 
 
+            # PostgreSQL Connection
+
+            if(self.dbms == 'pgsql'):
+
+                # HOSTNAME
+
+                if 'HostName' in confobj[self.db_connection]:
+                    self.hostname = confobj[self.db_connection]['HostName']
+
+                if (self.hostname is None):
+                    self.status = 'error'
+                    self.msg = \
+                        'Failed to find PostgreSQL HostName in config_file.'
+                    raise Exception(self.msg)
+
+
+                # DATABASE
+                
+                if 'DataBase' in confobj[self.db_connection]:
+                    self.database = confobj[self.db_connection]['DataBase']
+
+                if self.connectInfo['database'] is None:
+                    self.status = 'error'
+                    self.msg = \
+                        'Failed to find PostgreSQL DataBase keyword in config_file'
+                    raise Exception(self.msg)
+
+
+                # USERNAME
+
+                if 'UserName' in confobj[self.db_connection]:
+                    self.username = confobj[self.db_connection]['UserName']
+
+                if self.username is None:
+                    self.status = 'error'
+                    self.msg = 'Failed to find PostgreSQL username in config_file.'
+                    raise Exception(self.msg)
+
+ 
+                # PASSWORD
+
+                if 'Password' in confobj[self.db_connection]:
+                    self.password = confobj[self.db_connection]['Password']
+
+                if self.password is None:
+                    self.status = 'error'
+                    self.msg = 'Failed to find PostgreSQL password in config_file.'
+                    raise Exception(self.msg)
+
+
+
         ### Spatial Index Configuration #############
 
         self.adqlparam = {}
@@ -498,9 +553,12 @@ class configParam:
 
         self.connectInfo['dbms']              = self.dbms
         self.connectInfo['dbserver']          = self.dbserver
+        self.connectInfo['hostname']          = self.hostname
         self.connectInfo['userid']            = self.userid
+        self.connectInfo['username']          = self.username
         self.connectInfo['password']          = self.password
         self.connectInfo['db']                = self.db
+        self.connectInfo['database']          = self.database
         self.connectInfo['tap_schema']        = self.tap_schema
         self.connectInfo['tap_schema_file']   = self.tap_schema_file
         self.connectInfo['schemas_table']     = self.schemas_table
@@ -520,18 +578,37 @@ class configParam:
 
         if self.debug:
             logging.debug('')
-            logging.debug('      workdir    = ' + str(self.workdir))
-            logging.debug('      workurl    = ' + str(self.workurl))
-            logging.debug('      httpurl    = ' + str(self.httpurl))
-            logging.debug('      cgipgm     = ' + str(self.cgipgm))
-            logging.debug('      port       = ' + str(self.dbport))
-            logging.debug('      cookiename = ' + str(self.cookiename))
-            logging.debug('      usertbl    = ' + str(self.usertbl))
-            logging.debug('      accesstbl  = ' + str(self.accesstbl))
-            logging.debug('      propfilter = ' + str(self.propfilter))
-            logging.debug('      fileid     = ' + str(self.fileid))
-            logging.debug('      accessid   = ' + str(self.accessid))
-            logging.debug('      racol      = ' + str(self.racol))
-            logging.debug('      deccol     = ' + str(self.deccol))
+            logging.debug('      dbms              = ' + str(self.dbms))
+            logging.debug('      dbserver          = ' + str(self.dbserver))
+            logging.debug('      hostname          = ' + str(self.hostname))
+            logging.debug('      userid            = ' + str(self.userid))
+            logging.debug('      username          = ' + str(self.username))
+            logging.debug('      password          = ' + str(self.password))
+            logging.debug('      db                = ' + str(self.db))
+            logging.debug('      database          = ' + str(self.database))
+            logging.debug('      tap_schema        = ' + str(self.tap_schema))
+            logging.debug('      tap_schema_file   = ' + str(self.tap_schema_file))
+            logging.debug('      schemas_table     = ' + str(self.schemas_table))
+            logging.debug('      tables_table      = ' + str(self.tables_table))
+            logging.debug('      columns_table     = ' + str(self.columns_table))
+            logging.debug('      keys_table        = ' + str(self.keys_table))
+            logging.debug('      key_columns_table = ' + str(self.key_columns_table))
+            logging.debug('      port              = ' + str(self.dbport))
+            logging.debug('      socket            = ' + str(self.socket))
+            logging.debug('      dbschema          = ' + str(self.dbschema))
+            logging.debug('')
+            logging.debug('      workdir           = ' + str(self.workdir))
+            logging.debug('      workurl           = ' + str(self.workurl))
+            logging.debug('      httpurl           = ' + str(self.httpurl))
+            logging.debug('      cgipgm            = ' + str(self.cgipgm))
+            logging.debug('      port              = ' + str(self.dbport))
+            logging.debug('      cookiename        = ' + str(self.cookiename))
+            logging.debug('      usertbl           = ' + str(self.usertbl))
+            logging.debug('      accesstbl         = ' + str(self.accesstbl))
+            logging.debug('      propfilter        = ' + str(self.propfilter))
+            logging.debug('      fileid            = ' + str(self.fileid))
+            logging.debug('      accessid          = ' + str(self.accessid))
+            logging.debug('      racol             = ' + str(self.racol))
+            logging.debug('      deccol            = ' + str(self.deccol))
 
         return
