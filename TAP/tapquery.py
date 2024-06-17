@@ -21,7 +21,7 @@ from ADQL.adql import ADQL
 from spatial_index import SpatialIndex
 
 
-class runQuery:
+class tapQuery:
 
     pid = os.getpid()
 
@@ -29,7 +29,7 @@ class runQuery:
 
     status = ''
     msg = ''
-    returnMsg = ""
+    returnMsg = ''
 
     #
     # DD columns
@@ -62,17 +62,23 @@ class runQuery:
         #
 
         """
-        runQuery provides a basic search interface for database tables.
+        tapQuery provides a basic search interface for database tables.
 
-        Given an SQL statement and database table name, runQuery contacts
+        Given an SQL statement and database table name, tapQuery contacts
         the DBMS server, submits the query and return the data in IPAC ASCII
         format.
 
         Required keyword input parameters:
 
-            connectInfo:        Dictionary containing the info needed
-                                to make a "connection".  These parameters
-                                are different depending on the DBMS.
+            connectInfo:       Dictionary containing the info needed
+                               to make a "connection".  These parameters
+                               are different depending on the DBMS.
+            conn:              We will need the above connectInfo for it's
+                               formatting info but we may have already made
+                               the DBMS connection elsewhere (for more involved
+                               processing scenarios).  In that case we can 
+                               optionally pass in the connection itself 
+                               instead of creating it here.
             query(char):       the sql query to be executed,
             workdir(char):     user work directory
 
@@ -86,7 +92,7 @@ class runQuery:
 
         Usage:
 
-          runquery = runQuery(connectInfo=connectInfo,
+          tapquery = tapQuery(connectInfo=connectInfo,
                               query=query,
                               workdir=userworkdir,
                               filename=filename,
@@ -101,7 +107,7 @@ class runQuery:
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'Enter runQuery')
+            logging.debug(f'Enter tapQuery')
             logging.debug(f'self.debug = {self.debug:d}')
 
 
@@ -109,23 +115,40 @@ class runQuery:
         if('arraysize' in kwargs):
             self.arraysize = kwargs['arraysize']
 
-        #
-        # Get keyword parameters
-        #
 
         if('connectInfo' in kwargs):
-
             self.connectInfo = kwargs['connectInfo']
-
             self.dbms = self.connectInfo['dbms']
+
+
+                
+
+        # If the DBMS connection has already been made:
+
+        if('conn' in kwargs):
+            self.conn = kwargs['conn']
+
+
+        # Otherwise collect the info for making the connection and make it.
+
+        else:
+            
+            # Get keyword parameters
+            #
+            # There are two use modes for getting these parameters.  Most of the time we let this code do everything;
+            # getting the connection paramters and making the actual connection ('conn' parameter) to whichever DBMS
+            # we are using.  But sometimes we have a more complicated scenario (like using and populating temporary
+            # tables as part of the processing).  The we will have run tapUtil() to do this same setup and used the 
+            # database connection for these other steps before we get here.  The all of the code here and the section
+            # below where we connect to the database will have already been executed there. 
+
+            # These two parameters are only used by SQLite startup
 
             self.tap_schema_file   = self.connectInfo['tap_schema_file']
             self.tap_schema        = self.connectInfo['tap_schema']
-            self.schemas_table     = self.connectInfo['schemas_table']
-            self.tables_table      = self.connectInfo['tables_table']
-            self.columns_table     = self.connectInfo['columns_table']
-            self.keys_table        = self.connectInfo['keys_table']
-            self.key_columns_table = self.connectInfo['key_columns_table']
+
+
+            # Parameters needed for Oracle startup
 
             if(self.dbms.lower() == 'oracle'):
 
@@ -251,12 +274,6 @@ class runQuery:
                 if('dbschema' in self.connectInfo):
                     self.db = self.connectInfo['dbschema']
 
-                if(self.db is None):
-                    self.msg = 'Failed to retrieve required input parameter'\
-                               ' [dbschema]'
-                    self.status = 'error'
-                    raise Exception(self.msg)
-
                 if self.debug:
                     logging.debug('')
                     logging.debug('dbserver=')
@@ -269,6 +286,110 @@ class runQuery:
                     logging.debug(f'userid   = {self.userid:s}')
                     logging.debug(f'password = {self.password:s}')
         
+
+            # Connect to the DBMS
+
+            if(self.dbms.lower() == 'oracle'):
+
+                try:
+                    self.conn = cx_Oracle.connect(self.userid,
+                                                  self.password,
+                                                  self.dbserver)
+
+                    if self.debug:
+                        logging.debug('')
+                        logging.debug('connected to Oracle, DB ' + self.dbserver)
+
+                except Exception as e:
+
+                    self.status = 'error'
+                    self.msg = 'Failed to connect to cx_Oracle'
+
+                    raise Exception(self.msg)
+
+            elif(self.dbms.lower() == 'sqlite3'):
+
+                try:
+                    self.conn = sqlite3.connect(self.db)
+
+                    if self.debug:
+                        logging.debug('')
+                        logging.debug('connected to SQLite3, database ' + self.db)
+
+                    cmd = 'ATTACH DATABASE ? AS ' + self.tap_schema_file
+
+                    dbspec = (self.tap_schema,)
+
+                    if self.debug:
+                        logging.debug('')
+                        logging.debug('cmd: ' + cmd + '(' + self.tap_schema + ')')
+
+                    cursor = self.conn.cursor()
+
+                    cursor.execute(cmd, dbspec)
+
+                    if self.debug:
+                        logging.debug('')
+                        logging.debug('TAP_SCHEMA attached')
+
+                except Exception as e:
+
+                    self.status = 'error'
+                    self.msg = 'Failed to connect to SQLite3 databases'
+
+                    raise Exception(self.msg)
+
+            elif (self.dbms.lower() == 'mysql'):
+           
+                try:
+                    if (self.dbserver is not None):
+
+                        self.conn = mysql.connector.connect (
+                            user=self.userid, \
+                            password=self.password, \
+                            host=self.dbserver, \
+                            port=self.port, \
+                            db=self.db
+                        )
+                    
+                    elif (self.socket is not None):
+
+                        self.conn = mysql.connector.connect (
+                            user=self.userid, \
+                            password=self.password, \
+                            unix_socket=self.socket, \
+                            db=self.db
+                        )
+                    
+                    else:
+                        self.status = 'error'
+                        self.msg = 'Failed to connect to mysql databases'
+                        raise Exception(self.msg)
+
+                    if self.debug:
+                        logging.debug('')
+                        logging.debug('mysql connected')
+
+                except Exception as e:
+
+                    self.status = 'error'
+                    self.msg = 'Failed to connect to mysql databases'
+
+                    raise Exception(self.msg)
+
+                if self.debug:
+                    logging.debug('')
+                    logging.debug('here0')
+               
+            else:
+                self.status = 'error'
+                self.msg = 'Invalid DBMS'
+
+                raise Exception(self.msg)
+
+ 
+        # Get the query and query processing parameters (format, workspace, coordinate columns, etc.)
+
         self.sql = None 
         if('query' in kwargs):
             self.sql = kwargs['query']
@@ -336,9 +457,7 @@ class runQuery:
             logging.debug(f'maxrec= {self.maxrec:d}')
 
 
-        #
         # Extract DB table name from query
-        #
 
         self.dbtable = None 
 
@@ -352,107 +471,6 @@ class runQuery:
             logging.debug('')
             logging.debug(f'dbtable= [{self.dbtable:s}]')
 
-        #
-        # Connect to DBMS
-        #
-
-        if(self.dbms.lower() == 'oracle'):
-
-            try:
-                self.conn = cx_Oracle.connect(self.userid,
-                                              self.password,
-                                              self.dbserver)
-
-                if self.debug:
-                    logging.debug('')
-                    logging.debug('connected to Oracle, DB ' + self.dbserver)
-
-            except Exception as e:
-
-                self.status = 'error'
-                self.msg = 'Failed to connect to cx_Oracle'
-
-                raise Exception(self.msg)
-
-        elif(self.dbms.lower() == 'sqlite3'):
-
-            try:
-                self.conn = sqlite3.connect(self.db)
-
-                if self.debug:
-                    logging.debug('')
-                    logging.debug('connected to SQLite3, database ' + self.db)
-
-                cmd = 'ATTACH DATABASE ? AS ' + self.tap_schema_file
-
-                dbspec = (self.tap_schema,)
-
-                if self.debug:
-                    logging.debug('')
-                    logging.debug('cmd: ' + cmd + '(' + self.tap_schema + ')')
-
-                cursor = self.conn.cursor()
-
-                cursor.execute(cmd, dbspec)
-
-                if self.debug:
-                    logging.debug('')
-                    logging.debug('TAP_SCHEMA attached')
-
-            except Exception as e:
-
-                self.status = 'error'
-                self.msg = 'Failed to connect to SQLite3 databases'
-
-                raise Exception(self.msg)
-
-        elif (self.dbms.lower() == 'mysql'):
-       
-            try:
-                if (self.dbserver is not None):
-
-                    self.conn = mysql.connector.connect (
-                        user=self.userid, \
-                        password=self.password, \
-                        host=self.dbserver, \
-                        port=self.port, \
-                        db=self.db
-                    )
-                
-                elif (self.socket is not None):
-
-                    self.conn = mysql.connector.connect (
-                        user=self.userid, \
-                        password=self.password, \
-                        unix_socket=self.socket, \
-                        db=self.db
-                    )
-                
-                else:
-                    self.status = 'error'
-                    self.msg = 'Failed to connect to mysql databases'
-                    raise Exception(self.msg)
-
-                if self.debug:
-                    logging.debug('')
-                    logging.debug('mysql connected')
-
-            except Exception as e:
-
-                self.status = 'error'
-                self.msg = 'Failed to connect to mysql databases'
-
-                raise Exception(self.msg)
-
-            if self.debug:
-                logging.debug('')
-                logging.debug('here0')
-           
-        else:
-            self.status = 'error'
-            self.msg = 'Invalid DBMS'
-
-            raise Exception(self.msg)
 
         #
         # Retrieve dd table
@@ -482,7 +500,7 @@ class runQuery:
             logging.debug('Done DD retrieval')
 
         #
-        # Submit database query of user input sql
+        # Submit database query with user input SQL
         #
 
         cursor = self.conn.cursor()
@@ -538,15 +556,16 @@ class runQuery:
 
             raise Exception(str(e))
 
-        self.stat = 'ok'
+        self.stat    = 'OK'
         self.outpath = wresult.outpath
-        self.ntot = wresult.ntot
-        self.returnMsg = \
-            f'Query completed.  Output: {self.outpath:s}'
+        self.ntot    = wresult.ntot
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'outpath = {self.outpath:s}')
+            logging.debug('Return:')
+            logging.debug('stat    = ' + str(self.stat))
+            logging.debug('outpath = ' + str(self.outpath))
+            logging.debug('ntot    = ' + str(self.ntot))
 
         #
         # } end of init def
@@ -587,6 +606,12 @@ class runQuery:
         #
 
 
+
+# Note that if we use this main method, we implicitly need to create the DBMS connection implicitly.
+# So there is not 'conn' parameter included.  That is for other use cases where this main is not used
+# (e.g., where we use tapUtil() to create the connections or where we are running the nexsciTAP web
+# service).
+
 def main():
 
     pid = os.getpid()
@@ -595,7 +620,7 @@ def main():
 
     debugfname = '/tmp/tap_' + str(pid) + '.debug'
 
-    parser = argparse.ArgumentParser(description='runQuery')
+    parser = argparse.ArgumentParser(description='tapQuery')
 
     parser.add_argument('--configpath',    help='Configuration file specifying database userid, passwd, and server.')
     parser.add_argument('--instance',      help='Configuration instance (defaults to using predefined config).')
@@ -659,7 +684,7 @@ def main():
         deccol  = config.deccol
 
         level   = config.adqlparam['level']
-        colname = config.adqlparam['level']
+        colname = config.adqlparam['colname']
 
         encoding = SpatialIndex.BASE4
         if(config.adqlparam['encoding'] == 'BASE10'):
@@ -691,24 +716,27 @@ def main():
             logging.debug(f'ADQL string: {adql_string:s}')
             logging.debug(f' SQL string: {sql_string:s}')
 
-        dbquery = runQuery(connectInfo=config.connectInfo,
-                           query=sql_string,
-                           filename=filename,
-                           format=format,
-                           maxrec=maxrec,
-                           arraysize=arraysize,
-                           racol=config.racol,
-                           deccol=config.deccol,
-                           debug=debug)
+        query = tapQuery(connectInfo=config.connectInfo,
+                         query=sql_string,
+                         filename=filename,
+                         format=format,
+                         maxrec=maxrec,
+                         arraysize=arraysize,
+                         racol=config.racol,
+                         deccol=config.deccol,
+                         debug=debug)
 
-        print('[struct stat="OK", msg="' + dbquery.returnMsg + '"]')
-        exit(0)
+        status  = query.stat.upper()
+        outfile = query.outpath
+        nrec    = query.ntot
+        msg     = query.returnMsg
+
+        if status == 'OK':
+            print('[struct stat="' + status + '", filename="' + outfile + '", nrec=' + str(nrec) + ']')
+        else:
+            print('[struct stat="' + status + '", msg="' + msg + '"]')
 
     except Exception as e:
-
-        if debug:
-            logging.debug(f'runQuery failed: {str(e):s}')
-
         print('[struct stat="ERROR", msg="Query failed: ' + str(e) + '"]')
         exit(0)
 
