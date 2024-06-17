@@ -23,7 +23,7 @@ from ADQL.adql import ADQL
 
 from spatial_index import SpatialIndex
 
-from TAP.runquery import runQuery
+from TAP.tapquery import tapQuery
 from TAP.configparam import configParam
 from TAP.propfilter import propFilter
 from TAP.tablenames import TableNames
@@ -1610,7 +1610,7 @@ class Tap:
         if(self.propflag == 0):
 
             #
-            # { Execute 'runQuery':
+            # { Execute 'tapQuery':
             #   return the result if sync, or
             #   update the status file if async
             #
@@ -1619,7 +1619,7 @@ class Tap:
 
                 if self.debug:
                     logging.debug('')
-                    logging.debug(f'runQuery parameters:')
+                    logging.debug(f'tapQuery parameters:')
                     logging.debug(f'query     = [{self.query:s}]')
                     logging.debug(f'workdir   = [{self.userWorkdir:s}]')
                     logging.debug(f'format    = [{self.format:s}]')
@@ -1629,7 +1629,7 @@ class Tap:
                     logging.debug(f'deccol    = [{self.config.deccol:s}]')
                     logging.debug('')
 
-                dbquery = runQuery(connectInfo=self.config.connectInfo,
+                dbquery = tapQuery(connectInfo=self.config.connectInfo,
                                    query=self.query,
                                    workdir=self.userWorkdir,
                                    format=self.format,
@@ -1646,7 +1646,7 @@ class Tap:
 
                 if self.debug:
                     logging.debug('')
-                    logging.debug(f'runQuery exception: {str(e):s}')
+                    logging.debug(f'tapQuery exception: {str(e):s}')
 
                 self.phase = 'ERROR'
 
@@ -1658,7 +1658,7 @@ class Tap:
                 else:
                     self.__printError__(self.format, str(e), errcode='400')
             #
-            # } end runquery
+            # } end tapquery
             #
 
         else:
@@ -1713,7 +1713,7 @@ class Tap:
             #
 
         #
-        # } finished run query
+        # } finished tap query
         #
 
         #

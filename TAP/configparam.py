@@ -572,12 +572,6 @@ class configParam:
 
         if self.debug:
             logging.debug('')
-            logging.debug('connectInfo:')
-            logging.debug('%s', self.connectInfo)
-
-
-        if self.debug:
-            logging.debug('')
             logging.debug('      dbms              = ' + str(self.dbms))
             logging.debug('      dbserver          = ' + str(self.dbserver))
             logging.debug('      hostname          = ' + str(self.hostname))
@@ -611,4 +605,5 @@ class configParam:
             logging.debug('      racol             = ' + str(self.racol))
             logging.debug('      deccol            = ' + str(self.deccol))
 
-        return
+        
+        return 
