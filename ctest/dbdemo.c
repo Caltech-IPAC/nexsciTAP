@@ -9,6 +9,18 @@ char dbMsg   [1024];
 int  dbNrec;
 
 
+//  I don't expect this capability is going to be very widely used.  Most current 
+//  database access from C programs use the ISISQL service program and the TAP local
+//  service example above can be used as a fairly direct replacement.  It is only when
+//  we want to do something more unusual, like running additional SQL directives like
+//  "create temporary table ..." or run a bunch of TAP-like queries in a loop that 
+//  the local service mode becomes inefficient.  That is likely to involve a very small
+//  handful of applications so rather than going through the effort of setting up yet
+//  another library, we just give this example.  The developer (probably me) can
+//  just include the two functions in their code and use the "main" method as an
+//  example of how to use them.
+
+
 int main(int argc, char **argv)
 {
     int i, status, nrec;
@@ -16,13 +28,14 @@ int main(int argc, char **argv)
     char sql  [1024];
     char fname[1024];
 
-    int debug = 0;
-
     strcpy(dbStatus, "");
     strcpy(dbMsg,    "");
     dbNrec = 0;
 
-    dbInit(debug);
+    status = dbInit();
+
+    if(status == 0)
+        printf("ERROR: dbInit() failed.\n");
 
     for(i=1; i<6; ++i)
     {
@@ -36,7 +49,7 @@ int main(int argc, char **argv)
         printf("DEBUG> [%s]\n", fname);
         fflush(stdout);
 
-        status = dbRunQuery(sql, fname, debug);
+        status = dbRunQuery(sql, fname);
 
         if(status == 0)
             printf("ERROR: %s\n", dbMsg);
@@ -51,21 +64,22 @@ int main(int argc, char **argv)
 
  
 
-int dbInit(int debug)
+int dbInit()
 {
-    PyObject *filename, *init_func, *args, *call;
+    PyObject *filename, *init_func, *args, *rtn;
+
+    int status;
 
    
     // Initialize an instance of embedded Python
     
     Py_Initialize();
 
-    if(debug)
-    {
-        printf("DEBUG> Embedded Python initialized.\n");
-        fflush(stdout);
-    }
 
+    // When used from C, Python can't know when it can when
+    // variables created by C can be garbage collected.  So
+    // best practice is to explicitly tell it when we are done
+    // with a variable using Py_DECREF().
 
     // Create a filename object.
     
@@ -73,19 +87,9 @@ int dbInit(int debug)
 
     if(filename == NULL)
     {
-        if(debug)
-        {
-            printf("Failed to create 'filename' object.\n");
-            fflush(stdout);
-        }
-        
-        exit(0);
-    }
-
-    if(debug)
-    {
-        printf("DEBUG> Made filename.\n");
+        printf("Failed to create 'filename' object.\n");
         fflush(stdout);
+        exit(0);
     }
 
 
@@ -97,19 +101,9 @@ int dbInit(int debug)
     {
         Py_DECREF(filename);
 
-        if(debug)
-        {
-            printf("Failed to import module 'dbtap'.\n");
-            fflush(stdout);
-        }
-        
-        exit(0);
-    }
-
-    if(debug)
-    {
-        printf("DEBUG> Imported module.\n");
+        printf("Failed to import module 'dbtap'.\n");
         fflush(stdout);
+        exit(0);
     }
 
     Py_DECREF(filename);
@@ -123,63 +117,35 @@ int dbInit(int debug)
     {
         Py_DECREF(filename);
 
-        if(debug)
-        {
-            printf("Failed to get 'dbinit' function'.\n");
-            fflush(stdout);
-        }
-        
-        exit(0);
-    }
-
-    if(debug)
-    {
-        printf("DEBUG> Found dbinit() function.\n");
+        printf("Failed to get 'dbinit' function'.\n");
         fflush(stdout);
-    }
-
-
-    // Run dbinit() function
-
-    args = PyTuple_Pack(1, PyLong_FromLong(debug));
-
-    if(args == NULL)
-    {
-        if(debug)
-        {
-            printf("Failed to compose arguments.\n");
-            fflush(stdout);
-        }
-        
         exit(0);
     }
-    
-    call = PyObject_CallObject(init_func, args);
+
+
+    // Run the dbinit() function
+
+    rtn = PyObject_CallObject(init_func, NULL);
 
     Py_DECREF(init_func);
 
-    if(call == NULL)
+    if(rtn == NULL)
     {
-        if(debug)
-        {
-            printf("Failed to run 'dbinit()'\n");
-            fflush(stdout);
-        }
-        
+        printf("Failed to run 'dbinit()'\n");
+        fflush(stdout);
         exit(0);
     }
 
-    if(debug)
-    {
-        printf("DEBUG> Ran dbinit() function.\n");
-        fflush(stdout);
-    }
+    status = PyLong_AsLong(PySequence_GetItem(rtn, 0));
 
-    Py_DECREF(call);
+    Py_DECREF(rtn);
 }
 
 
-int dbRunQuery(char *sql, char *filename, int debug)
+
+// This is where we actually run the TAP ADQL query
+
+int dbRunQuery(char *sql, char *filename)
 {
     char cmd[32768];
 
@@ -187,14 +153,10 @@ int dbRunQuery(char *sql, char *filename, int debug)
 
     PyObject *dbQuery, *args, *rtn;
 
-    if(debug)
-    {
-        printf("\nDEBUG> In dbRunQuery().\n");
-        fflush(stdout);
-    }
+    strcpy(dbStatus, "ERROR");
 
 
-    // Get a handle to the 'query' function in class 'DB'
+    // Find the 'query' function 
 
     dbQuery = PyObject_GetAttrString(module, "dbquery");
 
@@ -203,21 +165,10 @@ int dbRunQuery(char *sql, char *filename, int debug)
         Py_DECREF(module);
         Py_DECREF(module);
 
-        if(debug)
-        {
-            printf("Failed to get 'dbquery' function.\n");
-            fflush(stdout);
-        }
-        
-        exit(0);
+        strcpy(dbMsg, "Failed to find the 'dbquery' function.\n");
+        return 0;
     }
 
-    if(debug)
-    {
-        printf("DEBUG> Found dbquery() function.\n");
-        fflush(stdout);
-    }
-    
     
     // Compose args
     
@@ -226,19 +177,8 @@ int dbRunQuery(char *sql, char *filename, int debug)
 
     if(args == NULL)
     {
-        if(debug)
-        {
-            printf("Failed to compose arguments.\n");
-            fflush(stdout);
-        }
-        
-        exit(0);
-    }
-
-    if(debug)
-    {
-        printf("DEBUG> Created args.\n");
-        fflush(stdout);
+        strcpy(dbMsg, "Failed to compose arguments.\n");
+        return 0;
     }
 
 
@@ -251,19 +191,8 @@ int dbRunQuery(char *sql, char *filename, int debug)
 
     if(rtn == NULL)
     {
-        if(debug)
-        {
-            printf("Failed to run dbquery() function.\n");
-            fflush(stdout);
-        }
-        
-        exit(0);
-    }
-
-    if(debug)
-    {
-        printf("DEBUG> Ran dbquery() function.\n");
-        fflush(stdout);
+        strcpy(dbMsg, "Failed to run dbquery() function.\n");
+        return 0;
     }
 
 
@@ -282,6 +211,11 @@ int dbRunQuery(char *sql, char *filename, int debug)
         return(0);
 }
 
+
+
+// Best not to use this unless we are sure we are done
+// with the Python instance and have a lot more code to
+// run.
 
 int dbClose()
 {
