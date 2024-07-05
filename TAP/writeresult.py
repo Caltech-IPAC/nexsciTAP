@@ -19,46 +19,46 @@ from TAP import writerecs
 
 class writeResult:
 
-    time00 = None
-    time0 = None
-    time1 = None
+    time00         = None
+    time0          = None
+    time1          = None
 
-    delt = 0.0
-    deltsum_pack = 0.0
+    delt           = 0.0
+    deltsum_pack   = 0.0
     deltsum_cwrite = 0.0
-    delt_dd = 0.0
+    delt_dd        = 0.0
 
-    debug = 0
+    debug          = 0
 
-    cursor = None
-    workdir = None
-    dd = None
-    dbms = ''
+    cursor         = None
+    workdir        = None
+    dd             = None
+    dbms           = ''
 
-    ncols_dd = 0
-    ind_racol = -1
-    ind_deccol = -1
-    ind_exclcol = -1
+    ncols_dd       = 0
+    ind_racol      = -1
+    ind_deccol     = -1
+    ind_exclcol    = -1
 
-    racol = ''
-    deccol = ''
-    exclcol = ''
+    racol          = ''
+    deccol         = ''
+    exclcol        = ''
 
-    format = 'votable'
-    maxrec = -1
+    format         = 'votable'
+    maxrec         = -1
 
-    outpath = ''
-    ntot = 0
-    ncol = 0
-    overflow = 0
-    ishdr = 0
-    istail = 0
+    outpath        = ''
+    ntot           = 0
+    ncol           = 0
+    overflow       = 0
+    ishdr          = 0
+    istail         = 0
 
-    prepare_time = 0
-    write_time = 0
+    prepare_time   = 0
+    write_time     = 0
 
-    msg = ''
-    status = ''
+    msg            = ''
+    status         = ''
 
 
     def __init__(self, cursor, workdir, dd, **kwargs):
@@ -72,8 +72,8 @@ class writeResult:
         workdir:      work directory for output files,
         filename:     output file name. 
         dd:           data dictionary for the output columns,
-        coldes(0/1): indictes whether to include column descriptions in the
-                  output file header
+        coldes(0/1):  indictes whether to include column descriptions in the
+                      output file header
 
         kwargs inputs:
 
@@ -161,7 +161,7 @@ class writeResult:
         if self.debug:
             logging.debug('')
             logging.debug('from kwargs:')
-            logging.debug(f'      format     = {self.format:s}')
+            logging.debug(f'      format      = {self.format:s}')
             logging.debug(f'      racol       = {self.racol:s}')
             logging.debug(f'      deccol      = {self.deccol:s}')
             logging.debug(f'      ind_racol   = {self.ind_racol:d}')
