@@ -75,78 +75,76 @@ class Tap:
     # { class tap
     #
 
-    pid = os.getpid()
-    form = cgi.FieldStorage()
+    pid         = os.getpid()
+    form        = cgi.FieldStorage()
 
+    debug       = 0
 
-    debug = 0
+    debugfname  = '/tmp/tap_' + str(pid) + '.debug'
 
-    debugfname = '/tmp/tap_' + str(pid) + '.debug'
+    sql         = ''
+    servernamr  = ''
+    dbtable     = ''
+    dd          = None
 
-    sql = ''
-    servernamr = ''
-    dbtable = ''
-    dd = None
+    param       = dict()
+    statdict    = dict()
 
-    param = dict()
-    statdict = dict()
+    errmsg      = ''
 
+    propflag    = -1
+    datalevel   = ''
+    instrument  = ''
 
-    errmsg = ''
+    overflow    = 0
+    maxrec      = -1
+    maxrecstr   = ''
 
-    propflag = -1
-    datalevel = ''
-    instrument = ''
+    ntot        = 0
 
-    overflow = 0
-    maxrec = -1
-    maxrecstr = ''
+    status      = ''
+    msg         = ''
 
-    ntot = 0
+    fmterr      = ''
+    maxrecerr   = ''
 
-    status = ''
-    msg = ''
+    tapcontext  = ''
+    getstatus   = 0
+    setstatus   = 0
+    id          = ''
+    statuskey   = ''
 
-    fmterr = ''
-    maxrecerr = ''
+    configpath  = ''
+    configext   = ''
+    pathinfo    = ''
 
-    tapcontext = ''
-    getstatus = 0
-    setstatus = 0
-    id = ''
-    statuskey = ''
+    token       = ''
+    cookiestr   = ''
+    cookiename  = ''
 
-    configpath = ''
-    configext  = ''
-    pathinfo = ''
+    infomsg     = ''
 
-    token = ''
-    cookiestr = ''
-    cookiename = ''
-
-    infomsg = ''
-
-    workdir = ''
-    workurl = ''
-    httpurl = ''
-    cgipgm  = ''
+    workdir     = ''
+    workurl     = ''
+    httpurl     = ''
+    cgipgm      = ''
 
     userWorkdir = ''
-    workspace = ''
+    workspace   = ''
 
-    statustbl = ''
-    statuspath = ''
-    statusurl = ''
+    statustbl   = ''
+    statuspath  = ''
+    statusurl   = ''
 
-    resulttbl = ''
-    resultpath = ''
-    resulturl = ''
+    resulttbl   = ''
+    resultpath  = ''
+    resulturl   = ''
 
-    query = ''
+    query       = ''
 
-    statusjob = None
+    statusjob   = None
 
-    uwsheader = ''
+    uwsheader   = ''
 
 
     def __init__(self, **kwargs):
@@ -187,12 +185,12 @@ class Tap:
         #  Default values: maxrec = -1
         #
 
-        self.param['lang'] = 'ADQL'
-        self.param['phase'] = ''
+        self.param['lang']    = 'ADQL'
+        self.param['phase']   = ''
         self.param['request'] = 'doQuery'
-        self.param['query'] = ''
-        self.param['format'] = 'votable'
-        self.param['maxrec'] = -1
+        self.param['query']   = ''
+        self.param['format']  = 'votable'
+        self.param['maxrec']  = -1
 
         self.querykey = 0
 
@@ -201,13 +199,13 @@ class Tap:
             logging.debug('nexsciTAP version 1.2.1\n\n')
             logging.debug('HTTP request keywords:\n')
 
-        self.lang = 'ADQL'
-        self.format = 'votable'
+        self.lang      = 'ADQL'
+        self.format    = 'votable'
         self.maxrecstr = '-1'
-        self.token = ''
-        self.query = ''
-        self.phase = ''
-        self.instance = ''
+        self.token     = ''
+        self.query     = ''
+        self.phase     = ''
+        self.instance  = ''
 
         self.uwsheader = '<uws:job xmlns:uws="http://www.ivoa.net/xml/UWS/v1.0" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema" xsi:schemaLocation="http://www.ivoa.net/xml/UWS/v1.0 http://www.ivoa.net/xml/UWS/v1.0">'
 

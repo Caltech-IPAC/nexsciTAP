@@ -16,70 +16,70 @@ from TAP.tablenames import TableNames
 
 class propFilter:
 
-    pid = os.getpid()
+    pid                    = os.getpid()
 
-    debug = 0
+    debug                  = 0
 
-    status = ''
-    msg = ''
+    status                 = ''
+    msg                    = ''
 
-    cookiestr = ''
-    userid = ''
-    encodedpass = ''
+    cookiestr              = ''
+    userid                 = ''
+    encodedpass            = ''
 
-    cookiename = ''
-    accesstbl = ''
-    usertbl = ''
+    cookiename             = ''
+    accesstbl              = ''
+    usertbl                = ''
 
-    propfilter = ''
+    propfilter             = ''
 
-    dbms = None
+    dbms                   = None
 
-    conn = None
-    dd = None
+    conn                   = None
+    dd                     = None
 
-    dbtable = ''
-    instrument = ''
-    datalevel = ''
+    dbtable                = ''
+    instrument             = ''
+    datalevel              = ''
 
-    tmp_accessiddbtbl = ''
+    tmp_accessiddbtbl      = ''
     tmp_fileidAlloweddbtbl = ''
 
-    nfetch = 1000
-    ninsert = 1000
+    nfetch                 = 1000
+    ninsert                = 1000
 
-    racol = ''
-    deccol = ''
+    racol                  = ''
+    deccol                 = ''
 
-    userworkdir = ''
-    outpath = ''
-    inpath = ''
+    userworkdir            = ''
+    outpath                = ''
+    inpath                 = ''
 
-    format = 'votable'
-    maxrec = -1
-    coldesc = 0
+    format                 = 'votable'
+    maxrec                 = -1
+    coldesc                = 0
 
-    nrec = 0
-    ntot = 0
+    nrec                   = 0
+    ntot                   = 0
 
-    nrows_in = 0
-    ncols_in = 0
-    colnames_in = None
-    query_in = ''
-    query = ''
+    nrows_in               = 0
+    ncols_in               = 0
+    colnames_in            = None
+    query_in               = ''
+    query                  = ''
 
-    selectstr = ''
-    wherestr = ''
-    orderbystr = ''
-    groupbystr = ''
+    selectstr              = ''
+    wherestr               = ''
+    orderbystr             = ''
+    groupbystr             = ''
 
-    selectcols = []
-    orderbycols = []
-    groupbycols = []
+    selectcols             = []
+    orderbycols            = []
+    groupbycols            = []
 
-    time0 = None
-    time1 = None
-    delt = 0.0
+    time0                  = None
+    time1                  = None
+    delt                   = 0.0
 
 
     def __init__(self, **kwargs):
@@ -91,41 +91,43 @@ class propFilter:
         """
         propFilter filters out the proprietary data from the input table.
 
+
         Required keyword parameters:
 
             connectInfo:        Dictionary containing the info needed
                                 to make a "connection".  These parameters
                                 are different depending on the DBMS.
 
-            query(char): user query
+            query(char):        User query
 
-            workdir(char): user work directory
+            workdir(char):      User work directory
+
 
         Optional keyword parameters(for accessing proprietary data):
 
-            cookiename(char):  cookie name for the HTTP server,
+            cookiename(char):   Cookie name for the HTTP server,
 
-            cookiestr(char):   cookie string extracted from input HTTP cookie
+            cookiestr(char):    Cookie string extracted from input HTTP cookie
                                 containing KOA userid and encoded password,
 
-            usertbl(char):     DB table containing the userid and
+            usertbl(char):      DB table containing the userid and
                                 encoded password
 
-            accesstbl(char):   DB table containing the user access info
+            accesstbl(char):    DB table containing the user access info
 
-            accessid(char):   column name in accesstbl represent the user
-                               access info
+            accessid(char):     Column name in accesstbl represent the user
+                                access info
 
-            fileid(char):     column name in result represent the unique
-                               filename
+            fileid(char):       Column name in result represent the unique
+                                filename
 
-            format(char):     output format(default votable),
+            format(char):       Output format(default votable),
 
-            maxrec(int):      default -1 meaning return all records,
+            maxrec(int):        Default -1 meaning return all records,
 
-            racol(char):      RA column name,
+            racol(char):        RA column name,
 
-            deccol(char):     Dec column name,
+            deccol(char):       Dec column name,
 
         Usage:
 
@@ -224,10 +226,11 @@ class propFilter:
                     logging.debug(f'dbserver = {self.dbserver:s}')
                     logging.debug( 'userid   = [Not shown for security reasons].')
                     logging.debug( 'password = [Not shown for security reasons].')
+
                 #   Change to the following to temporarily debug login
                     
-                    logging.debug(f'userid   = {self.userid:s}')
-                    logging.debug(f'password = {self.password:s}')
+                #   logging.debug(f'userid   = {self.userid:s}')
+                #   logging.debug(f'password = {self.password:s}')
 
 
 
@@ -279,7 +282,6 @@ class propFilter:
                                ' [password].'
                     self.status = 'error'
                     raise Exception(self.msg)
-
 
 
             if(self.dbms.lower() == 'sqlite3'):
@@ -420,6 +422,8 @@ class propFilter:
         # { Connect to DBMS
         #
 
+        # ORACLE
+
         if(self.dbms.lower() == 'oracle'):
 
             try:
@@ -440,6 +444,8 @@ class propFilter:
 
                 raise Exception(self.msg)
 
+
+        # PGSQL
 
         elif(self.dbms.lower() == 'pgsql'):
 
@@ -462,6 +468,8 @@ class propFilter:
 
                 raise Exception(self.msg)
 
+
+        # SQLITE3
 
         elif(self.dbms.lower() == 'sqlite3'):
 
@@ -949,8 +957,8 @@ class propFilter:
                  "l2",
                  "eng"]
 
-        selectstr = ''
-        wherestr = ''
+        selectstr  = ''
+        wherestr   = ''
         orderbystr = ''
         groupbystr = ''
 
