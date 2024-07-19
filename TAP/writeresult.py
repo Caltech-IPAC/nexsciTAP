@@ -914,6 +914,16 @@ class writeResult:
             self.status = None
             rowslist = []
             try:
+                if self.debug:
+                    logging.debug('')
+                    logging.debug(f'Calling writerecs()[1]:')
+                    logging.debug(f'format:   ' + str(self.format))
+                    logging.debug(f'ddlist:   ' + str(ddlist))
+                    logging.debug(f'rowslist: ' + str(rowslist))
+                    logging.debug(f'ishdr:    ' + str(self.ishdr))
+                    logging.debug(f'coldesc:  ' + str(self.coldesc))
+                    logging.debug(f'overflow: ' + str(self.overflow))
+                    logging.debug(f'istail:   ' + str(self.istail))
 
                 istatus = writerecs.writerecs(self.outpath, self.format,
                                               ddlist, rowslist, self.ishdr,
@@ -950,7 +960,19 @@ class writeResult:
         # Start fetching data lines
         #
 
+        if self.debug:
+            logging.debug('')
+            logging.debug(f'cursor.arraysize =  {self.cursor.arraysize:d}')
+
+        self.cursor.arraysize = self.arraysize
+
+        if self.debug:
+            logging.debug('')
+            logging.debug(f'cursor.arraysize -> {self.cursor.arraysize:d}')
+
+
         nfetch = self.arraysize
+
         if self.debug:
             logging.debug('')
             logging.debug(f'nfetch = {nfetch:d}')
@@ -1017,10 +1039,22 @@ class writeResult:
                     rowslist = []
                     try:
 
+                        if self.debug:
+                            logging.debug('')
+                            logging.debug(f'Calling writerecs()[2]:')
+                            logging.debug(f'format:   ' + str(self.format))
+                            logging.debug(f'ddlist:   ' + str(ddlist))
+                            logging.debug(f'rowslist: ' + str(rowslist))
+                            logging.debug(f'ishdr:    ' + str(self.ishdr))
+                            logging.debug(f'coldesc:  ' + str(self.coldesc))
+                            logging.debug(f'overflow: ' + str(self.overflow))
+                            logging.debug(f'istail:   ' + str(self.istail))
+
                         istatus = writerecs.writerecs(self.outpath, self.format,
                               ddlist, rowslist, self.ishdr,
                               self.coldesc, self.overflow,
                               self.istail)
+
 
                         if(istatus == 0):
                             self.status = 'ok'
@@ -1104,7 +1138,6 @@ class writeResult:
             #
             # } end special treatment for sqlite datatype assignment
             #
-
 
             for ll in range(0, nrec):
 
@@ -1248,6 +1281,7 @@ class writeResult:
             if self.debug:
                 logging.debug('----------------------------------------')
 
+                
             #
             # The following block determines the NUMBER type ORACLE arrays's
             # datatype -- whether the column should be double or int based
@@ -1315,7 +1349,16 @@ class writeResult:
             try:
 
                 if self.debug:
-                    logging.debug('call writerecs.writerecs')
+                    logging.debug('')
+                    logging.debug(f'Calling writerecs()[3]:')
+                    logging.debug(f'format:   ' + str(self.format))
+                    logging.debug(f'ddlist:   ' + str(ddlist))
+                    logging.debug(f'rowslist: ' + str(rowslist))
+                    logging.debug(f'ishdr:    ' + str(self.ishdr))
+                    logging.debug(f'coldesc:  ' + str(self.coldesc))
+                    logging.debug(f'overflow: ' + str(self.overflow))
+                    logging.debug(f'istail:   ' + str(self.istail))
+                    logging.debug(f'cursor.arraysize' + str(self.cursor.arraysize))
 
                 istatus = writerecs.writerecs(self.outpath, self.format,
                                               ddlist, rowslist, self.ishdr,

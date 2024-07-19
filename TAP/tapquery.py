@@ -133,7 +133,7 @@ class tapQuery:
 
         else:
             
-            # Get keyword parameters
+            # Collect DBMS-specific keyword parameters
             #
             # There are two use modes for getting these parameters.  Most of the time we let this code do everything;
             # getting the connection paramters and making the actual connection ('conn' parameter) to whichever DBMS
@@ -148,7 +148,7 @@ class tapQuery:
             self.tap_schema        = self.connectInfo['tap_schema']
 
 
-            # Parameters needed for Oracle startup
+            # ORACLE
 
             if(self.dbms.lower() == 'oracle'):
 
@@ -191,7 +191,9 @@ class tapQuery:
                     logging.debug(f'dbserver = {self.dbserver:s}')
 
 
-            if(self.dbms.lower() == 'sqlite3'):
+            # SQLITE3
+
+            elif self.dbms.lower() == 'sqlite3':
 
                 import sqlite3
 
@@ -221,7 +223,9 @@ class tapQuery:
                     logging.debug(f'tap_schema= {self.tap_schema:s}')
 
             
-            if(self.dbms.lower() == 'mysql'):
+            # MYSQL
+
+            elif self.dbms.lower() == 'mysql':
 
                 import mysql.connector
             
@@ -285,11 +289,75 @@ class tapQuery:
                     logging.debug(f'db   = {self.db:s}')
                     logging.debug(f'userid   = {self.userid:s}')
                     logging.debug(f'password = {self.password:s}')
-        
 
-            # Connect to the DBMS
 
-            if(self.dbms.lower() == 'oracle'):
+            # POSTGRESQL
+
+            elif self.dbms.lower() == 'pgsql':
+
+                import psycopg2
+
+                self.hostname = None
+                self.database = None
+                self.username = None
+                self.password = None
+
+                self.hostname = None
+                if ('hostname' in self.connectInfo):
+                    self.hostname = self.connectInfo['hostname']
+
+                if (self.hostname is None):
+                    self.msg = 'Failed to retrieve required input parameter'\
+                               ' [hostname]'
+                    self.status = 'error'
+                    raise Exception(self.msg)
+
+                self.database = None
+                if ('database' in self.connectInfo):
+                    self.database = self.connectInfo['database']
+
+                if (self.database is None):
+                    self.msg = 'Failed to retrieve required input parameter'\
+                               ' [database]'
+                    self.status = 'error'
+                    raise Exception(self.msg)
+
+                self.username = None
+                if ('username' in self.connectInfo):
+                    self.username = self.connectInfo['username']
+
+                if (self.username is None):
+                    self.msg = 'Failed to retrieve required input parameter'\
+                               ' [username]'
+                    self.status = 'error'
+                    raise Exception(self.msg)
+
+                self.password = None
+                if ('password' in self.connectInfo):
+                    self.password = self.connectInfo['password']
+
+                if (self.password is None):
+                    self.msg = 'Failed to retrieve required input parameter'\
+                               ' [password]'
+                    self.status = 'error'
+                    raise Exception(self.msg)
+
+
+            # BAD (OR NO) DBMS
+
+            else:
+                self.status = 'error'
+                self.msg = 'Invalid DBMS'
+
+                raise Exception(self.msg)
+
+
+
+        # Connect to the DBMS
+
+            # ORACLE
+
+            if self.dbms.lower() == 'oracle':
 
                 try:
                     self.conn = cx_Oracle.connect(self.userid,
@@ -307,7 +375,10 @@ class tapQuery:
 
                     raise Exception(self.msg)
 
-            elif(self.dbms.lower() == 'sqlite3'):
+          
+            # SQLITE3
+
+            elif self.dbms.lower() == 'sqlite3':
 
                 try:
                     self.conn = sqlite3.connect(self.db)
@@ -339,7 +410,10 @@ class tapQuery:
 
                     raise Exception(self.msg)
 
-            elif (self.dbms.lower() == 'mysql'):
+
+            # MYSQL
+
+            elif self.dbms.lower() == 'mysql':
            
                 try:
                     if (self.dbserver is not None):
@@ -381,11 +455,30 @@ class tapQuery:
                     logging.debug('')
                     logging.debug('here0')
                
-            else:
-                self.status = 'error'
-                self.msg = 'Invalid DBMS'
 
-                raise Exception(self.msg)
+            # POSTGRESQL
+
+            elif self.dbms.lower() == 'pgsql':
+
+                try:
+                    self.conn = psycopg2.connect (
+                        host=self.hostname, \
+                        database=self.database, \
+                        user=self.username, \
+                        password=self.password
+                    )
+
+                    if self.debug:
+                        logging.debug('')
+                        logging.debug('connected to postgresql DB ' + self.hostname)
+
+                except Exception as e:
+
+                    self.status = 'error'
+                    self.msg = 'Failed to connect to pgsql: ' + str(e)
+
+                    raise Exception(self.msg)
+
 
  
         # Get the query and query processing parameters (format, workspace, coordinate columns, etc.)
