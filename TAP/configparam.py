@@ -112,6 +112,11 @@ class configParam:
             self.msg = 'Failed to find TAP_WORKURL in config_file'
             raise Exception(self.msg)
 
+        if self.debug:
+            logging.debug('')
+            logging.debug('workdir       = %s', self.workdir)
+            logging.debug('workurl       = %s', self.workurl)
+
 
         # HTTP_URL  (includingt HTTP_PORT)
 
@@ -152,6 +157,13 @@ class configParam:
         if('INFOMSG' in confobj[self.web]):                                 
             self.infomsg = confobj[self.web]['INFOMSG']                     
 
+        if self.debug:
+            logging.debug('')
+            logging.debug('httpurl       = %s', self.httpurl)
+            logging.debug('port          = %s', self.port)
+            logging.debug('cgipgm        = %s', self.cgipgm)
+            logging.debug('arraysize     = %s', self.infomsg)
+
 
         
         ### Configuration ###########################
@@ -179,6 +191,11 @@ class configParam:
             self.sptind_config =  None
             if('SPTIND_CONFIG' in confobj[self.instance]):
                 self.sptind_config = confobj[self.instance]['SPTIND_CONFIG']
+
+        if self.debug:
+            logging.debug('')
+            logging.debug('db_connection = %s', self.db_connection)
+            logging.debug('sptind_config = %s', self.sptind_config)
 
 
 
@@ -226,6 +243,10 @@ class configParam:
                 self.status = 'error'
                 self.msg = 'Failed to find DBMS in config_file'
                 raise Exception(self.msg)
+
+            if self.debug:
+                logging.debug('')
+                logging.debug('dbms          = %s', self.dbms)
            
 
             # ORACLE Connection
@@ -323,7 +344,7 @@ class configParam:
 
             # SQLITE Connection
 
-            if self.dbms == 'sqlite3':
+            elif self.dbms == 'sqlite3':
 
                 # DB
 
@@ -368,7 +389,7 @@ class configParam:
 
             # MYSQL Connection
 
-            if(self.dbms == 'mysql'):
+            elif self.dbms == 'mysql':
 
                 # DBSERVER
 
@@ -454,7 +475,7 @@ class configParam:
 
             # PostgreSQL Connection
 
-            if(self.dbms == 'pgsql'):
+            elif self.dbms == 'pgsql':
 
                 # HOSTNAME
 
@@ -473,7 +494,7 @@ class configParam:
                 if 'DataBase' in confobj[self.db_connection]:
                     self.database = confobj[self.db_connection]['DataBase']
 
-                if self.connectInfo['database'] is None:
+                if self.database is None:
                     self.status = 'error'
                     self.msg = \
                         'Failed to find PostgreSQL DataBase keyword in config_file'
@@ -501,6 +522,44 @@ class configParam:
                     self.msg = 'Failed to find PostgreSQL password in config_file.'
                     raise Exception(self.msg)
 
+
+            # Unrecognized DBMS
+
+            else:
+                self.status = 'error'
+                self.msg = 'Unrecognized DBMS.'
+                raise Exception(self.msg)
+
+
+        if self.debug:
+            logging.debug('')
+            logging.debug('Which of these are used depends on the DBMS')
+            logging.debug('self.dbms              = %s', self.dbms)
+            logging.debug('self.dbserver          = %s', self.dbserver)
+            logging.debug('self.hostname          = %s', self.hostname)
+            logging.debug('self.userid            = %s', self.userid)
+            logging.debug('self.username          = %s', self.username)
+            logging.debug('self.password          = %s', self.password)
+            logging.debug('self.db                = %s', self.db)
+            logging.debug('self.database          = %s', self.database)
+            logging.debug('self.tap_schema        = %s', self.tap_schema)
+            logging.debug('self.tap_schema_file   = %s', self.tap_schema_file)
+            logging.debug('self.schemas_table     = %s', self.schemas_table)
+            logging.debug('self.tables_table      = %s', self.tables_table)
+            logging.debug('self.columns_table     = %s', self.columns_table)
+            logging.debug('self.keys_table        = %s', self.keys_table)
+            logging.debug('self.key_columns_table = %s', self.key_columns_table)
+            logging.debug('self.dbport            = %s', self.dbport)
+            logging.debug('self.socket            = %s', self.socket)
+            logging.debug('self.dbschema          = %s', self.dbschema)
+            logging.debug('self.cookiename        = %s', self.cookiename)
+            logging.debug('self.accesstbl         = %s', self.accesstbl)
+            logging.debug('self.usertbl           = %s', self.usertbl)
+            logging.debug('self.propfilter        = %s', self.propfilter)
+            logging.debug('self.fileid            = %s', self.fileid)
+            logging.debug('self.accessid          = %s', self.accessid)
+            logging.debug('self.racol             = %s', self.racol)
+            logging.debug('self.deccol            = %s', self.deccol)
 
 
         ### Spatial Index Configuration #############

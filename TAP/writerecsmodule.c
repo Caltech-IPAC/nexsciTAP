@@ -68,8 +68,8 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
     int inlen;
 
     char debugfname[1024];
-    int  debug  = 1;
-    int  debug1 = 1;
+    int  debug  = 0;
+    int  debug1 = 0;
 
     FILE *fp;
     FILE *fp_debug = (FILE *)NULL;
@@ -624,7 +624,7 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
                        }
 
                        fprintf (fp, "  <DESCRIPTION><![CDATA[ %s ]]></DESCRIPTION>\n", descarr[i]);
-                       fprintf (fp, "    </FIELD>\n>");
+                       fprintf (fp, "    </FIELD>\n");
                     }
                     else
                     {
