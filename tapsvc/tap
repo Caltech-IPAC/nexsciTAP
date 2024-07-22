@@ -1,0 +1,129 @@
+#!/bin/env python
+
+import sys
+
+import logging
+
+from TAP.tapstore  import tapStore
+from TAP.taputil   import tapUtil
+from TAP.tapquery  import tapQuery
+
+dbutils  = None
+dbconfig = None
+dbconn   = None
+dbadql   = None
+debug    = False
+
+def dbinit():
+
+    global dbutils
+    global dbconfig
+    global dbconn
+    global dbadql
+    global debug
+
+    try:
+        dbstore  = tapStore()
+        dbutils  = tapUtil(store=dbstore, debug=debug)
+        dbconfig = dbstore.getConfig()
+        dbconn   = dbstore.getConn()
+        dbadql   = dbstore.getADQL()
+
+    except Exception as e:
+        return 0
+    
+    return 1
+
+
+def dbquery(adql_string, filename, format):
+
+    global dbutils
+    global dbconfig
+    global dbconn
+    global dbadql
+    global debug
+
+    msg = 'Query failed.'
+
+    try:
+        cursor = dbconn.cursor()
+        
+        sql_string  = dbadql.sql(adql_string)
+
+        dbQuery = tapQuery(connectInfo=dbconfig.connectInfo,
+                           conn=dbconn, 
+                           query=sql_string, 
+                           filename=filename,
+                           format=format,
+                           debug=debug)
+
+        status  = dbQuery.stat.upper()
+
+        outfile = dbQuery.outpath
+        nrec    = dbQuery.ntot
+        msg     = dbQuery.returnMsg
+
+        if status == 'OK':
+            return status, nrec, outfile
+        else:
+            return status, 0, msg
+
+    except Exception as e:
+            return status, 0, msg
+
+
+def main():
+    
+    global dbutils
+    global dbconfig
+    global dbconn
+    global dbadql
+    global debug
+
+    if len(sys.argv) < 3:
+        print('[struct stat="ERROR", msg="Usage: tap <adql> <outfile> [<format] (default=ipac)"]')
+        sys.exit(1)
+
+    adql    = sys.argv[1]
+    outfile = sys.argv[2]
+    format  = 'ipac'
+
+    if len(sys.argv) > 3:
+        format = sys.argv[3]
+    
+    if len(sys.argv) > 4:
+
+        debug = True
+
+        debugfile = sys.argv[4]
+
+    if debug:
+        logging.basicConfig(filename=debugfile,
+                            format='%(levelname)-8s %(relativeCreated)d>  '
+                            '%(filename)s %(lineno)d  '
+                            '(%(funcName)s):   %(message)s',
+                            level=logging.DEBUG)
+
+        logging.debug('Starting TAP service debugging.')
+
+    
+    status = dbinit()
+
+    if status == 0:
+        print('[struct stat="ERROR", msg="Database initialization failed.  Check config file."]')
+        sys.exit(1)
+
+
+    status, nrec, msg = dbquery(adql, outfile, format)
+
+    if status == 'ERROR':
+        print('[struct stat="ERROR", msg="' + msg + '"]')
+        sys.exit(1)
+    else:
+        print('[struct stat="OK", nrec=' + str(nrec) + ']')
+        sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()
+

@@ -297,50 +297,6 @@ class tapQuery:
 
                 import psycopg2
 
-                self.hostname = None
-                self.database = None
-                self.username = None
-                self.password = None
-
-                self.hostname = None
-                if ('hostname' in self.connectInfo):
-                    self.hostname = self.connectInfo['hostname']
-
-                if (self.hostname is None):
-                    self.msg = 'Failed to retrieve required input parameter'\
-                               ' [hostname]'
-                    self.status = 'error'
-                    raise Exception(self.msg)
-
-                self.database = None
-                if ('database' in self.connectInfo):
-                    self.database = self.connectInfo['database']
-
-                if (self.database is None):
-                    self.msg = 'Failed to retrieve required input parameter'\
-                               ' [database]'
-                    self.status = 'error'
-                    raise Exception(self.msg)
-
-                self.username = None
-                if ('username' in self.connectInfo):
-                    self.username = self.connectInfo['username']
-
-                if (self.username is None):
-                    self.msg = 'Failed to retrieve required input parameter'\
-                               ' [username]'
-                    self.status = 'error'
-                    raise Exception(self.msg)
-
-                self.password = None
-                if ('password' in self.connectInfo):
-                    self.password = self.connectInfo['password']
-
-                if (self.password is None):
-                    self.msg = 'Failed to retrieve required input parameter'\
-                               ' [password]'
-                    self.status = 'error'
-                    raise Exception(self.msg)
 
 
             # BAD (OR NO) DBMS
