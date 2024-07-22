@@ -24,7 +24,13 @@ class tapUtil:
 
         sys.tracebacklimit = 0
 
-        debugfname = '/tmp/tap_' + str(pid) + '.debug'
+        debug = False
+        if 'debug' in kwargs:
+            debug = kwargs['debug']
+
+        if debug:
+            logging.debug('')
+            logging.debug('In tapUtil().')
 
         store = None
         if 'store' in kwargs:
@@ -37,14 +43,6 @@ class tapUtil:
         instance = None
         if 'instance' in kwargs:
             instance = kwargs['instance']
-
-        debug = False
-        if 'debug' in kwargs:
-            debug = kwargs['debug']
-
-        if debug:
-            logging.debug('')
-            logging.debug('In tapUtil().')
 
         if configpath == None:
             if 'TAP_CONF' in os.environ:
@@ -96,9 +94,12 @@ class tapUtil:
             # Get DB connection info
 
             connectInfo = config.connectInfo
-            
+
             if ('dbserver' in connectInfo):
                 dbserver = connectInfo['dbserver']
+
+            if ('hostname' in connectInfo):
+                hostname = connectInfo['hostname']
 
             socket = None
             if ('socket' in connectInfo):
@@ -111,8 +112,7 @@ class tapUtil:
                 if (port is not None):
                     port = int(port)
 
-
-            if (dbserver is None and socket is None):
+            if (dbserver is None and hostname is None and socket is None):
 
                 msg = 'Failed to retrieve required input DB server ' \
                     'parameter [dbserver] or [socket]'
@@ -121,9 +121,12 @@ class tapUtil:
             if('userid' in connectInfo):
                 userid = connectInfo['userid']
 
+            if(userid == None and 'username' in connectInfo):
+                userid = connectInfo['username']
+
             if(userid is  None):
                 msg = 'Failed to retrieve required input parameter'\
-                           ' [userid]'
+                           ' [userid/username]'
                 raise Exception(msg)
 
             if('password' in connectInfo):
@@ -137,15 +140,19 @@ class tapUtil:
             if('dbschema' in connectInfo):
                 db = connectInfo['dbschema']
 
+            if('database' in connectInfo):
+                database = connectInfo['database']
+
             if debug:
                 logging.debug('')
                 logging.debug('dbserver = ' + str(dbserver))
+                logging.debug('hostname = ' + str(hostname))
                 logging.debug('port     = ' + str(port))
                 logging.debug('socket   = ' + str(socket))
                 logging.debug('db       = ' + str(db))
+                logging.debug('database = ' + str(database))
                 logging.debug('userid   = ' + str(userid))
                 logging.debug('password = ' + str(password))
-
 
         except Exception as e:
             raise Exception(e)
@@ -154,6 +161,8 @@ class tapUtil:
         #
         # Connect to DBMS
         #
+
+        # ORACLE
 
         if(dbms.lower() == 'oracle'):
 
@@ -172,6 +181,34 @@ class tapUtil:
                 msg = 'Failed to connect to cx_Oracle'
                 raise Exception(msg)
 
+
+        # POSTGRESQL
+
+        elif(dbms.lower() == 'pgsql'):
+
+            import psycopg2
+
+            try:
+                self.conn = psycopg2.connect (
+                    host=hostname, \
+                    database=database, \
+                    user=userid, \
+                    password=password
+                )
+
+                if debug:
+                    logging.debug('')
+                    logging.debug('connected to postgresql DB ' + hostname)
+
+            except Exception as e:
+
+                self.status = 'error'
+                self.msg = 'Failed to connect to pgsql: ' + str(e)
+
+                raise Exception(self.msg)
+
+
+        # SQLITE3
 
         elif(dbms.lower() == 'sqlite3'):
 
@@ -204,6 +241,8 @@ class tapUtil:
                 msg = 'Failed to connect to SQLite3 databases'
                 raise Exception(msg)
 
+
+        # MYSQL
 
         elif (dbms.lower() == 'mysql'):
    
