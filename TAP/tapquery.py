@@ -120,6 +120,13 @@ class tapQuery:
             self.connectInfo = kwargs['connectInfo']
             self.dbms = self.connectInfo['dbms']
 
+            self.tap_schema = 'None'
+            if 'tap_schema' in self.connectInfo :
+                self.tap_schema = self.connectInfo['tap_schema']
+
+            self.tap_schema_file = ''
+            if 'tap_schema_file' in self.connectInfo :
+                self.tap_schema_file = self.connectInfo['tap_schema_file']
 
                 
 
@@ -141,11 +148,6 @@ class tapQuery:
             # tables as part of the processing).  The we will have run tapUtil() to do this same setup and used the 
             # database connection for these other steps before we get here.  The all of the code here and the section
             # below where we connect to the database will have already been executed there. 
-
-            # These two parameters are only used by SQLite startup
-
-            self.tap_schema_file   = self.connectInfo['tap_schema_file']
-            self.tap_schema        = self.connectInfo['tap_schema']
 
 
             # ORACLE
@@ -527,26 +529,30 @@ class tapQuery:
 
         self.dd = None
 
-        try:
-            self.dd = dataDictionary(self.conn, self.dbtable, self.connectInfo, debug=self.debug)
+        if self.tap_schema.lower() == 'none':
+            if self.debug:
+                logging.debug('')
+                logging.debug('No DD; all formats defaulting.')
+
+        else:
+            try:
+                self.dd = dataDictionary(self.conn, self.dbtable, self.connectInfo, debug=self.debug)
+
+                if self.debug:
+                    logging.debug('DD successfully retrieved.')
+
+            except Exception as e:
+
+                if self.debug:
+                    logging.debug('dataDictionary retrieval failure.')
+
+                self.msg = f'dataDictionary retrieval failure.'
+
+                raise Exception(self.msg)
 
             if self.debug:
                 logging.debug('')
-                logging.debug('DD successfully retrieved')
-
-        except Exception as e:
-
-            if self.debug:
-                logging.debug('')
-                logging.debug('dataDictionary exception: {str(e)}')
-
-            self.msg = f'dataDictionary retrieval exception: {str(e)}'
-
-            #raise Exception(self.msg)
-
-        if self.debug:
-            logging.debug('')
-            logging.debug('Done DD retrieval')
+                logging.debug('Done DD retrieval')
 
         #
         # Submit database query with user input SQL

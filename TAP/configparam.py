@@ -523,6 +523,27 @@ class configParam:
                     raise Exception(self.msg)
 
 
+                # TAP_SCHEMA, schemas, tables, columns
+
+                if 'TAP_SCHEMA' in confobj[self.db_connection]:
+                    self.tap_schema = confobj[self.db_connection]['TAP_SCHEMA']
+
+                if 'SchemasTable' in confobj[self.db_connection]:
+                    self.schemas_table = confobj[self.db_connection]['SchemasTable']
+
+                if 'TablesTable' in confobj[self.db_connection]:
+                    self.tables_table = confobj[self.db_connection]['TablesTable']
+
+                if 'ColumnsTable' in confobj[self.db_connection]:
+                    self.columns_table = confobj[self.db_connection]['ColumnsTable']
+
+                if 'KeysTable' in confobj[self.db_connection]:
+                    self.keys_table = confobj[self.db_connection]['KeysTable']
+
+                if 'KeyColumnsTable' in confobj[self.db_connection]:
+                    self.key_columns_table = confobj[self.db_connection]['KeyColumnsTable']
+
+
             # Unrecognized DBMS
 
             else:
