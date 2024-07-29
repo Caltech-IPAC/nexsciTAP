@@ -128,7 +128,6 @@ class tapQuery:
             if 'tap_schema_file' in self.connectInfo :
                 self.tap_schema_file = self.connectInfo['tap_schema_file']
 
-                
 
         # If the DBMS connection has already been made:
 
@@ -298,6 +297,54 @@ class tapQuery:
             elif self.dbms.lower() == 'pgsql':
 
                 import psycopg2
+
+                self.hostname = None 
+                if('hostname' in self.connectInfo):
+                    self.hostname = self.connectInfo['hostname']
+
+                if (self.hostname is None):
+                    self.msg = 'Failed to retrieve required input parameter'\
+                               ' [hostname]'
+                    self.status = 'error'
+                    raise Exception(self.msg)
+
+                self.database = None 
+                if('database' in self.connectInfo):
+                    self.database = self.connectInfo['database']
+
+                if (self.database is None):
+                    self.msg = 'Failed to retrieve required input parameter'\
+                               ' [database]'
+                    self.status = 'error'
+                    raise Exception(self.msg)
+
+                self.username = None 
+                if('username' in self.connectInfo):
+                    self.username = self.connectInfo['username']
+
+                if (self.username is None):
+                    self.msg = 'Failed to retrieve required input parameter'\
+                               ' [username]'
+                    self.status = 'error'
+                    raise Exception(self.msg)
+
+                self.password = None 
+                if('password' in self.connectInfo):
+                    self.password = self.connectInfo['password']
+
+                if (self.password is None):
+                    self.msg = 'Failed to retrieve required input parameter'\
+                               ' [password]'
+                    self.status = 'error'
+                    raise Exception(self.msg)
+
+                if self.debug:
+                    logging.debug('')
+                    logging.debug(f'hostname = {self.hostname:s}')
+                    logging.debug(f'database = {self.database:s}')
+                    logging.debug(f'username = {self.username:s}')
+                    logging.debug(f'password = {self.password:s}')
+
 
 
 

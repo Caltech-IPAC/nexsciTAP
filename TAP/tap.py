@@ -469,6 +469,7 @@ class Tap:
             self.msg = 'Internal system error: config variables read error.'
             self.__printError__('votable', str(e), errcode='500')
 
+
         self.workdir = self.config.workdir
         self.workurl = self.config.workurl
         self.httpurl = self.config.httpurl
@@ -506,8 +507,6 @@ class Tap:
 
 
 
-        #XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-        #
         #  Special case:  HTTP DELETE.  We only need 
         #  the REQUEST_METHOD and PATH_INFO environment
         #  variable.  The first must be DELETE and the
