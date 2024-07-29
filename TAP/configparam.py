@@ -684,6 +684,5 @@ class configParam:
             logging.debug('      accessid          = ' + str(self.accessid))
             logging.debug('      racol             = ' + str(self.racol))
             logging.debug('      deccol            = ' + str(self.deccol))
-
         
         return 
