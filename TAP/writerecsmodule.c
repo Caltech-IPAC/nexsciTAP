@@ -980,9 +980,10 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
                 }     
             
             }
-            else if ((strcasecmp (typearr[i], "int"    ) == 0) || 
-                     (strcasecmp (typearr[i], "long"   ) == 0) ||
-                     (strcasecmp (typearr[i], "integer") == 0)) {
+            else if ((strcasecmp (typearr[i], "int"     ) == 0) || 
+                     (strcasecmp (typearr[i], "long"    ) == 0) ||
+                     (strcasecmp (typearr[i], "longlong") == 0) ||
+                     (strcasecmp (typearr[i], "integer" ) == 0)) {
 
                 sprintf (fmt, "%%-%s", fmtarr[i]);
                         
@@ -990,7 +991,6 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
                     fprintf (fp_debug, "fmt= [%s]\n", fmt);
                     fflush (fp_debug);
                 }
-                    
                 strcpy (strval, "");
                 if (PyLong_Check (item)) {
                     intval = PyLong_AsLong (item);
