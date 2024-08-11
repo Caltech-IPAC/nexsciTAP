@@ -68,8 +68,8 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
     int inlen;
 
     char debugfname[1024];
-    int  debug  = 0;
-    int  debug1 = 0;
+    int  debug  = 1;
+    int  debug1 = 1;
 
     FILE *fp;
     FILE *fp_debug = (FILE *)NULL;
@@ -105,12 +105,14 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
         PyErr_SetString (PyExc_Exception, "Input outpath string empty");
         return NULL;
     }
+
     strcpy (filepath, cptr_outpath);
 
     if (cptr_format == (char *)NULL) {
         PyErr_SetString (PyExc_Exception, "Input format string empty");
         return NULL;
     }
+
     strcpy (outfmt, cptr_format);
 
     if ((debug) && (fp_debug != (FILE *)NULL)) {

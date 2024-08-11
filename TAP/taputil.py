@@ -29,7 +29,6 @@ class tapUtil:
             debug = kwargs['debug']
 
         if debug:
-            logging.debug('')
             logging.debug('In tapUtil().')
 
         store = None
@@ -90,7 +89,6 @@ class tapUtil:
                 store.setADQL(self.adql)
 
 
-
             # Get DB connection info
 
             connectInfo = config.connectInfo
@@ -144,7 +142,6 @@ class tapUtil:
                 database = connectInfo['database']
 
             if debug:
-                logging.debug('')
                 logging.debug('dbserver = ' + str(dbserver))
                 logging.debug('hostname = ' + str(hostname))
                 logging.debug('port     = ' + str(port))

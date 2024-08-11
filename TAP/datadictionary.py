@@ -5,6 +5,8 @@
 
 import os
 import logging
+import re
+from astropy.io import ascii
 
 
 class dataDictionary:
@@ -12,6 +14,8 @@ class dataDictionary:
     pid = os.getpid()
 
     debug = 0
+
+    ddtbl = None
 
     status = ''
     msg = ''
@@ -73,15 +77,77 @@ class dataDictionary:
             self.debug = kwargs['debug']
 
         if self.debug:
-            logging.debug('')
             logging.debug('Enter dataDictionary.init')
+
+        self.ddtbl = None
+        if('ddtbl' in kwargs):
+            self.ddtbl = kwargs['ddtbl']
 
         self.conn = conn
         self.dbtable = table
 
         if self.debug:
-            logging.debug('')
             logging.debug(f'dbtable = {self.dbtable:s}')
+            logging.debug(f'ddtbl   = ' + str(self.ddtbl))
+
+
+        #
+        # If we have a DD table file, scan it instead of querying the TAP_SCHEMA table
+        #
+
+        if self.ddtbl != None:
+
+            tdata = ascii.read(self.ddtbl)
+            tcolnames = tdata.colnames
+
+            i = 0 
+
+            for trow in tdata:
+                    
+                dbname = ''
+                desc   = ''
+                if 'name' in tcolnames:
+                    dbname = trow['name'].lower()
+                    desc   = dbname
+                    
+                type = ''
+                if 'intype' in tcolnames:
+                    type = trow['intype']
+                    
+                unit = ''
+                if 'units' in tcolnames:
+                    unit = trow['units']
+
+                format = ''
+                if 'format' in tcolnames:
+                    format = trow['format']
+
+
+                width = 0
+                if 'width' in tcolnames:
+                    widthstr = trow['width']
+                else:
+                    widthstr = format
+
+                substr = re.search(r'\d+', widthstr)
+
+                if substr != None:
+                    width = int(substr.group())
+
+                if len(dbname) > width:
+                    width = len(dbname)
+                  
+
+                self.colname[i] = dbname
+                i = i+1
+
+                self.coltype [dbname] = type
+                self.coldesc [dbname] = desc
+                self.colunits[dbname] = unit
+                self.colfmt  [dbname] = format
+                self.colwidth[dbname] = width
+
+            return
 
         #
         # Construct and submit data dictionary query
