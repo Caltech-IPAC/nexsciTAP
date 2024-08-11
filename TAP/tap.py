@@ -1629,6 +1629,7 @@ class Tap:
                 dbquery = tapQuery(connectInfo=self.config.connectInfo,
                                    query=self.query,
                                    workdir=self.userWorkdir,
+                                   ddtbl=None,
                                    format=self.format,
                                    maxrec=self.maxrec,
                                    arraysize=self.arraysize,

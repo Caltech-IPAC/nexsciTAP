@@ -1,7 +1,9 @@
 #!/bin/env python
 
 import sys
+import os
 
+import argparse
 import logging
 
 from TAP.tapstore  import tapStore
@@ -12,7 +14,10 @@ dbutils  = None
 dbconfig = None
 dbconn   = None
 dbadql   = None
+ddtbl    = None
+
 debug    = False
+
 
 def dbinit():
 
@@ -30,9 +35,9 @@ def dbinit():
         dbadql   = dbstore.getADQL()
 
     except Exception as e:
-        return 0
+        return 0, str(e)
     
-    return 1
+    return 1, ''
 
 
 def dbquery(adql_string, filename, format):
@@ -41,6 +46,7 @@ def dbquery(adql_string, filename, format):
     global dbconfig
     global dbconn
     global dbadql
+    global ddtbl
     global debug
 
     msg = 'Query failed.'
@@ -54,6 +60,7 @@ def dbquery(adql_string, filename, format):
                            conn=dbconn, 
                            query=sql_string, 
                            filename=filename,
+                           ddtbl=ddtbl,
                            format=format,
                            debug=debug)
 
@@ -69,7 +76,8 @@ def dbquery(adql_string, filename, format):
             return status, 0, msg
 
     except Exception as e:
-            return status, 0, msg
+        status = 'ERROR'
+        return status, 0, str(e)
 
 
 def main():
@@ -78,26 +86,47 @@ def main():
     global dbconfig
     global dbconn
     global dbadql
+    global ddtbl
     global debug
 
-    if len(sys.argv) < 3:
-        print('[struct stat="ERROR", msg="Usage: tap <adql> <outfile> [<format] (default=ipac)"]')
-        sys.exit(1)
-
-    adql    = sys.argv[1]
-    outfile = sys.argv[2]
-    format  = 'ipac'
-
-    if len(sys.argv) > 3:
-        format = sys.argv[3]
     
-    if len(sys.argv) > 4:
+    # Parse the command line
 
+    parser = argparse.ArgumentParser(description="TAP command-line service.")
+
+    parser.add_argument("-d", "--debug",  nargs=1, default=None, help="Specify debug output file.")
+    parser.add_argument("-t", "--ddtbl",  nargs=1, default=None, help="External data dictionary information (overrides TAP_SCHEMA).")
+    parser.add_argument("-f", "--format", nargs=1, default=None, help="Output table format.")
+
+    parser.add_argument('posargs', nargs='+', help="Two arguments: ADQL (SQL) string and output filename.")
+
+    args = parser.parse_args()
+
+    debugfile = args.debug
+    if debugfile != None:
+        debugfile = debugfile[0]
         debug = True
 
-        debugfile = sys.argv[4]
+    ddtbl = args.ddtbl
+    if ddtbl != None:
+        ddtbl = ddtbl[0]
+
+    format = args.format
+    if format != None:
+        format = format[0]
+    else:
+        format = 'ipac'
+
+    if len(args.posargs) < 2:
+        print('[struct stat="ERROR", msg="Need two positional arguments: ADQL (SQL) string and output filename."]')
+        sys.stdout.flush()
+        sys.exit(0)
+    else:
+        adql    = args.posargs[0]
+        outfile = args.posargs[1]
 
     if debug:
+
         logging.basicConfig(filename=debugfile,
                             format='%(levelname)-8s %(relativeCreated)d>  '
                             '%(filename)s %(lineno)d  '
@@ -106,24 +135,27 @@ def main():
 
         logging.debug('Starting TAP service debugging.')
 
-    
-    status = dbinit()
+    status, msg = dbinit()
 
     if status == 0:
-        print('[struct stat="ERROR", msg="Database initialization failed.  Check config file."]')
-        sys.exit(1)
+        print('[struct stat="ERROR", msg="' + msg + '"]')
+        sys.stdout.flush()
+        sys.exit(0)
 
 
     status, nrec, msg = dbquery(adql, outfile, format)
 
+    msg = msg.partition('\n')[0]
+
     if status == 'ERROR':
         print('[struct stat="ERROR", msg="' + msg + '"]')
-        sys.exit(1)
+        sys.stdout.flush()
+        sys.exit(0)
     else:
         print('[struct stat="OK", nrec=' + str(nrec) + ']')
+        sys.stdout.flush()
         sys.exit(0)
 
 
 if __name__ == "__main__":
     main()
-

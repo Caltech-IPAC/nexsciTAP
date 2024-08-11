@@ -606,7 +606,7 @@ class propFilter:
 
         self.dd = None
         try:
-            self.dd = dataDictionary(self.conn, self.dbtable, self.connectInfo, debug=self.debug)
+            self.dd = dataDictionary(self.conn, self.dbtable, self.connectInfo, ddtbl=None, debug=self.debug)
 
         except Exception as e:
 

@@ -50,6 +50,8 @@ class tapQuery:
     userworkdir = None
     ntot = 0
 
+    ddtbl = None
+
     format = 'votable'
     maxrec = -1
     coldesc = 0
@@ -97,6 +99,7 @@ class tapQuery:
                               workdir=userworkdir,
                               filename=filename,
                               maxrec=maxrec,
+                              ddtbl=ddtbl,  
                               format=format,
                               racol=racol,
                               deccol=deccol)
@@ -105,8 +108,11 @@ class tapQuery:
         if('debug' in kwargs):
             self.debug = kwargs['debug']
 
+        self.ddtbl = None
+        if('ddtbl' in kwargs):
+            self.ddtbl = kwargs['ddtbl']
+
         if self.debug:
-            logging.debug('')
             logging.debug(f'Enter tapQuery')
             logging.debug(f'self.debug = {self.debug:d}')
 
@@ -114,7 +120,6 @@ class tapQuery:
         self.arraysize = 10000
         if('arraysize' in kwargs):
             self.arraysize = kwargs['arraysize']
-
 
         if('connectInfo' in kwargs):
             self.connectInfo = kwargs['connectInfo']
@@ -124,7 +129,6 @@ class tapQuery:
             if 'tap_schema' in self.connectInfo :
                 self.tap_schema = self.connectInfo['tap_schema']
 
-            self.tap_schema_file = ''
             if 'tap_schema_file' in self.connectInfo :
                 self.tap_schema_file = self.connectInfo['tap_schema_file']
 
@@ -186,7 +190,6 @@ class tapQuery:
                     raise Exception(self.msg)
 
                 if self.debug:
-                    logging.debug('')
                     logging.debug(f'userid   = {self.userid:s}')
                     logging.debug(f'password = {self.password:s}')
                     logging.debug(f'dbserver = {self.dbserver:s}')
@@ -219,7 +222,6 @@ class tapQuery:
                     raise Exception(self.msg)
 
                 if self.debug:
-                    logging.debug('')
                     logging.debug(f'db= {self.db:s}')
                     logging.debug(f'tap_schema= {self.tap_schema:s}')
 
@@ -280,7 +282,6 @@ class tapQuery:
                     self.db = self.connectInfo['dbschema']
 
                 if self.debug:
-                    logging.debug('')
                     logging.debug('dbserver=')
                     logging.debug(self.dbserver)
                     logging.debug('port=')
@@ -339,7 +340,6 @@ class tapQuery:
                     raise Exception(self.msg)
 
                 if self.debug:
-                    logging.debug('')
                     logging.debug(f'hostname = {self.hostname:s}')
                     logging.debug(f'database = {self.database:s}')
                     logging.debug(f'username = {self.username:s}')
@@ -370,7 +370,6 @@ class tapQuery:
                                                   self.dbserver)
 
                     if self.debug:
-                        logging.debug('')
                         logging.debug('connected to Oracle, DB ' + self.dbserver)
 
                 except Exception as e:
@@ -389,7 +388,6 @@ class tapQuery:
                     self.conn = sqlite3.connect(self.db)
 
                     if self.debug:
-                        logging.debug('')
                         logging.debug('connected to SQLite3, database ' + self.db)
 
                     cmd = 'ATTACH DATABASE ? AS ' + self.tap_schema_file
@@ -397,7 +395,6 @@ class tapQuery:
                     dbspec = (self.tap_schema,)
 
                     if self.debug:
-                        logging.debug('')
                         logging.debug('cmd: ' + cmd + '(' + self.tap_schema + ')')
 
                     cursor = self.conn.cursor()
@@ -405,7 +402,6 @@ class tapQuery:
                     cursor.execute(cmd, dbspec)
 
                     if self.debug:
-                        logging.debug('')
                         logging.debug('TAP_SCHEMA attached')
 
                 except Exception as e:
@@ -446,7 +442,6 @@ class tapQuery:
                         raise Exception(self.msg)
 
                     if self.debug:
-                        logging.debug('')
                         logging.debug('mysql connected')
 
                 except Exception as e:
@@ -457,7 +452,6 @@ class tapQuery:
                     raise Exception(self.msg)
 
                 if self.debug:
-                    logging.debug('')
                     logging.debug('here0')
                
 
@@ -474,7 +468,6 @@ class tapQuery:
                     )
 
                     if self.debug:
-                        logging.debug('')
                         logging.debug('connected to postgresql DB ' + self.hostname)
 
                 except Exception as e:
@@ -509,7 +502,6 @@ class tapQuery:
             self.filename = kwargs['filename']
 
         if self.debug:
-            logging.debug('')
             logging.debug(f'userworkdir= {self.userworkdir:s}')
 
             if('filename' in kwargs):
@@ -529,10 +521,8 @@ class tapQuery:
             self.deccol = kwargs['deccol']
 
         if self.debug:
-            logging.debug('')
             logging.debug(f'racol= {self.racol:s}')
             logging.debug(f'deccol= {self.deccol:s}')
-        
 
         if('format' in kwargs):
             self.format = kwargs['format']
@@ -550,7 +540,9 @@ class tapQuery:
                 raise Exception(self.msg)
 
         if self.debug:
-            logging.debug('')
+            #  if self.ddtbl != None:
+            #      logging.debug(f'ddtbl= {self.ddtbl:s}')
+
             logging.debug(f'format= {self.format:s}')
             logging.debug(f'maxrec= {self.maxrec:d}')
 
@@ -566,7 +558,6 @@ class tapQuery:
             self.dbtable = tables[0]
 
         if self.debug:
-            logging.debug('')
             logging.debug(f'dbtable= [{self.dbtable:s}]')
 
 
@@ -578,12 +569,11 @@ class tapQuery:
 
         if self.tap_schema.lower() == 'none':
             if self.debug:
-                logging.debug('')
                 logging.debug('No DD; all formats defaulting.')
 
         else:
             try:
-                self.dd = dataDictionary(self.conn, self.dbtable, self.connectInfo, debug=self.debug)
+                self.dd = dataDictionary(self.conn, self.dbtable, self.connectInfo, ddtbl=self.ddtbl, debug=self.debug)
 
                 if self.debug:
                     logging.debug('DD successfully retrieved.')
@@ -598,7 +588,6 @@ class tapQuery:
                 raise Exception(self.msg)
 
             if self.debug:
-                logging.debug('')
                 logging.debug('Done DD retrieval')
 
         #
@@ -608,29 +597,17 @@ class tapQuery:
         cursor = self.conn.cursor()
         
         if self.debug:
-            logging.debug('')
             logging.debug(f'sql = {self.sql:s}')
-            logging.debug('call execute sql')
+            logging.debug('call execut sql')
 
-        try:
-            self.__executeSql__(cursor, self.sql, debug=1)
-        
-            if self.debug:
-                logging.debug('')
-                logging.debug('returned executeSql')
-
-        except Exception as e:
-
-            if self.debug:
-                logging.debug('')
-                logging.debug(f'executeSql exception: {str(e):s}')
-
-            raise Exception(str(e))
-
+        self.msg = self.__executeSql__(cursor, self.sql, debug=1)
+    
         if self.debug:
-            logging.debug('')
             logging.debug('returned executeSql')
 
+        if len(self.msg) > 0:
+            raise Exception(self.msg)
+            
 
     #
     # Call writeResult
@@ -653,7 +630,6 @@ class tapQuery:
         except Exception as e:
 
             if self.debug:
-                logging.debug('')
                 logging.debug(f'writeResult exception: {str(e):s}')
 
             raise Exception(str(e))
@@ -663,7 +639,6 @@ class tapQuery:
         self.ntot    = wresult.ntot
 
         if self.debug:
-            logging.debug('')
             logging.debug('Return:')
             logging.debug('stat    = ' + str(self.stat))
             logging.debug('outpath = ' + str(self.outpath))
@@ -686,22 +661,36 @@ class tapQuery:
             debug = kwargs['debug']
 
         if self.debug:
-            logging.debug('')
             logging.debug('Enter executeSql')
             logging.debug(f'sql:= {sql:s}')
 
+        #
+        # The actual database query is the cursor.execute() statement below.
+        # If the query fails, we get an exception, which we will save and then
+        # try a rollback() (to avoid memory issues), whether or not the query
+        # was successful.
+
+        # Then if the query was successful we will return an empty string and
+        # if it failed we will return the exception message.
+
+        return_message = ''
+
         try:
             cursor.execute(sql)
+            
         except Exception as e:
+            return_message = str(e).replace('"', "'")
 
-            msg = str(e).replace('"', "'")
 
-            if self.debug:
-                logging.debug('')
-                logging.debug(f'executeSql exception: {str(msg):s}')
+        # Rollback just to be safe.
 
-            # raise Exception(str(e))
-            raise Exception(msg)
+        try:
+            self.conn.rollback()
+        
+        except Exception as e:
+            pass
+            
+        return return_message
 
         #
         # } end of executeSql def
@@ -728,6 +717,7 @@ def main():
     parser.add_argument('--instance',      help='Configuration instance (defaults to using predefined config).')
     parser.add_argument('--sql',           help='ADQL (SQL) SELECT statement.')
     parser.add_argument('--filename',      help='Output filename.', default='results.tbl')
+    parser.add_argument('--ddtbl',         help='Format of output table.', default=None)
     parser.add_argument('--format',        help='Format of output table.', default='ipac')
     parser.add_argument('--maxrec',        help='Maximum number of records on output (default: all).', default='-1')
     parser.add_argument('--debug',         help='Debug flag: 1/0 (default: 0).', default='0')
@@ -738,6 +728,7 @@ def main():
     configpath    = args.configpath
     instance      = args.instance
     format        = args.format
+    ddtbl         = args.ddtbl
     maxrec        = args.maxrec
     filename      = args.filename
     debug         = int(args.debug)
@@ -750,7 +741,6 @@ def main():
                             '(%(funcName)s):   %(message)s',
                             level=logging.DEBUG)
 
-        logging.debug('')
         logging.debug('TAP version:  3Apr2024 with Oracle, PostgreSQL, SQLite and MySQL.')
 
     arraysize  = 10000
@@ -774,7 +764,6 @@ def main():
         config = configParam(configpath, instance=instance, debug=debug)
 
         if debug:
-            logging.debug('')
             logging.debug('config:')
             logging.debug('%s', config)
 
@@ -821,6 +810,7 @@ def main():
         query = tapQuery(connectInfo=config.connectInfo,
                          query=sql_string,
                          filename=filename,
+                         ddtbl=ddtbl,
                          format=format,
                          maxrec=maxrec,
                          arraysize=arraysize,
