@@ -567,7 +567,7 @@ class tapQuery:
 
         self.dd = None
 
-        if self.tap_schema.lower() == 'none':
+        if self.tap_schema.lower() == 'none' and self.ddtbl == None:
             if self.debug:
                 logging.debug('No DD; all formats defaulting.')
 
