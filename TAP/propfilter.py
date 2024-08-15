@@ -1234,6 +1234,10 @@ class propFilter:
         #  If cookiestr exists: validate userid/encodedpass
         #
 
+        if self.debug:
+            logging.debug(f'cookiename = ' + str(cookiename))
+            logging.debug(f'cookiestr  = ' + str(cookiestr))
+
         msg = ''
         ind = cookiestr.find(cookiename)
 
@@ -1268,8 +1272,10 @@ class propFilter:
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'userid = {self.userid:s}')
-            logging.debug(f'encodedpass = {self.encodedpass:s}')
+            logging.debug(f'substr1     = ' + str(substr1))
+            logging.debug(f'arr         = ' + str(arr))
+            logging.debug(f'userid      = ' + str(self.userid))
+            logging.debug(f'encodedpass = ' + str(self.encodedpass))
 
         if(self.userid == 'anon'):
             self.userid = ''
