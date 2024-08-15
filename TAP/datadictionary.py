@@ -97,7 +97,7 @@ class dataDictionary:
 
         if self.ddtbl != None:
 
-            tdata = ascii.read(self.ddtbl)
+            tdata = ascii.read(self.ddtbl, format='ipac')
             tcolnames = tdata.colnames
 
             i = 0 
