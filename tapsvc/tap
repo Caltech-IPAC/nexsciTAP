@@ -54,7 +54,13 @@ def dbquery(adql_string, filename, format):
     try:
         cursor = dbconn.cursor()
         
+        if debug:
+            logging.debug('ADQL: ' + adql_string)
+
         sql_string  = dbadql.sql(adql_string)
+        
+        if debug:
+            logging.debug('SQL:  ' + sql_string)
 
         dbQuery = tapQuery(connectInfo=dbconfig.connectInfo,
                            conn=dbconn, 

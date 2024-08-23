@@ -47,6 +47,7 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
     int  nrows_dd;
 
     char    outfmt[40];
+    char    colfmt[40];
     char    msg[1024];
     char    fmt[40];
     char    nullval[20];
@@ -68,8 +69,8 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
     int inlen;
 
     char debugfname[1024];
-    int  debug  = 1;
-    int  debug1 = 1;
+    int  debug  = 0;
+    int  debug1 = 0;
 
     FILE *fp;
     FILE *fp_debug = (FILE *)NULL;
@@ -484,6 +485,8 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
 
     if (ishdr) {
         
+        // ---- HEADER ----
+        
         if (strcasecmp (outfmt, "ipac") == 0) {
     
 
@@ -774,9 +777,12 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
                 fprintf (fp_debug, "PyObject type:[%s], typearr[i]: [%s]\n", coltype, typearr[i]);
                 fflush (fp_debug);
             }
+                
+
+            // ---- DATA:null ----
 
             if (item == Py_None) {
-                
+        
                 sprintf (fmt, "%%-%ds ", widtharr[i]);
             
                 if ((debug1) && (fp_debug != (FILE *)NULL)) {
@@ -835,6 +841,10 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
                         fprintf (fp, "}");
                 }     
             }
+
+
+            // ---- DATA: string (-like) ----
+        
             else if ((strcasecmp (typearr[i],   "char") == 0) || 
                      (strcasecmp (typearr[i],   "date") == 0) ||
                      (strcasecmp (dbtypearr[i], "timestamp") == 0)) {
@@ -982,6 +992,10 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
                 }     
             
             }
+
+
+            // ---- DATA: int (-like) ----
+        
             else if ((strcasecmp (typearr[i], "int"     ) == 0) || 
                      (strcasecmp (typearr[i], "long"    ) == 0) ||
                      (strcasecmp (typearr[i], "longlong") == 0) ||
@@ -1007,7 +1021,9 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
                     
                 if (strcasecmp (outfmt, "ipac") == 0) {
                     
-                    fprintf (fp, "%s ", strval);
+                    sprintf(colfmt, "%%-%ds ", widtharr[i]);
+
+                    fprintf (fp, colfmt, strval);
                     
                     if (i == ncols-1) {
                         fprintf (fp, "\n");
@@ -1071,6 +1087,10 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
                    }
                 }     
             }
+
+
+            // ---- DATA: double ----
+        
             else if ((strcasecmp (typearr[i], "float" ) == 0) || 
                      (strcasecmp (typearr[i], "double") == 0)) {
 
@@ -1133,12 +1153,14 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
 
                 if (strcasecmp (outfmt, "ipac") == 0) {
         
+                    sprintf(colfmt, "%%-%ds ", widtharr[i]);
+
                     if ((debug1) && (fp_debug != (FILE *)NULL)) {
-                        fprintf (fp_debug, "ipac outfmt\n");
+                        fprintf (fp_debug, "ipac outfmt: [%s]  colfmt: [%s]\n", strval, colfmt);
                         fflush (fp_debug);
                     }
 
-                    fprintf (fp, "%s ", strval);
+                    fprintf (fp, colfmt, strval);
                         
                     if (i == ncols-1) {
                         fprintf (fp, "\n");
