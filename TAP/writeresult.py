@@ -607,16 +607,15 @@ class writeResult:
                         width = len(colname)
                     fmt = str(width) + 's'
 
-
                 if self.debug:
                     logging.debug('')
                     logging.debug('Column is in dd:')
-                    logging.debug(f'      colname = {colname:s}')
-                    logging.debug(f'      coltype = {coltype:s}')
-                    logging.debug(f'      dbtype  = {dbtype:s}')
-                    logging.debug(f'      fmt     = {fmt:s}')
-                    logging.debug(f'      width   = {width:d}')
-                    logging.debug(f'      desc    = {desc:s}')
+                    logging.debug(f'      colname  = {colname:s}')
+                    logging.debug(f'      coltype  = {coltype:s}')
+                    logging.debug(f'      dbtype   = {dbtype:s}')
+                    logging.debug(f'      fmt      = {fmt:s}')
+                    logging.debug(f'      width    = {width:d}')
+                    logging.debug(f'      desc     = {desc:s}')
 
                 #
                 # } end char/date/datetime/timestamp: verify format with
@@ -677,6 +676,7 @@ class writeResult:
 
                     if(len(colname) > width):
                         width = len(colname)
+
                     fmt = str(width) + 's'
 
                     #
