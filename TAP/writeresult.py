@@ -583,6 +583,9 @@ class writeResult:
                     if (len(colname) > width):
                         width = len(colname)
 
+                    if(len(units) > width):
+                        width = len(units)
+
                     coltype = 'char'
                     dbtype = "varchar(" + str(width) + ")"
                     fmt = str(width) + 's'
@@ -592,8 +595,13 @@ class writeResult:
                     coltype = 'char'
 
                     width = 14
+
                     if(len(colname) > width):
                         width = len(colname)
+
+                    if(len(units) > width):
+                        width = len(units)
+
                     fmt = str(width) + 's'
 
 
@@ -603,15 +611,27 @@ class writeResult:
                     coltype = 'char'
 
                     width = 30
+
                     if(len(colname) > width):
                         width = len(colname)
+
+                    if(len(units) > width):
+                        width = len(units)
+
                     fmt = str(width) + 's'
+
+                if (len(colname) > width):
+                    width = len(colname)
+
+                if(len(units) > width):
+                    width = len(units)
 
                 if self.debug:
                     logging.debug('')
                     logging.debug('Column is in dd:')
                     logging.debug(f'      colname  = {colname:s}')
                     logging.debug(f'      coltype  = {coltype:s}')
+                    logging.debug(f'      units    = {units:s}')
                     logging.debug(f'      dbtype   = {dbtype:s}')
                     logging.debug(f'      fmt      = {fmt:s}')
                     logging.debug(f'      width    = {width:d}')
@@ -649,6 +669,9 @@ class writeResult:
                     if(len(colname) > width):
                         width = len(colname)
 
+                    if(len(units) > width):
+                        width = len(units)
+
                     coltype = 'char'
                     dbtype = dbdatatype
                     fmt = str(width) + 's'
@@ -677,6 +700,9 @@ class writeResult:
                     if(len(colname) > width):
                         width = len(colname)
 
+                    if(len(units) > width):
+                        width = len(units)
+
                     fmt = str(width) + 's'
 
                     #
@@ -696,8 +722,13 @@ class writeResult:
                     dbtype = 'long'
 
                     width = 22
+
                     if(len(colname) > width):
                         width = len(colname)
+
+                    if(len(units) > width):
+                        width = len(units)
+
                     fmt = str(width) + 'd'
 
                     #
@@ -714,8 +745,13 @@ class writeResult:
                     dbtype = 'longlong'
 
                     width = 24
+
                     if(len(colname) > width):
                         width = len(colname)
+
+                    if(len(units) > width):
+                        width = len(units)
+
                     fmt = str(width) + 'ld'
 
                     #
@@ -735,8 +771,13 @@ class writeResult:
                     fmt = '22.14e'
 
                     width = 22
+
                     if(len(colname) > width):
                         width = len(colname)
+
+                    if(len(units) > width):
+                        width = len(units)
+
                     fmt = str(width) + '.14e'
 
                     #
@@ -757,8 +798,13 @@ class writeResult:
                         dbtype = dbdatatype
 
                         width = 22
+
                         if(len(colname) > width):
                             width = len(colname)
+
+                        if(len(units) > width):
+                            width = len(units)
+
                         fmt = str(width) + 'd'
 
                     else:
@@ -767,8 +813,13 @@ class writeResult:
                         dbtype = dbdatatype
 
                         width = 22
+
                         if(len(colname) > width):
                             width = len(colname)
+
+                        if(len(units) > width):
+                            width = len(units)
+
                         fmt = str(width) + '.14e'
 
                     #
@@ -789,8 +840,13 @@ class writeResult:
                     dbtype = dbdatatype
 
                     width = 22
+
                     if(len(colname) > width):
                         width = len(colname)
+
+                    if(len(units) > width):
+                        width = len(units)
+
                     fmt = str(width) + '.14e'
 
                 #
@@ -807,8 +863,13 @@ class writeResult:
                     dbtype = dbdatatype
 
                     width = 80
+
                     if(len(colname) > width):
                         width = len(colname)
+
+                    if(len(units) > width):
+                        width = len(units)
+
                     fmt = str(width) + 's'
 
                 #
@@ -847,6 +908,7 @@ class writeResult:
                     logging.debug('column not in dd')
                     logging.debug(f'      width   = {width:d}')
                     logging.debug(f'      dbtype  = {dbtype:s}')
+                    logging.debug(f'      units   = {units:s}')
                     logging.debug(f'      coltype = {coltype:s}')
                     logging.debug(f'      fmt     = {fmt:s}')
 
