@@ -559,6 +559,12 @@ class writeResult:
                 fmt     = self.dd.colfmt  [colname]
                 desc    = self.dd.coldesc [colname]
 
+                try:
+                    if len(units) <= 0:
+                        units = ''
+                except Exception as e:
+                    units = ''
+
                 isddcolarr.append(1)
                 intcntarr.append(0)
                 fltcntarr.append(0)
