@@ -51,6 +51,7 @@ class tapQuery:
     ntot = 0
 
     ddtbl = None
+    ddfile = None
 
     format = 'votable'
     maxrec = -1
@@ -100,6 +101,7 @@ class tapQuery:
                               filename=filename,
                               maxrec=maxrec,
                               ddtbl=ddtbl,  
+                              ddtbl=ddfile,  
                               format=format,
                               racol=racol,
                               deccol=deccol)
@@ -111,6 +113,10 @@ class tapQuery:
         self.ddtbl = None
         if('ddtbl' in kwargs):
             self.ddtbl = kwargs['ddtbl']
+
+        self.ddfile = None
+        if('ddfile' in kwargs):
+            self.ddfile = kwargs['ddfile']
 
         if self.debug:
             logging.debug(f'Enter tapQuery')
@@ -540,9 +546,6 @@ class tapQuery:
                 raise Exception(self.msg)
 
         if self.debug:
-            #  if self.ddtbl != None:
-            #      logging.debug(f'ddtbl= {self.ddtbl:s}')
-
             logging.debug(f'format= {self.format:s}')
             logging.debug(f'maxrec= {self.maxrec:d}')
 
@@ -567,13 +570,13 @@ class tapQuery:
 
         self.dd = None
 
-        if self.tap_schema.lower() == 'none' and self.ddtbl == None:
+        if self.tap_schema.lower() == 'none' and self.ddtbl == None and self.ddfile == None:
             if self.debug:
                 logging.debug('No DD; all formats defaulting.')
 
         else:
             try:
-                self.dd = dataDictionary(self.conn, self.dbtable, self.connectInfo, ddtbl=self.ddtbl, debug=self.debug)
+                self.dd = dataDictionary(self.conn, self.dbtable, self.connectInfo, ddtbl=self.ddtbl, ddfile=self.ddfile, debug=self.debug)
 
                 if self.debug:
                     logging.debug('DD successfully retrieved.')
@@ -717,7 +720,8 @@ def main():
     parser.add_argument('--instance',      help='Configuration instance (defaults to using predefined config).')
     parser.add_argument('--sql',           help='ADQL (SQL) SELECT statement.')
     parser.add_argument('--filename',      help='Output filename.', default='results.tbl')
-    parser.add_argument('--ddtbl',         help='Format of output table.', default=None)
+    parser.add_argument('--ddtbl',         help='DD in internal DD table.', default=None)
+    parser.add_argument('--ddfile',        help='DD in external ASCII table file.', default=None)
     parser.add_argument('--format',        help='Format of output table.', default='ipac')
     parser.add_argument('--maxrec',        help='Maximum number of records on output (default: all).', default='-1')
     parser.add_argument('--debug',         help='Debug flag: 1/0 (default: 0).', default='0')
@@ -729,6 +733,7 @@ def main():
     instance      = args.instance
     format        = args.format
     ddtbl         = args.ddtbl
+    ddfile        = args.ddfile
     maxrec        = args.maxrec
     filename      = args.filename
     debug         = int(args.debug)
@@ -811,6 +816,7 @@ def main():
                          query=sql_string,
                          filename=filename,
                          ddtbl=ddtbl,
+                         ddfile=ddfile,
                          format=format,
                          maxrec=maxrec,
                          arraysize=arraysize,

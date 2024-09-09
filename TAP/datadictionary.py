@@ -83,22 +83,33 @@ class dataDictionary:
         if('ddtbl' in kwargs):
             self.ddtbl = kwargs['ddtbl']
 
+        self.ddfile = None
+        if('ddfile' in kwargs):
+            self.ddfile = kwargs['ddfile']
+
         self.conn = conn
         self.dbtable = table
 
         if self.debug:
             logging.debug(f'dbtable = {self.dbtable:s}')
             logging.debug(f'ddtbl   = ' + str(self.ddtbl))
+            logging.debug(f'ddfile  = ' + str(self.ddfile))
 
 
         #
         # If we have a DD table file, scan it instead of querying the TAP_SCHEMA table
         #
 
-        if self.ddtbl != None:
+        if self.ddfile != None:
 
-            tdata = ascii.read(self.ddtbl, format='ipac')
+            if self.debug:
+                logging.debug(f'Reading: {self.ddfile:s}')
+
+            tdata = ascii.read(self.ddfile, format='ipac')
             tcolnames = tdata.colnames
+
+            if self.debug:
+                logging.debug('colnames: ' + str(tcolnames))
 
             i = 0 
 
@@ -156,18 +167,24 @@ class dataDictionary:
         cursor = self.conn.cursor()
         if self.debug:
             logging.debug('')
-            logging.debug('DBMS cursor:')
-            logging.debug('-------------------------------------------------')
-            logging.debug(cursor)
-            logging.debug('-------------------------------------------------')
+            logging.debug('Created DD query cursor.')
 
+        if self.ddtbl == None:
 
-        sql = "select * from " + self.connectInfo["tap_schema"] + "." + self.connectInfo["columns_table"] + " where lower(table_name) = " + \
-            "'" + self.dbtable + "'"
+            sql = "select * from " + self.connectInfo["tap_schema"] + "." + self.connectInfo["columns_table"] + " where lower(table_name) = " + \
+                "'" + self.dbtable + "'"
 
-        if self.debug:
-            logging.debug('')
-            logging.debug(f'TAP_SCHEMA sql = {sql:s}')
+            if self.debug:
+                logging.debug('')
+                logging.debug(f'TAP_SCHEMA sql = {sql:s}')
+
+        else:
+
+            sql = "select name as column_name, description as desc, units as unit, intype as datatype, format from " + self.ddtbl
+
+            if self.debug:
+                logging.debug('')
+                logging.debug(f'Internal DD table sql = {sql:s}')
 
         try:
             cursor.execute(sql)
@@ -186,7 +203,7 @@ class dataDictionary:
 
         if self.debug:
             logging.debug('')
-            logging.debug('select TAP_SCHEMA statement executed')
+            logging.debug('select TAP_SCHEMA/DD statement executed')
 
         #
         # { Extract column index
@@ -194,7 +211,7 @@ class dataDictionary:
 
         if self.debug:
             logging.debug('')
-            logging.debug('TAP_SCHEMA cursor description:')
+            logging.debug('TAP_SCHEMA/DD cursor description:')
             logging.debug('------------------------------------------------')
             logging.debug(cursor.description)
             logging.debug('------------------------------------------------')

@@ -54,6 +54,7 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
     char    nullval_ipac[20];
     char    strval[1024];
     char    jsonstr[4096];
+    char    tempstr[4096];
     char    substr[40];
     
     double  dblval = 0.0;
@@ -461,6 +462,7 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
     }
 
     if (fp == (FILE *)NULL) {
+
         sprintf (msg, "Failed to open filepath: [%s](errno:%d)", filepath, errno);
         
         if ((debug) && (fp_debug != (FILE *)NULL)) {
@@ -875,6 +877,22 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
                 if (strcasecmp (outfmt, "ipac") == 0) {
                     
                     sprintf (fmt, "%%-%s ", fmtarr[i]);
+
+                    sprintf(tempstr, fmt, strval);
+
+                    if(strlen(tempstr) > widtharr[i]+1)
+                    {
+                        sprintf (msg, "Column %d [%s], row %d: Formatted value [%s](%s) -> %d characters,  overflows column width [%d char].",
+                            i, namearr[i], l, strval, fmtarr[i], (int)strlen(tempstr), widtharr[i]);
+                    
+                        if ((debug1) && (fp_debug != (FILE *)NULL)) {
+                            fprintf (fp_debug, "ERROR: %s\n", msg);
+                            fflush (fp_debug);
+                        }
+
+                        PyErr_SetString (PyExc_Exception, msg);
+                        return NULL;
+                    }
                     
                     if ((debug1) && (fp_debug != (FILE *)NULL)) {
                         fprintf (fp_debug, "fmt= [%s]\n", fmt);
@@ -1023,6 +1041,22 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
                     
                     sprintf(colfmt, "%%-%ds ", widtharr[i]);
 
+                    sprintf(tempstr, colfmt, strval);
+
+                    if(strlen(tempstr) > widtharr[i]+1)
+                    {
+                        sprintf (msg, "Column %d [%s], row %d: Formatted value [%s](%s) -> %d characters,  overflows column width [%d char].",
+                            i, namearr[i], l, strval, fmtarr[i], (int)strlen(tempstr), widtharr[i]);
+                    
+                        if ((debug1) && (fp_debug != (FILE *)NULL)) {
+                            fprintf (fp_debug, "ERROR: %s\n", msg);
+                            fflush (fp_debug);
+                        }
+
+                        PyErr_SetString (PyExc_Exception, msg);
+                        return NULL;
+                    }
+
                     fprintf (fp, colfmt, strval);
                     
                     if (i == ncols-1) {
@@ -1155,13 +1189,29 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
         
                     sprintf(colfmt, "%%-%ds ", widtharr[i]);
 
+                    sprintf(tempstr, colfmt, strval);
+
+                    if(strlen(tempstr) > widtharr[i]+1)
+                    {
+                        sprintf (msg, "Column %d [%s], row %d: Formatted value [%s](%s) -> %d characters,  overflows column width [%d char].",
+                            i, namearr[i], l, strval, fmtarr[i], (int)strlen(tempstr), widtharr[i]);
+                    
+                        if ((debug1) && (fp_debug != (FILE *)NULL)) {
+                            fprintf (fp_debug, "ERROR: %s\n", msg);
+                            fflush (fp_debug);
+                        }
+
+                        PyErr_SetString (PyExc_Exception, msg);
+                        return NULL;
+                    }
+
                     if ((debug1) && (fp_debug != (FILE *)NULL)) {
                         fprintf (fp_debug, "ipac outfmt: [%s]  colfmt: [%s]\n", strval, colfmt);
                         fflush (fp_debug);
                     }
 
                     fprintf (fp, colfmt, strval);
-                        
+
                     if (i == ncols-1) {
                         fprintf (fp, "\n");
                         if ((debug1) && (fp_debug != (FILE *)NULL)) {
