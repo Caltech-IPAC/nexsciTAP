@@ -15,6 +15,7 @@ import configobj
 from TAP.datadictionary import dataDictionary
 from TAP.writeresult import writeResult
 from TAP.tablenames import TableNames
+from TAP.tablevalidator import TableValidator
 
 
 class runQuery:
@@ -315,6 +316,26 @@ class runQuery:
             self.status = 'error'
             self.msg = 'Invalid DBMS'
 
+            raise Exception(self.msg)
+
+        #
+        # Defense-in-depth: validate tables against TAP_SCHEMA
+        #
+
+        try:
+            tn = TableNames()
+            query_tables = tn.extract_tables(self.sql)
+
+            validator = TableValidator(self.conn, debug=self.debug)
+            validator.validate(query_tables)
+
+        except Exception as e:
+
+            if self.debug:
+                logging.debug('')
+                logging.debug(f'Table validation exception: {str(e):s}')
+
+            self.msg = str(e)
             raise Exception(self.msg)
 
         #
