@@ -28,6 +28,7 @@ from TAP.runquery import runQuery
 from TAP.configparam import configParam
 from TAP.propfilter import propFilter
 from TAP.tablenames import TableNames
+from TAP.tablevalidator import TableValidator
 from TAP.vositables import vosiTables 
 
 
@@ -1519,6 +1520,7 @@ class Tap:
         #
 
         self.dbtable = ''
+        tables = []
         try:
             tn = TableNames()
             tables = tn.extract_tables(self.query)
@@ -1533,9 +1535,9 @@ class Tap:
         if len(self.dbtable) == 0:
 
             self.msg = 'No table name found in ADQL query.'
-            
+
             if(self.tapcontext == 'async'):
-                
+
                 self.__writeAsyncError__(self.msg, self.statuspath,
                                          self.statdict, self.param)
             else:
@@ -1544,6 +1546,31 @@ class Tap:
         if self.debug:
             logging.debug('')
             logging.debug(f'dbtable = [{self.dbtable:s}]')
+
+        #
+        # Validate that all queried tables are in TAP_SCHEMA.tables
+        #
+
+        try:
+            conn = self.__getValidationConnection__()
+            try:
+                validator = TableValidator(conn, debug=self.debug)
+                validator.validate(tables)
+            finally:
+                conn.close()
+
+        except Exception as e:
+
+            if self.debug:
+                logging.debug('')
+                logging.debug(f'Table validation failed: {str(e):s}')
+
+            if(self.tapcontext == 'async'):
+                self.phase = 'ERROR'
+                self.__writeAsyncError__(str(e), self.statuspath,
+                                         self.statdict, self.param)
+            else:
+                self.__printError__(self.format, str(e), '400')
 
         self.datalevel = self.__getDatalevel__(self.dbtable)
 
@@ -2683,6 +2710,37 @@ class Tap:
         #
         # } end writeStatusMsg
         #
+
+
+    def __getValidationConnection__(self):
+
+        info = self.config.connectInfo
+        dbms = info['dbms'].lower()
+
+        if dbms == 'oracle':
+            import cx_Oracle
+            return cx_Oracle.connect(
+                info['userid'], info['password'], info['dbserver'])
+
+        elif dbms == 'postgresql':
+            import psycopg2
+            return psycopg2.connect(
+                host=info['host'],
+                database=info['database'],
+                user=info['userid'],
+                password=info['password'],
+                port=info.get('port', '5432'))
+
+        elif dbms == 'sqlite3':
+            import sqlite3
+            conn = sqlite3.connect(info['db'])
+            cursor = conn.cursor()
+            cursor.execute(
+                'ATTACH DATABASE ? AS TAP_SCHEMA', (info['tap_schema'],))
+            return conn
+
+        else:
+            raise Exception(f'Unsupported DBMS for validation: {dbms}')
 
 
     def __getDatalevel__(self, dbtable, **kwargs):

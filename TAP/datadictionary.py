@@ -90,15 +90,25 @@ class dataDictionary:
             logging.debug('-------------------------------------------------')
 
 
-        sql = "select * from TAP_SCHEMA.columns where lower(table_name) = " + \
-            "'" + self.dbtable + "'"
+        # Detect placeholder style from connection type
+        conn_type = type(self.conn).__module__
+        if 'cx_Oracle' in conn_type or 'oracledb' in conn_type:
+            placeholder = ':1'
+        elif 'psycopg2' in conn_type:
+            placeholder = '%s'
+        else:
+            placeholder = '?'
+
+        sql = "select * from TAP_SCHEMA.columns where lower(table_name) = " \
+            + placeholder
 
         if self.debug:
             logging.debug('')
             logging.debug(f'TAP_SCHEMA sql = {sql:s}')
+            logging.debug(f'  param = {self.dbtable:s}')
 
         try:
-            cursor.execute(sql)
+            cursor.execute(sql, (self.dbtable,))
 
         except Exception as e:
 
