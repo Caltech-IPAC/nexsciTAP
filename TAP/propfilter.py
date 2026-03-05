@@ -12,6 +12,7 @@ import time
 from TAP.writeresult import writeResult
 from TAP.datadictionary import dataDictionary
 from TAP.tablenames import TableNames
+from TAP.tablevalidator import TableValidator
 
 
 class propFilter:
@@ -557,6 +558,25 @@ class propFilter:
         if self.debug:
             logging.debug('')
             logging.debug(f'dbtable = [{self.dbtable:s}]')
+
+        #
+        # Defense-in-depth: validate tables against TAP_SCHEMA
+        #
+
+        try:
+            validator = TableValidator(self.conn,
+                                       connectInfo=self.connectInfo,
+                                       debug=self.debug)
+            validator.validate(tables)
+
+        except Exception as e:
+
+            if self.debug:
+                logging.debug('')
+                logging.debug(f'Table validation exception: {str(e):s}')
+
+            self.msg = str(e)
+            raise Exception(self.msg)
 
         #
         # Parse query: to extract query pieces for propfilter
