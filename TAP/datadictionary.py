@@ -171,12 +171,24 @@ class dataDictionary:
 
         if self.ddtbl == None:
 
-            sql = "select * from " + self.connectInfo["tap_schema"] + "." + self.connectInfo["columns_table"] + " where lower(table_name) = " + \
-                "'" + self.dbtable + "'"
+            # Detect placeholder style from connection type
+            conn_type = type(self.conn).__module__
+            if 'cx_Oracle' in conn_type or 'oracledb' in conn_type:
+                placeholder = ':1'
+            elif 'psycopg2' in conn_type:
+                placeholder = '%s'
+            elif 'mysql' in conn_type:
+                placeholder = '%s'
+            else:
+                placeholder = '?'
+
+            sql = "select * from " + self.connectInfo["tap_schema"] + "." + self.connectInfo["columns_table"] + " where lower(table_name) = " \
+                + placeholder
 
             if self.debug:
                 logging.debug('')
                 logging.debug(f'TAP_SCHEMA sql = {sql:s}')
+                logging.debug(f'  param = {self.dbtable:s}')
 
         else:
 
@@ -187,7 +199,10 @@ class dataDictionary:
                 logging.debug(f'Internal DD table sql = {sql:s}')
 
         try:
-            cursor.execute(sql)
+            if self.ddtbl is None:
+                cursor.execute(sql, (self.dbtable,))
+            else:
+                cursor.execute(sql)
 
         except Exception as e:
 
