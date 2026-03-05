@@ -45,7 +45,8 @@ class TableNames:
                     for x in self.extract_from_part(item):
                         yield x
                 elif item.ttype is Keyword and item.value.upper() in \
-                        ['ORDER', 'GROUP', 'BY', 'HAVING', 'GROUP BY']:
+                        ['ORDER', 'ORDER BY', 'GROUP', 'GROUP BY',
+                         'BY', 'HAVING', 'LIMIT', 'OFFSET']:
                     from_seen = False
                     StopIteration
                 else:
