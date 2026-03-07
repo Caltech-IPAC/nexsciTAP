@@ -172,7 +172,7 @@ class dataDictionary:
         if self.ddtbl == None:
 
             # Detect placeholder style from connection type
-            conn_type = type(self.conn).__module__
+            conn_type = self.conn.__class__.__module__
             if 'cx_Oracle' in conn_type or 'oracledb' in conn_type:
                 placeholder = ':1'
             elif 'psycopg2' in conn_type:
