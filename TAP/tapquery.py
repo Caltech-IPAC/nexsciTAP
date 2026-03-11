@@ -565,24 +565,44 @@ class tapQuery:
             logging.debug(f'dbtable= [{self.dbtable:s}]')
 
         #
-        # Defense-in-depth: validate tables against TAP_SCHEMA
+        # Defense-in-depth: validate tables against TAP_SCHEMA.
+        #
+        # Exclude server-configured internal tables (access control
+        # tables used by propfilter) from validation.  These are NOT
+        # in TAP_SCHEMA.tables so they would be rejected, but the
+        # system needs them for proprietary-data filtering.
         #
 
         if self.tap_schema.lower() != 'none':
-            try:
-                validator = TableValidator(self.conn,
-                                           connectInfo=self.connectInfo,
-                                           debug=self.debug)
-                validator.validate(tables)
 
-            except Exception as e:
+            internal_tables = set()
+            accesstbl = self.connectInfo.get('accesstbl', '')
+            usertbl = self.connectInfo.get('usertbl', '')
+            if accesstbl:
+                internal_tables.add(accesstbl.lower())
+            if usertbl:
+                internal_tables.add(usertbl.lower())
 
-                if self.debug:
-                    logging.debug('')
-                    logging.debug(f'Table validation exception: {str(e):s}')
+            user_tables = [t for t in tables
+                           if t.lower() not in internal_tables]
 
-                self.msg = str(e)
-                raise Exception(self.msg)
+            if user_tables:
+                try:
+                    validator = TableValidator(
+                        self.conn,
+                        connectInfo=self.connectInfo,
+                        debug=self.debug)
+                    validator.validate(user_tables)
+
+                except Exception as e:
+
+                    if self.debug:
+                        logging.debug('')
+                        logging.debug(
+                            f'Table validation exception: {str(e):s}')
+
+                    self.msg = str(e)
+                    raise Exception(self.msg)
 
         #
         # Retrieve dd table
