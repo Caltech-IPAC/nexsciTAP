@@ -6,6 +6,15 @@
 import logging
 
 
+class TableValidationError(Exception):
+    """
+    Raised when an ADQL query references a table that is not registered
+    in TAP_SCHEMA. Distinct from a generic Exception so callers can
+    return HTTP 403 (access denied) rather than HTTP 400 (bad request).
+    """
+    pass
+
+
 class TableValidator:
     """
     Validates that table names in an ADQL query are registered in
@@ -89,7 +98,7 @@ class TableValidator:
                 if tname_lower in self.allowed_bare:
                     continue
 
-            raise Exception(
+            raise TableValidationError(
                 f'Table \'{tname}\' is not available for querying. '
                 f'Use TAP_SCHEMA.tables to see available tables.')
 
