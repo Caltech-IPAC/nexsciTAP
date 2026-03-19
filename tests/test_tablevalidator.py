@@ -3,7 +3,7 @@ import sqlite3
 import tempfile
 import unittest
 
-from TAP.tablevalidator import TableValidator
+from TAP.tablevalidator import TableValidator, TableValidationError
 
 
 def _make_db(table_names, schema_name='TAP_SCHEMA', tables_table='tables'):
@@ -74,7 +74,9 @@ class TestTableValidator(unittest.TestCase):
     def test_bare_in_whitelist_unknown_schema_in_query(self):
         """'ps' is whitelisted bare; 'public.ps' has unknown schema — rejected."""
         v = TableValidator(self.conn, connectInfo=self.connectInfo)
-        with self.assertRaises(Exception):
+        # Assert TableValidationError specifically so a revert to generic Exception
+        # would be caught — tap.py relies on this type for 403 vs 400 distinction.
+        with self.assertRaises(TableValidationError):
             v.validate(['public.ps'])
 
     def test_known_schema_bare_table_in_query(self):
@@ -84,7 +86,9 @@ class TestTableValidator(unittest.TestCase):
 
     def test_disallowed_table_raises(self):
         v = TableValidator(self.conn, connectInfo=self.connectInfo)
-        with self.assertRaises(Exception) as ctx:
+        # Assert TableValidationError specifically so a revert to generic Exception
+        # would be caught — tap.py relies on this type for 403 vs 400 distinction.
+        with self.assertRaises(TableValidationError) as ctx:
             v.validate(['pg_catalog.pg_tables'])
         self.assertIn('not available', str(ctx.exception))
 
@@ -94,12 +98,16 @@ class TestTableValidator(unittest.TestCase):
 
     def test_multi_table_one_invalid(self):
         v = TableValidator(self.conn, connectInfo=self.connectInfo)
-        with self.assertRaises(Exception) as ctx:
+        # Assert TableValidationError specifically so a revert to generic Exception
+        # would be caught — tap.py relies on this type for 403 vs 400 distinction.
+        with self.assertRaises(TableValidationError) as ctx:
             v.validate(['ps', 'information_schema.tables', 'stellarhosts'])
         self.assertIn('information_schema.tables', str(ctx.exception))
 
     def test_empty_table_list_raises(self):
         v = TableValidator(self.conn, connectInfo=self.connectInfo)
+        # Empty list is a protocol-level error, not a table access rejection —
+        # generic Exception is correct here (not TableValidationError).
         with self.assertRaises(Exception):
             v.validate([])
 
@@ -113,7 +121,9 @@ class TestTableValidator(unittest.TestCase):
             'pg_catalog.pg_class',
             'EXOFOP.FILES',
         ]:
-            with self.assertRaises(Exception, msg=f'{bad_table} should be blocked'):
+            # Assert TableValidationError specifically so a revert to generic Exception
+            # would be caught — tap.py relies on this type for 403 vs 400 distinction.
+            with self.assertRaises(TableValidationError, msg=f'{bad_table} should be blocked'):
                 v.validate([bad_table])
 
 
