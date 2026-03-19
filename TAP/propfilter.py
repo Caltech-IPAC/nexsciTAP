@@ -12,7 +12,7 @@ import time
 from TAP.writeresult import writeResult
 from TAP.datadictionary import dataDictionary
 from TAP.tablenames import TableNames
-from TAP.tablevalidator import TableValidator
+from TAP.tablevalidator import TableValidator, TableValidationError
 
 
 class propFilter:
@@ -586,6 +586,11 @@ class propFilter:
                                            connectInfo=self.connectInfo,
                                            debug=self.debug)
                 validator.validate(user_tables)
+
+            except TableValidationError:
+                # Re-raise as-is so tap.py can distinguish a table
+                # access rejection (403) from other query errors (400).
+                raise
 
             except Exception as e:
 
