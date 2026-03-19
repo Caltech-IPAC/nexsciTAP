@@ -5,6 +5,7 @@
 import os
 import sys
 import fcntl
+import html
 
 import logging
 
@@ -27,7 +28,8 @@ from TAP.tapquery import tapQuery
 from TAP.configparam import configParam
 from TAP.propfilter import propFilter
 from TAP.tablenames import TableNames
-from TAP.vositables import vosiTables 
+from TAP.vositables import vosiTables
+from TAP.tablevalidator import TableValidationError
 
 
 class Tap:
@@ -148,6 +150,20 @@ class Tap:
 
 
     def __init__(self, **kwargs):
+
+        # Wrap all init in __run__ so any uncaught startup exception
+        # (e.g. missing TAP.ini in configparam) returns a proper VOTable
+        # 500 instead of leaking raw text or 'WEB' into the HTTP response.
+        try:
+            self.__run__(**kwargs)
+        except Exception as e:
+            self.__printError__('votable', html.escape(str(e)), errcode='500')
+
+
+    def __run__(self, **kwargs):
+
+        self.infomsg = ''
+        self.dbtable = ''
 
         #
         # { tap.init()
@@ -1648,13 +1664,18 @@ class Tap:
 
                 self.phase = 'ERROR'
 
+                # TableValidationError means the query referenced a table
+                # not in TAP_SCHEMA — access denied (403). All other errors
+                # are bad requests (400).
+                errcode = '403' if isinstance(e, TableValidationError) else '400'
+
                 if(self.tapcontext == 'async'):
 
                     self.__writeAsyncError__(str(e), self.statuspath,
                                              self.statdict, self.param)
 
                 else:
-                    self.__printError__(self.format, str(e), errcode='400')
+                    self.__printError__(self.format, str(e), errcode=errcode)
             #
             # } end tapquery
             #
@@ -1700,12 +1721,17 @@ class Tap:
                 self.phase = 'ERROR'
                 self.errmsg = str(e)
 
+                # TableValidationError means the query referenced a table
+                # not in TAP_SCHEMA — access denied (403). All other errors
+                # are bad requests (400).
+                errcode = '403' if isinstance(e, TableValidationError) else '400'
+
                 if(self.tapcontext == 'async'):
 
                     self.__writeAsyncError__(str(e), self.statuspath,
                                              self.statdict, self.param)
                 else:
-                    self.__printError__(self.format, str(e), errcode='400')
+                    self.__printError__(self.format, str(e), errcode=errcode)
             #
             # } end propfilter
             #
@@ -2492,6 +2518,11 @@ class Tap:
 
 
     def __writeAsyncError__(self, errmsg, statuspath, statdict, param, **kwargs):
+
+        # errcode is not accepted here by design: DALI 1.1 §4.2 requires that
+        # async error documents be returned with HTTP 200 when accessed via
+        # /async/<jobid>/error. The 403 vs 400 distinction only applies to
+        # synchronous responses and is handled in __printError__ at the call sites.
 
         #
         # {
