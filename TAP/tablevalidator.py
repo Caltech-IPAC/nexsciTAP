@@ -72,7 +72,8 @@ class TableValidator:
     def validate(self, table_names):
 
         if not table_names:
-            raise Exception('No table names to validate.')
+            # Empty list means extraction failed — reject rather than pass through.
+            raise Exception('No table names found in query. Unable to verify table access.')
 
         for tname in table_names:
             tname_lower = tname.strip().lower()
