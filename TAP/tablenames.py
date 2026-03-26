@@ -9,6 +9,8 @@ import sqlparse
 from sqlparse.sql import IdentifierList, Identifier
 from sqlparse.tokens import Keyword, DML
 
+from TAP.tablevalidator import TableValidationError
+
 
 class TableNames:
 
@@ -70,10 +72,18 @@ class TableNames:
         extracted_tables = []
         statements = list(sqlparse.parse(sql))
         for statement in statements:
-            if statement.get_type() != 'UNKNOWN':
-                stream = self.extract_from_part(statement)
-                extracted_tables.append(list(
-                    self.extract_table_identifiers(stream)))
+            # Skip write/DDL only. Previously skipped 'UNKNOWN', which caused
+            # Oracle-dialect queries (ROWNUM etc.) to bypass table validation.
+            if statement.get_type() not in (
+                    'INSERT', 'UPDATE', 'DELETE',
+                    'CREATE', 'DROP', 'ALTER'):
+                try:
+                    stream = self.extract_from_part(statement)
+                    extracted_tables.append(list(
+                        self.extract_table_identifiers(stream)))
+                except Exception:
+                    # Cannot verify table access — reject rather than pass through.
+                    raise Exception('Query parsing failed. Unable to verify table access.')
         tables = list(itertools.chain(*extracted_tables))
 
         for idx, _ in enumerate(tables):
