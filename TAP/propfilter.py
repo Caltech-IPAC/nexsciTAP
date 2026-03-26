@@ -527,12 +527,28 @@ class propFilter:
 
             except Exception as e:
 
+                # ORA-00942: table inaccessible — raise TableValidationError
+                # so tap.py returns HTTP 403 with a clean message instead of
+                # leaking the raw Oracle error. Oracle-specific.
+                if 'ORA-00942' in str(e):
+                    try:
+                        tables = TableNames().extract_tables(self.query)
+                        tname = tables[0] if tables else 'unknown'
+                    except Exception as tex:
+                        if self.debug:
+                            logging.debug(
+                                f'ORA-00942: table name extraction failed: {str(tex):s}')
+                        tname = 'unknown'
+                    raise TableValidationError(
+                        f"Table '{tname}' is not available for querying. "
+                        f"Use TAP_SCHEMA.tables to see available tables.")
+
                 errmsg = \
                     f'Input query [{self.query:s}] syntax error: {str(e):s}'
 
                 if self.debug:
                     logging.debug('')
-                    logging.debug(f'Exception __parseSql: {str(e):s}')
+                    logging.debug(f'Exception __parseSql__: {str(e):s}')
 
                 self.__encodeSqlerrmsg__(errmsg)
 
