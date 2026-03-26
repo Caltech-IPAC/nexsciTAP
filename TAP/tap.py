@@ -1671,6 +1671,10 @@ class Tap:
 
                 if(self.tapcontext == 'async'):
 
+                    # errcode not passed: UWS async job status has no HTTP
+                    # status field; TAP 1.1 §3.3 requires HTTP 200 for async
+                    # error retrieval regardless of whether this job's error
+                    # is a 403 (blocked table) or 400 (bad request).
                     self.__writeAsyncError__(str(e), self.statuspath,
                                              self.statdict, self.param)
 
@@ -1728,6 +1732,10 @@ class Tap:
 
                 if(self.tapcontext == 'async'):
 
+                    # errcode not passed: UWS async job status has no HTTP
+                    # status field; TAP 1.1 §3.3 requires HTTP 200 for async
+                    # error retrieval regardless of whether this job's error
+                    # is a 403 (blocked table) or 400 (bad request).
                     self.__writeAsyncError__(str(e), self.statuspath,
                                              self.statdict, self.param)
                 else:
