@@ -27,7 +27,8 @@ from TAP.tapquery import tapQuery
 from TAP.configparam import configParam
 from TAP.propfilter import propFilter
 from TAP.tablenames import TableNames
-from TAP.vositables import vosiTables 
+from TAP.vositables import vosiTables
+from TAP.datadictionary import dataDictionary
 
 
 class Tap:
@@ -1497,13 +1498,23 @@ class Tap:
                 logging.debug(f'dbms = {dbms:s}')
 
 
+            # Query TAP_SCHEMA for date/timestamp column xtypes so the
+            # ADQL translator can wrap string literals in DBMS-appropriate
+            # cast functions (e.g. TO_DATE for Oracle).  Returns an empty
+            # dict on failure, which means ADQL proceeds without rewriting.
+
+            column_types = dataDictionary.get_date_column_types(
+                self.config.connectInfo, debug=self.debug)
+
             adql = ADQL(dbms=dbms, mode=mode, level=level, indxcol=colname,
                         encoding=encoding, racol=racol, deccol=deccol,
-                        xcol=xcol, ycol=ycol, zcol=zcol)
+                        xcol=xcol, ycol=ycol, zcol=zcol,
+                        column_types=column_types)
 
             if self.debug:
                 logging.debug('')
                 logging.debug(f'ADQL initialized')
+                logging.debug(f'column_types: {column_types}')
 
 
             self.query = adql.sql(query_adql)

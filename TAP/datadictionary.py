@@ -42,6 +42,111 @@ class dataDictionary:
     nfetch = 1000
 
 
+    @staticmethod
+    def get_date_column_types(connectInfo, debug=False):
+        """Query TAP_SCHEMA for columns with xtype 'date' or 'timestamp'.
+
+        Returns a dict mapping column_name (lowercase) to xtype string,
+        covering all tables in TAP_SCHEMA.  This is used by the ADQL
+        translator to wrap date string literals in DBMS-appropriate cast
+        functions (TO_DATE, TO_TIMESTAMP) before the query reaches the
+        database.
+
+        Opens and closes its own connection.  The query is lightweight
+        (small system table, typically under 100 rows with xtype set)
+        and adds negligible overhead compared to the actual data query.
+
+        Returns an empty dict on any failure so that ADQL translation
+        proceeds without date rewriting rather than raising an error.
+        """
+
+        column_types = {}
+
+        try:
+            dbms = connectInfo['dbms'].lower()
+            tap_schema = connectInfo.get('tap_schema', 'TAP_SCHEMA')
+            columns_table = connectInfo.get('columns_table', 'columns')
+
+            sql = (
+                "SELECT column_name, xtype FROM "
+                + tap_schema + "." + columns_table
+                + " WHERE xtype IS NOT NULL"
+            )
+
+            conn = None
+
+            if dbms == 'oracle':
+                import cx_Oracle
+                conn = cx_Oracle.connect(
+                    connectInfo['userid'],
+                    connectInfo['password'],
+                    connectInfo['dbserver']
+                )
+
+            elif dbms == 'sqlite3':
+                import sqlite3
+                conn = sqlite3.connect(connectInfo['db'])
+
+            elif dbms == 'mysql':
+                import mysql.connector
+                if connectInfo.get('dbserver') is not None:
+                    conn = mysql.connector.connect(
+                        user=connectInfo['userid'],
+                        password=connectInfo['password'],
+                        host=connectInfo['dbserver'],
+                        port=int(connectInfo.get('port', 3306)),
+                        db=connectInfo.get('dbschema', '')
+                    )
+                elif connectInfo.get('socket') is not None:
+                    conn = mysql.connector.connect(
+                        user=connectInfo['userid'],
+                        password=connectInfo['password'],
+                        unix_socket=connectInfo['socket'],
+                        db=connectInfo.get('dbschema', '')
+                    )
+
+            elif dbms == 'postgresql':
+                import psycopg2
+                conn = psycopg2.connect(
+                    user=connectInfo['userid'],
+                    password=connectInfo['password'],
+                    host=connectInfo['dbserver'],
+                    port=int(connectInfo.get('port', 5432)),
+                    dbname=connectInfo.get('db', '')
+                )
+
+            if conn is None:
+                return column_types
+
+            cursor = conn.cursor()
+            cursor.execute(sql)
+
+            for row in cursor.fetchall():
+                col_name = str(row[0]).strip().lower()
+                xtype = str(row[1]).strip().lower()
+                if xtype in ('date', 'timestamp'):
+                    column_types[col_name] = xtype
+
+            cursor.close()
+            conn.close()
+
+            if debug:
+                logging.debug(
+                    f'get_date_column_types: {len(column_types)} '
+                    f'date/timestamp columns found'
+                )
+
+        except Exception as e:
+            if debug:
+                logging.debug(
+                    f'get_date_column_types failed: {str(e)}; '
+                    f'proceeding without date rewriting'
+                )
+            column_types = {}
+
+        return column_types
+
+
     def __init__(self, conn, table, connectInfo, **kwargs):
 
         """
@@ -226,6 +331,7 @@ class dataDictionary:
         ind_desc = -1
         ind_unit = -1
         ind_format = -1
+        ind_xtype = -1
 
         i = 0
         for col in cursor.description:
@@ -251,6 +357,9 @@ class dataDictionary:
             if(name == 'format'):
                 ind_format = i
 
+            if(name == 'xtype'):
+                ind_xtype = i
+
             i = i + 1
 
         if self.debug:
@@ -260,6 +369,7 @@ class dataDictionary:
             logging.debug(f'ind_desc     = {ind_desc:d}')
             logging.debug(f'ind_unit     = {ind_unit:d}')
             logging.debug(f'ind_format   = {ind_format:d}')
+            logging.debug(f'ind_xtype    = {ind_xtype:d}')
         #
         # } end extract column index
 
@@ -281,6 +391,7 @@ class dataDictionary:
         self.coldesc  = {}
         self.colunits = {}
         self.colwidth = {}
+        self.colxtype = {}
         self.ncols = 0
 
         while True:
@@ -327,6 +438,19 @@ class dataDictionary:
 
                 if(self.coltype[col_str] == 'integer'):
                     self.coltype[col_str] = 'int'
+
+                #
+                # Xtype (TAP_SCHEMA xtype column, e.g. 'date', 'timestamp').
+                # Previously discarded despite being in the SELECT * result.
+                # Now stored so the ADQL translator can wrap date literals
+                # in DBMS-appropriate cast functions (TO_DATE, TO_TIMESTAMP).
+                #
+
+                if(ind_xtype >= 0 and row[ind_xtype] is not None):
+                    self.colxtype[col_str] = \
+                        str(row[ind_xtype]).strip().lower()
+                else:
+                    self.colxtype[col_str] = ''
 
                 #
                 # Format
