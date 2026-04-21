@@ -29,7 +29,7 @@ from TAP.configparam import configParam
 from TAP.propfilter import propFilter
 from TAP.tablenames import TableNames
 from TAP.vositables import vosiTables
-from TAP.tablevalidator import TableValidationError
+from TAP.tablevalidator import TableValidationError, TableValidator
 
 
 class Tap:
@@ -1473,6 +1473,22 @@ class Tap:
         if self.debug:
             logging.debug('')
             logging.debug(f'ADQL query: {query_adql:s}\n')
+
+        # Reject DML, DDL, and dangerous Oracle functions before any
+        # parsing or translation.  This runs before the ADQL translator
+        # and before any database connection, so it catches malicious
+        # queries at the earliest possible point.
+
+        try:
+            TableValidator.validate_statement(query_adql, debug=self.debug)
+        except Exception as e:
+            if(self.tapcontext == 'async'):
+                self.phase = 'ERROR'
+                self.__writeAsyncError__(str(e), self.statuspath,
+                                         self.statdict, self.param)
+            else:
+                self.__printError__(self.format, str(e), errcode='400')
+            return
 
         try:
             mode = SpatialIndex.HTM

@@ -4,6 +4,7 @@
 
 
 import logging
+import re
 
 
 class TableValidationError(Exception):
@@ -107,3 +108,107 @@ class TableValidator:
             logging.debug('')
             logging.debug(
                 f'TableValidator: all tables validated: {table_names}')
+
+    # DML/DDL keywords that must never appear in a TAP query.
+    # TAP is a read-only protocol (IVOA TAP 1.1).  The ADQL translator
+    # already rejects non-SELECT at the parser level, but this check
+    # runs before ADQL translation as an additional layer of defense.
+    _FORBIDDEN_RE = re.compile(
+        r'\b('
+        r'INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|TRUNCATE|'
+        r'EXEC|EXECUTE|GRANT|REVOKE|COMMIT|ROLLBACK|MERGE|'
+        r'CALL|DECLARE|SET\b\s|BEGIN|'
+        r'INTO\s+OUTFILE|LOAD\s+DATA'
+        r')\b',
+        re.IGNORECASE
+    )
+
+    # Oracle-specific functions that should never be called through TAP.
+    # These are dangerous even in a SELECT context: UTL_HTTP enables SSRF,
+    # UTL_FILE enables filesystem access, DBMS_SQL enables dynamic SQL.
+    _DANGEROUS_FUNCTIONS_RE = re.compile(
+        r'\b('
+        r'UTL_HTTP|UTL_TCP|UTL_SMTP|UTL_FILE|UTL_INADDR|'
+        r'HTTPURITYPE|DBMS_LDAP|DBMS_SQL|DBMS_SCHEDULER|'
+        r'DBMS_JOB|DBMS_METADATA|DBMS_XMLGEN|'
+        r'SYS_CONTEXT|XMLTYPE'
+        r')\b',
+        re.IGNORECASE
+    )
+
+    # Oracle system catalog views and tables that should never be
+    # referenced in a TAP query.  The TableValidator.validate() method
+    # already blocks these (they are not in TAP_SCHEMA), but this is
+    # an additional layer that catches them before any database
+    # connection is made.  Added after an external vulnerability report
+    # used ALL_USERS to enumerate Oracle accounts via UNION ALL bypass.
+    _SYSTEM_OBJECTS_RE = re.compile(
+        r'\b('
+        r'ALL_USERS|DBA_USERS|ALL_TAB_PRIVS|ALL_TAB_COLUMNS|'
+        r'ALL_TABLES|ALL_OBJECTS|ALL_SOURCE|ALL_VIEWS|'
+        r'DBA_TAB_PRIVS|DBA_SYS_PRIVS|DBA_ROLE_PRIVS|'
+        r'DBA_TABLES|DBA_OBJECTS|DBA_SOURCE|DBA_VIEWS|'
+        r'USER_TABLES|USER_TAB_PRIVS|USER_SYS_PRIVS|'
+        r'USER_OBJECTS|USER_SOURCE|USER_ROLE_PRIVS|'
+        r'V\$SESSION|V\$INSTANCE|V\$DATABASE|V\$PARAMETER|'
+        r'INFORMATION_SCHEMA|PG_CATALOG|PG_TABLES|PG_ROLES'
+        r')\b',
+        re.IGNORECASE
+    )
+
+    @staticmethod
+    def validate_statement(query, debug=False):
+        """Reject queries containing DML, DDL, or dangerous Oracle functions.
+
+        TAP is a read-only protocol.  This method blocks statement types
+        and function calls that should never appear in a TAP query,
+        regardless of whether the database user has the privileges to
+        execute them.  This is defense-in-depth: even if database
+        privileges are misconfigured, the application layer rejects
+        the query before it reaches the DBMS.
+
+        Raises Exception if the query contains forbidden content.
+        """
+
+        # Semicolons indicate statement stacking.  TAP accepts a single
+        # statement per request.  Reject before any other check so that
+        # chained statements cannot bypass keyword scanning.
+        if ';' in query:
+            if debug:
+                logging.debug(
+                    'TableValidator: rejected semicolon (statement stacking)')
+            raise Exception(
+                'Query rejected: semicolons are not permitted. '
+                'TAP accepts a single statement per request.')
+
+        forbidden = TableValidator._FORBIDDEN_RE.search(query)
+        if forbidden:
+            keyword = forbidden.group(1).upper()
+            if debug:
+                logging.debug(
+                    f'TableValidator: rejected forbidden keyword: {keyword}')
+            raise Exception(
+                f'Query rejected: \'{keyword}\' statements are not '
+                f'permitted. TAP only supports SELECT queries.')
+
+        dangerous = TableValidator._DANGEROUS_FUNCTIONS_RE.search(query)
+        if dangerous:
+            func = dangerous.group(1).upper()
+            if debug:
+                logging.debug(
+                    f'TableValidator: rejected dangerous function: {func}')
+            raise Exception(
+                f'Query rejected: \'{func}\' is not permitted in '
+                f'TAP queries.')
+
+        system_obj = TableValidator._SYSTEM_OBJECTS_RE.search(query)
+        if system_obj:
+            obj = system_obj.group(1).upper()
+            if debug:
+                logging.debug(
+                    f'TableValidator: rejected system catalog '
+                    f'reference: {obj}')
+            raise Exception(
+                f'Query rejected: \'{obj}\' is a system catalog '
+                f'and is not available for querying. '
+                f'Use TAP_SCHEMA.tables to see available tables.')
