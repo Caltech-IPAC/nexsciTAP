@@ -649,6 +649,8 @@ class configParam:
         self.connectInfo['port']              = self.dbport
         self.connectInfo['socket']            = self.socket
         self.connectInfo['dbschema']          = self.dbschema
+        self.connectInfo['accesstbl']         = self.accesstbl
+        self.connectInfo['usertbl']           = self.usertbl
 
         if self.debug:
             logging.debug('')

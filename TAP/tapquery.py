@@ -14,6 +14,7 @@ import configobj
 from TAP.datadictionary import dataDictionary
 from TAP.writeresult    import writeResult
 from TAP.tablenames     import TableNames
+from TAP.tablevalidator import TableValidator
 from TAP.configparam    import configParam
 
 from ADQL.adql import ADQL
@@ -563,6 +564,45 @@ class tapQuery:
         if self.debug:
             logging.debug(f'dbtable= [{self.dbtable:s}]')
 
+        #
+        # Defense-in-depth: validate tables against TAP_SCHEMA.
+        #
+        # Exclude server-configured internal tables (access control
+        # tables used by propfilter) from validation.  These are NOT
+        # in TAP_SCHEMA.tables so they would be rejected, but the
+        # system needs them for proprietary-data filtering.
+        #
+
+        if self.tap_schema.lower() != 'none':
+
+            internal_tables = set()
+            accesstbl = self.connectInfo.get('accesstbl', '')
+            usertbl = self.connectInfo.get('usertbl', '')
+            if accesstbl:
+                internal_tables.add(accesstbl.lower())
+            if usertbl:
+                internal_tables.add(usertbl.lower())
+
+            user_tables = [t for t in tables
+                           if t.lower() not in internal_tables]
+
+            if user_tables:
+                try:
+                    validator = TableValidator(
+                        self.conn,
+                        connectInfo=self.connectInfo,
+                        debug=self.debug)
+                    validator.validate(user_tables)
+
+                except Exception as e:
+
+                    if self.debug:
+                        logging.debug('')
+                        logging.debug(
+                            f'Table validation exception: {str(e):s}')
+
+                    self.msg = str(e)
+                    raise Exception(self.msg)
 
         #
         # Retrieve dd table

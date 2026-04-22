@@ -12,6 +12,7 @@ import time
 from TAP.writeresult import writeResult
 from TAP.datadictionary import dataDictionary
 from TAP.tablenames import TableNames
+from TAP.tablevalidator import TableValidator
 
 
 class propFilter:
@@ -557,6 +558,44 @@ class propFilter:
         if self.debug:
             logging.debug('')
             logging.debug(f'dbtable = [{self.dbtable:s}]')
+
+        #
+        # Defense-in-depth: validate tables against TAP_SCHEMA.
+        #
+        # Exclude server-configured internal tables (access control
+        # tables used by propfilter) from validation.  These are NOT
+        # in TAP_SCHEMA.tables so they would be rejected, but
+        # propfilter needs them for proprietary-data filtering.
+        # Users still cannot query them directly: any query that
+        # enters through the non-propfilter path (tapQuery) will
+        # reject them because they are absent from TAP_SCHEMA.
+        #
+
+        internal_tables = set()
+        if self.accesstbl:
+            internal_tables.add(self.accesstbl.lower())
+        if self.usertbl:
+            internal_tables.add(self.usertbl.lower())
+
+        user_tables = [t for t in tables
+                       if t.lower() not in internal_tables]
+
+        if user_tables:
+            try:
+                validator = TableValidator(self.conn,
+                                           connectInfo=self.connectInfo,
+                                           debug=self.debug)
+                validator.validate(user_tables)
+
+            except Exception as e:
+
+                if self.debug:
+                    logging.debug('')
+                    logging.debug(
+                        f'Table validation exception: {str(e):s}')
+
+                self.msg = str(e)
+                raise Exception(self.msg)
 
         #
         # Parse query: to extract query pieces for propfilter
