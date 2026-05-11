@@ -151,19 +151,21 @@ class Tap:
 
     def __init__(self, **kwargs):
 
+        # Required by __printError__ — initialize before __run__ so they
+        # exist even if __run__ throws on its first line.
+        self.infomsg = ''
+        self.dbtable = ''
+
         # Wrap all init in __run__ so any uncaught startup exception
         # (e.g. missing TAP.ini in configparam) returns a proper VOTable
         # 500 instead of leaking raw text or 'WEB' into the HTTP response.
         try:
             self.__run__(**kwargs)
         except Exception as e:
-            self.__printError__('votable', html.escape(str(e)), errcode='500')
+            self.__printError__('votable', str(e), errcode='500')
 
 
     def __run__(self, **kwargs):
-
-        self.infomsg = ''
-        self.dbtable = ''
 
         #
         # { tap.init()
@@ -1482,12 +1484,13 @@ class Tap:
         try:
             TableValidator.validate_statement(query_adql, debug=self.debug)
         except Exception as e:
+            errcode = '403' if isinstance(e, TableValidationError) else '400'
             if(self.tapcontext == 'async'):
                 self.phase = 'ERROR'
                 self.__writeAsyncError__(str(e), self.statuspath,
                                          self.statdict, self.param)
             else:
-                self.__printError__(self.format, str(e), errcode='400')
+                self.__printError__(self.format, str(e), errcode=errcode)
             return
 
         try:
@@ -2508,12 +2511,14 @@ class Tap:
             print('<RESOURCE type="results">')
             print('<INFO name="QUERY_STATUS" value="ERROR">')
 
-            print(errmsg)
+            # Escape for XML: error messages may contain query-derived
+            # content (table names, ADQL fragments) with <, >, &, or quotes.
+            print(html.escape(errmsg))
 
-            if(len(self.infomsg) > 0):                                         
-                if(self.infomsg[-1] == '?'):                                   
-                    print(self.infomsg + 'dbtable=' + self.dbtable)            
-                else:                                                          
+            if(len(self.infomsg) > 0):
+                if(self.infomsg[-1] == '?'):
+                    print(self.infomsg + 'dbtable=' + html.escape(self.dbtable))
+                else:
                     print(self.infomsg)                                        
 
             print('</INFO>')
@@ -2524,11 +2529,11 @@ class Tap:
             print("Content-type: text/plain\r")
             print("\r")
             print (errmsg)
-                     
-            if(len(self.infomsg) > 0):                                         
-                if(self.infomsg[-1] == '?'):                                   
-                    print(self.infomsg + 'dbtable=' + self.dbtable)            
-                else:                                                          
+
+            if(len(self.infomsg) > 0):
+                if(self.infomsg[-1] == '?'):
+                    print(self.infomsg + 'dbtable=' + self.dbtable)
+                else:
                     print(self.infomsg)                                        
                    
 
@@ -2817,30 +2822,11 @@ class Tap:
 
 
         #
-        # Encode query to escape '<' and '>'
+        # Escape query for XML embedding (handles &, <, >, and quotes).
+        # Replaces manual < > replacement that did not escape &.
         #
 
-        str1 = param['query']
-
-        ind = str1.find('<')
-        while(ind >= 0):
-
-            substr1 = str1[0:ind]
-            substr2 = str1[ind + 1:]
-
-            str1 = substr1 + '&lt;' + substr2
-            ind = str1.find('<')
-
-        ind = str1.find('>')
-        while(ind >= 0):
-
-            substr1 = str1[0:ind]
-            substr2 = str1[ind + 1:]
-
-            str1 = substr1 + '&gt;' + substr2
-            ind = str1.find('>')
-
-        fp.write(f'        <uws:parameter id="query">{str1:s}')
+        fp.write(f'        <uws:parameter id="query">{html.escape(param["query"]):s}')
         fp.write('        </uws:parameter>\n')
 
         fp.write('    </uws:parameters>\n')
@@ -2855,7 +2841,7 @@ class Tap:
         elif(phase.lower() == 'error'):
 
             fp.write('    <uws:errorSummary type="transient" hasDetail="true">\n')
-            fp.write(f'        <uws:message>{errmsg:s}</uws:message>\n')
+            fp.write(f'        <uws:message>{html.escape(errmsg):s}</uws:message>\n')
             fp.write('    </uws:errorSummary>\n')
 
         fp.write('</uws:job>\n')
