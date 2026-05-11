@@ -9,8 +9,6 @@ import sqlparse
 from sqlparse.sql import IdentifierList, Identifier
 from sqlparse.tokens import Keyword, DML
 
-from TAP.tablevalidator import TableValidationError
-
 
 class TableNames:
 
@@ -50,7 +48,7 @@ class TableNames:
                         ['ORDER', 'ORDER BY', 'GROUP', 'GROUP BY',
                          'BY', 'HAVING', 'LIMIT', 'OFFSET']:
                     from_seen = False
-                    StopIteration
+                    return
                 else:
                     yield item
             if item.ttype is Keyword and item.value.upper() == 'FROM':
@@ -81,9 +79,9 @@ class TableNames:
                     stream = self.extract_from_part(statement)
                     extracted_tables.append(list(
                         self.extract_table_identifiers(stream)))
-                except Exception:
+                except Exception as e:
                     # Cannot verify table access — reject rather than pass through.
-                    raise Exception('Query parsing failed. Unable to verify table access.')
+                    raise Exception('Query parsing failed. Unable to verify table access.') from e
         tables = list(itertools.chain(*extracted_tables))
 
         for idx, _ in enumerate(tables):
