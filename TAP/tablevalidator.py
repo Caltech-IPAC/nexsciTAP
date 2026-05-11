@@ -102,7 +102,7 @@ class TableValidator:
 
             raise TableValidationError(
                 f'Table \'{tname}\' is not available for querying. '
-                f'Use TAP_SCHEMA.tables to see available tables.')
+                f'Use {self.tap_schema}.{self.tables_table} to see available tables.')
 
         if self.debug:
             logging.debug('')
@@ -167,6 +167,11 @@ class TableValidator:
         privileges are misconfigured, the application layer rejects
         the query before it reaches the DBMS.
 
+        Scanning runs on raw query text before ADQL parsing, so
+        forbidden keywords inside quoted string values will also be
+        rejected.  This is by design: blocking a rare legitimate
+        query is safer than allowing a real attack through.
+
         Raises Exception if the query contains forbidden content.
         """
 
@@ -183,7 +188,7 @@ class TableValidator:
 
         forbidden = TableValidator._FORBIDDEN_RE.search(query)
         if forbidden:
-            keyword = forbidden.group(1).upper()
+            keyword = forbidden.group(1).strip().upper()
             if debug:
                 logging.debug(
                     f'TableValidator: rejected forbidden keyword: {keyword}')
@@ -208,7 +213,5 @@ class TableValidator:
                 logging.debug(
                     f'TableValidator: rejected system catalog '
                     f'reference: {obj}')
-            raise Exception(
-                f'Query rejected: \'{obj}\' is a system catalog '
-                f'and is not available for querying. '
-                f'Use TAP_SCHEMA.tables to see available tables.')
+            raise TableValidationError(
+                f'Table \'{obj}\' is not available for querying.')
