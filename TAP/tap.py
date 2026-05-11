@@ -162,7 +162,10 @@ class Tap:
         try:
             self.__run__(**kwargs)
         except Exception as e:
-            self.__printError__('votable', str(e), errcode='500')
+            logging.error(f'Startup failure: {str(e)}')
+            self.__printError__('votable',
+                                'Internal server error during startup.',
+                                errcode='500')
 
 
     def __run__(self, **kwargs):
