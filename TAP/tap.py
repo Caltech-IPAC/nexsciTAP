@@ -5,6 +5,7 @@
 import os
 import sys
 import fcntl
+import html
 
 import logging
 
@@ -27,7 +28,8 @@ from TAP.tapquery import tapQuery
 from TAP.configparam import configParam
 from TAP.propfilter import propFilter
 from TAP.tablenames import TableNames
-from TAP.vositables import vosiTables 
+from TAP.vositables import vosiTables
+from TAP.tablevalidator import TableValidationError, TableValidator
 
 
 class Tap:
@@ -148,6 +150,25 @@ class Tap:
 
 
     def __init__(self, **kwargs):
+
+        # Required by __printError__ — initialize before __run__ so they
+        # exist even if __run__ throws on its first line.
+        self.infomsg = ''
+        self.dbtable = ''
+
+        # Wrap all init in __run__ so any uncaught startup exception
+        # (e.g. missing TAP.ini in configparam) returns a proper VOTable
+        # 500 instead of leaking raw text or 'WEB' into the HTTP response.
+        try:
+            self.__run__(**kwargs)
+        except Exception as e:
+            logging.error(f'Startup failure: {str(e)}')
+            self.__printError__('votable',
+                                'Internal server error during startup.',
+                                errcode='500')
+
+
+    def __run__(self, **kwargs):
 
         #
         # { tap.init()
@@ -1458,6 +1479,23 @@ class Tap:
             logging.debug('')
             logging.debug(f'ADQL query: {query_adql:s}\n')
 
+        # Reject DML, DDL, and dangerous Oracle functions before any
+        # parsing or translation.  This runs before the ADQL translator
+        # and before any database connection, so it catches malicious
+        # queries at the earliest possible point.
+
+        try:
+            TableValidator.validate_statement(query_adql, debug=self.debug)
+        except Exception as e:
+            errcode = '403' if isinstance(e, TableValidationError) else '400'
+            if(self.tapcontext == 'async'):
+                self.phase = 'ERROR'
+                self.__writeAsyncError__(str(e), self.statuspath,
+                                         self.statdict, self.param)
+            else:
+                self.__printError__(self.format, str(e), errcode=errcode)
+            return
+
         try:
             mode = SpatialIndex.HTM
 
@@ -1648,13 +1686,22 @@ class Tap:
 
                 self.phase = 'ERROR'
 
+                # TableValidationError means the query referenced a table
+                # not in TAP_SCHEMA — access denied (403). All other errors
+                # are bad requests (400).
+                errcode = '403' if isinstance(e, TableValidationError) else '400'
+
                 if(self.tapcontext == 'async'):
 
+                    # errcode not passed: UWS async job status has no HTTP
+                    # status field; TAP 1.1 §3.3 requires HTTP 200 for async
+                    # error retrieval regardless of whether this job's error
+                    # is a 403 (blocked table) or 400 (bad request).
                     self.__writeAsyncError__(str(e), self.statuspath,
                                              self.statdict, self.param)
 
                 else:
-                    self.__printError__(self.format, str(e), errcode='400')
+                    self.__printError__(self.format, str(e), errcode=errcode)
             #
             # } end tapquery
             #
@@ -1700,12 +1747,21 @@ class Tap:
                 self.phase = 'ERROR'
                 self.errmsg = str(e)
 
+                # TableValidationError means the query referenced a table
+                # not in TAP_SCHEMA — access denied (403). All other errors
+                # are bad requests (400).
+                errcode = '403' if isinstance(e, TableValidationError) else '400'
+
                 if(self.tapcontext == 'async'):
 
+                    # errcode not passed: UWS async job status has no HTTP
+                    # status field; TAP 1.1 §3.3 requires HTTP 200 for async
+                    # error retrieval regardless of whether this job's error
+                    # is a 403 (blocked table) or 400 (bad request).
                     self.__writeAsyncError__(str(e), self.statuspath,
                                              self.statdict, self.param)
                 else:
-                    self.__printError__(self.format, str(e), errcode='400')
+                    self.__printError__(self.format, str(e), errcode=errcode)
             #
             # } end propfilter
             #
@@ -2458,12 +2514,14 @@ class Tap:
             print('<RESOURCE type="results">')
             print('<INFO name="QUERY_STATUS" value="ERROR">')
 
-            print(errmsg)
+            # Escape for XML: error messages may contain query-derived
+            # content (table names, ADQL fragments) with <, >, &, or quotes.
+            print(html.escape(errmsg))
 
-            if(len(self.infomsg) > 0):                                         
-                if(self.infomsg[-1] == '?'):                                   
-                    print(self.infomsg + 'dbtable=' + self.dbtable)            
-                else:                                                          
+            if(len(self.infomsg) > 0):
+                if(self.infomsg[-1] == '?'):
+                    print(self.infomsg + 'dbtable=' + html.escape(self.dbtable))
+                else:
                     print(self.infomsg)                                        
 
             print('</INFO>')
@@ -2474,11 +2532,11 @@ class Tap:
             print("Content-type: text/plain\r")
             print("\r")
             print (errmsg)
-                     
-            if(len(self.infomsg) > 0):                                         
-                if(self.infomsg[-1] == '?'):                                   
-                    print(self.infomsg + 'dbtable=' + self.dbtable)            
-                else:                                                          
+
+            if(len(self.infomsg) > 0):
+                if(self.infomsg[-1] == '?'):
+                    print(self.infomsg + 'dbtable=' + self.dbtable)
+                else:
                     print(self.infomsg)                                        
                    
 
@@ -2492,6 +2550,11 @@ class Tap:
 
 
     def __writeAsyncError__(self, errmsg, statuspath, statdict, param, **kwargs):
+
+        # errcode is not accepted here by design: DALI 1.1 §4.2 requires that
+        # async error documents be returned with HTTP 200 when accessed via
+        # /async/<jobid>/error. The 403 vs 400 distinction only applies to
+        # synchronous responses and is handled in __printError__ at the call sites.
 
         #
         # {
@@ -2762,30 +2825,11 @@ class Tap:
 
 
         #
-        # Encode query to escape '<' and '>'
+        # Escape query for XML embedding (handles &, <, >, and quotes).
+        # Replaces manual < > replacement that did not escape &.
         #
 
-        str1 = param['query']
-
-        ind = str1.find('<')
-        while(ind >= 0):
-
-            substr1 = str1[0:ind]
-            substr2 = str1[ind + 1:]
-
-            str1 = substr1 + '&lt;' + substr2
-            ind = str1.find('<')
-
-        ind = str1.find('>')
-        while(ind >= 0):
-
-            substr1 = str1[0:ind]
-            substr2 = str1[ind + 1:]
-
-            str1 = substr1 + '&gt;' + substr2
-            ind = str1.find('>')
-
-        fp.write(f'        <uws:parameter id="query">{str1:s}')
+        fp.write(f'        <uws:parameter id="query">{html.escape(param["query"]):s}')
         fp.write('        </uws:parameter>\n')
 
         fp.write('    </uws:parameters>\n')
@@ -2800,7 +2844,7 @@ class Tap:
         elif(phase.lower() == 'error'):
 
             fp.write('    <uws:errorSummary type="transient" hasDetail="true">\n')
-            fp.write(f'        <uws:message>{errmsg:s}</uws:message>\n')
+            fp.write(f'        <uws:message>{html.escape(errmsg):s}</uws:message>\n')
             fp.write('    </uws:errorSummary>\n')
 
         fp.write('</uws:job>\n')

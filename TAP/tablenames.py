@@ -48,7 +48,7 @@ class TableNames:
                         ['ORDER', 'ORDER BY', 'GROUP', 'GROUP BY',
                          'BY', 'HAVING', 'LIMIT', 'OFFSET']:
                     from_seen = False
-                    StopIteration
+                    return
                 else:
                     yield item
             if item.ttype is Keyword and item.value.upper() == 'FROM':
@@ -70,10 +70,18 @@ class TableNames:
         extracted_tables = []
         statements = list(sqlparse.parse(sql))
         for statement in statements:
-            if statement.get_type() != 'UNKNOWN':
-                stream = self.extract_from_part(statement)
-                extracted_tables.append(list(
-                    self.extract_table_identifiers(stream)))
+            # Skip write/DDL only. Previously skipped 'UNKNOWN', which caused
+            # Oracle-dialect queries (ROWNUM etc.) to bypass table validation.
+            if statement.get_type() not in (
+                    'INSERT', 'UPDATE', 'DELETE',
+                    'CREATE', 'DROP', 'ALTER'):
+                try:
+                    stream = self.extract_from_part(statement)
+                    extracted_tables.append(list(
+                        self.extract_table_identifiers(stream)))
+                except Exception as e:
+                    # Cannot verify table access — reject rather than pass through.
+                    raise Exception('Query parsing failed. Unable to verify table access.') from e
         tables = list(itertools.chain(*extracted_tables))
 
         for idx, _ in enumerate(tables):
