@@ -1581,6 +1581,22 @@ class Tap:
                 self.propflag = 0
 
         #
+        # For NEID, only L0 data is permitted to bypass the prop filter.
+        # Ignore client-supplied propflag=0 on L1/L2/ENG tables.
+        #
+
+        if((self.config.propfilter.lower() == 'neid')
+                and (self.datalevel != 'l0')
+                and (self.propflag == 0)):
+
+            if self.debug:
+                logging.debug('')
+                logging.debug('NEID non-L0 table: ignoring client '
+                              'propflag=0, forcing propflag=1')
+
+            self.propflag = 1
+
+        #
         # Check if dbtable is THE tap_schema table
         #
 
