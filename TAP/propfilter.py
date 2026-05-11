@@ -541,7 +541,7 @@ class propFilter:
                         tname = 'unknown'
                     raise TableValidationError(
                         f"Table '{tname}' is not available for querying. "
-                        f"Use TAP_SCHEMA.tables to see available tables.")
+                        f"Use {self.tap_schema}.{self.tables_table} to see available tables.")
 
                 errmsg = \
                     f'Input query [{self.query:s}] syntax error: {str(e):s}'
