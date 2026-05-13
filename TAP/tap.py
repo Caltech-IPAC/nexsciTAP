@@ -1581,13 +1581,37 @@ class Tap:
                 self.propflag = 0
 
         #
-        # For NEID, only L0 data is permitted to bypass the prop filter.
-        # Ignore client-supplied propflag=0 on L1/L2/ENG tables.
+        # Ignore client-supplied propflag=0 where the prop filter is
+        # required:
+        #
+        #   KOA   - always required
+        #   NEID  - required for ENG, L1, L2 (L0 metadata is intentionally
+        #           exposed for the UI to construct download links;
+        #           the file-download service enforces propriety separately)
+        #
+        # The datalevel is matched against an explicit whitelist of
+        # 'eng', 'l1', 'l2' rather than 'not l0' because the table-name
+        # parser can return an empty datalevel for complex queries that
+        # contain a subquery FROM before the outer FROM.  An empty
+        # datalevel must not trip this guard, or L0 queries with such
+        # subqueries would be incorrectly routed through propFilter.
         #
 
-        if((self.config.propfilter.lower() == 'neid')
-                and (self.datalevel != 'l0')
+        if((self.config.propfilter.lower() == 'koa')
                 and (self.propflag == 0)):
+
+            if self.debug:
+                logging.debug('')
+                logging.debug('KOA: ignoring client propflag=0, '
+                              'forcing propflag=1')
+
+            self.propflag = 1
+
+        if((self.config.propfilter.lower() == 'neid')
+                and (self.propflag == 0)
+                and ((self.datalevel == 'eng')
+                     or (self.datalevel == 'l1')
+                     or (self.datalevel == 'l2'))):
 
             if self.debug:
                 logging.debug('')
