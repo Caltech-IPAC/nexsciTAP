@@ -8,3 +8,6 @@
 /final_dist
 /final_wheel
 /nexsciTAP.egg-info
+
+# Workflow artifacts (Claude Code planning/spec docs, not project documentation)
+/docs/superpowers/
