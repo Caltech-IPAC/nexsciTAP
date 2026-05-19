@@ -24,7 +24,7 @@ copyright = '2020, NExScI / IPAC / Caltech'
 author = 'John Good'
 
 # The full version, including alpha/beta/rc tags
-release = '1.1.3'
+release = '3.0.0'
 
 
 # -- General configuration ---------------------------------------------------

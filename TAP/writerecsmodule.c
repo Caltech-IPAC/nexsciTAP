@@ -9,6 +9,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <ctype.h>
+#include <string.h>
 
 static PyObject *method_writerecs(PyObject *self, PyObject *args) {
 
@@ -32,6 +33,8 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
 
     char *cptr1;
 
+    char charval;
+
     int  ishdr;
     int  coldesc;
     int  overflow;
@@ -44,24 +47,27 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
     int  nrows_dd;
 
     char    outfmt[40];
+    char    colfmt[40];
     char    msg[1024];
     char    fmt[40];
     char    nullval[20];
     char    nullval_ipac[20];
     char    strval[1024];
+    char    jsonstr[4096];
+    char    tempstr[4096];
     char    substr[40];
     
-    double  dblval;
-    int     intval;
+    double  dblval = 0.0;
+    int     intval = 0;
     int     istatus;
 
     const char *cptr_outpath = NULL;
     const char *cptr_format = NULL;
     const char *cptr = NULL;
 
-    int i;
-    int j;
-    int l;
+    int i, j, k, l, m;
+
+    int inlen;
 
     char debugfname[1024];
     int  debug  = 0;
@@ -101,12 +107,14 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
         PyErr_SetString (PyExc_Exception, "Input outpath string empty");
         return NULL;
     }
+
     strcpy (filepath, cptr_outpath);
 
     if (cptr_format == (char *)NULL) {
         PyErr_SetString (PyExc_Exception, "Input format string empty");
         return NULL;
     }
+
     strcpy (outfmt, cptr_format);
 
     if ((debug) && (fp_debug != (FILE *)NULL)) {
@@ -450,11 +458,12 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
         chmod(filepath, 0664);
     }
     else {
-        fp = fopen (filepath, "a");
+        fp = fopen (filepath, "a+");
     }
 
     if (fp == (FILE *)NULL) {
-        sprintf (msg, "Failed to open filepath: [%s]\n", filepath);
+
+        sprintf (msg, "Failed to open filepath: [%s](errno:%d)", filepath, errno);
         
         if ((debug) && (fp_debug != (FILE *)NULL)) {
             fprintf (fp_debug, "msg= [%s]\n", msg);
@@ -475,7 +484,10 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
 */
     strcpy (nullval, "");
     strcpy (nullval_ipac, "null");
+
     if (ishdr) {
+        
+        // ---- HEADER ----
         
         if (strcasecmp (outfmt, "ipac") == 0) {
     
@@ -546,21 +558,96 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
         
                     fprintf (fp_debug, "i= [%d] namearr= [%s]\n",
                         i, namearr[i]);
+
                     fprintf (fp_debug, "widtharr= [%d] typearr= [%s]\n",
                         widtharr[i], typearr[i]);
+
+                    fprintf(fp_debug, "descarr= [%s]\n", descarr[i]);
+
                     fflush (fp_debug);
                 }
             
+
+                // Char type
+                
                 if (strcasecmp (typearr[i], "char") == 0) {
 
-                    fprintf (fp, 
-                        "    <FIELD ID=\"%s\" arraysize=\"*\" datatype=\"%s\" "
-                        "name=\"%s\"/>\n", namearr[i], typearr[i], namearr[i]);
+                    if(strlen(descarr[i]) > 0)
+                    {
+                       if(strlen(unitsarr[i]) > 0)
+                       {
+                          fprintf (fp, 
+                              "    <FIELD ID=\"%s\" arraysize=\"*\" datatype=\"%s\" "
+                              "name=\"%s\" unit=\"%s\">\n", namearr[i], typearr[i],
+                             namearr[i], unitsarr[i]);
+                          fprintf (fp, "  <DESCRIPTION><![CDATA[ %s ]]></DESCRIPTION>\n", descarr[i]);
+                          fprintf (fp, "</FIELD>\n");
+                       }
+                       else
+                       {
+                          fprintf (fp, 
+                              "    <FIELD ID=\"%s\" arraysize=\"*\" datatype=\"%s\" "
+                              "name=\"%s\">\n", namearr[i], typearr[i], namearr[i]);
+                          fprintf (fp, "  <DESCRIPTION><![CDATA[ %s ]]></DESCRIPTION>\n", descarr[i]);
+                          fprintf (fp, "</FIELD>\n");
+                       }
+                    }
+
+                    else
+                    {
+                       if(strlen(unitsarr[i]) > 0)
+                       {
+                          fprintf (fp, 
+                              "    <FIELD ID=\"%s\" arraysize=\"*\" datatype=\"%s\" "
+                              "name=\"%s\" unit=\"%s\"/>\n", namearr[i], typearr[i],
+                             namearr[i], unitsarr[i]);
+                       }
+                       else
+                       {
+                          fprintf (fp, 
+                              "    <FIELD ID=\"%s\" arraysize=\"*\" datatype=\"%s\" "
+                              "name=\"%s\"/>\n", namearr[i], typearr[i], namearr[i]);
+                       }
+                    }
                 }
+
+
+                // Non-char columns
+                
                 else {
-                    fprintf (fp, 
-                        "    <FIELD ID=\"%s\" datatype=\"%s\" name=\"%s\"/>\n", 
-                        namearr[i], typearr[i], namearr[i]);
+                    if(strlen(descarr[i]) > 0)
+                    {
+                       if(strlen(unitsarr[i]) > 0)
+                       {
+                          fprintf (fp, 
+                              "    <FIELD ID=\"%s\" datatype=\"%s\" name=\"%s\" unit=\"%s\">\n", 
+                              namearr[i], typearr[i], namearr[i], unitsarr[i]);
+                       }
+                       else
+                       {
+                          fprintf (fp, 
+                              "    <FIELD ID=\"%s\" datatype=\"%s\" name=\"%s\">\n", 
+                              namearr[i], typearr[i], namearr[i]);
+                       }
+
+                       fprintf (fp, "  <DESCRIPTION><![CDATA[ %s ]]></DESCRIPTION>\n", descarr[i]);
+                       fprintf (fp, "    </FIELD>\n");
+                    }
+                    else
+                    {
+                       if(strlen(unitsarr[i]) > 0)
+                       {
+                          fprintf (fp, 
+                              "    <FIELD ID=\"%s\" datatype=\"%s\" name=\"%s\" unit=\"%s\"/>\n", 
+                              namearr[i], typearr[i], namearr[i], unitsarr[i]);
+                       }
+                       else
+                       {
+                          fprintf (fp, 
+                              "    <FIELD ID=\"%s\" datatype=\"%s\" name=\"%s\"/>\n", 
+                              namearr[i], typearr[i], namearr[i]);
+                       }
+                    }
                 }
             }
         }
@@ -590,6 +677,9 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
             }
             fprintf (fp, "\n");
         }
+        else if (strcasecmp (outfmt, "json") == 0) {
+           fprintf (fp, "[\n");
+        }
         fflush (fp);
    
         if ((debug) && (fp_debug != (FILE *)NULL)) {
@@ -600,26 +690,31 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
 
 
 /*
-    retieve data rows
+    retrieve data rows
 */
-    if ((nrows_data == 0) && (ishdr == 1) && (istail == 1)) {
+    if (istail == 1) {
+       if ((nrows_data == 0) && (ishdr == 1)) {
 
-        if ((debug) && (fp_debug != (FILE *)NULL)) {
-            fprintf (fp_debug, "here0-1: write tail for empty table\n");
-            fflush (fp_debug);
-        } 
+           if ((debug) && (fp_debug != (FILE *)NULL)) {
+               fprintf (fp_debug, "here0-1: write tail for empty table\n");
+               fflush (fp_debug);
+           } 
 
-        if (strcasecmp (outfmt, "votable") == 0) {
-  
-            fprintf (fp, "  </TABLE>\n");
-            fprintf (fp, "  </RESOURCE>\n");
-            fprintf (fp, "</VOTABLE>\n");
-        }
-        fflush (fp);
-        fclose (fp);
+           if (strcasecmp (outfmt, "votable") == 0) {
+     
+               fprintf (fp, "  </TABLE>\n");
+               fprintf (fp, "  </RESOURCE>\n");
+               fprintf (fp, "</VOTABLE>\n");
+           }
+           else if (strcasecmp (outfmt, "json") == 0) {
+               fprintf (fp, "]\n");
+           }
+           fflush (fp);
+           fclose (fp);
 
-        istatus = 0;    
-        return PyLong_FromLong (istatus);
+           istatus = 0;    
+           return PyLong_FromLong (istatus);
+       }
     }
     
     if ((debug) && (fp_debug != (FILE *)NULL)) {
@@ -640,7 +735,7 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
     for (l=0; l<nrows_data; l++) {
 
         if ((debug1) && (fp_debug != (FILE *)NULL)) {
-            fprintf (fp_debug, "\nxxxl= [%d]\n", l );
+            fprintf (fp_debug, "\nxxxl= [%d] (row counter)\n", l );
             fflush (fp_debug);
         }
         
@@ -684,9 +779,12 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
                 fprintf (fp_debug, "PyObject type:[%s], typearr[i]: [%s]\n", coltype, typearr[i]);
                 fflush (fp_debug);
             }
+                
+
+            // ---- DATA:null ----
 
             if (item == Py_None) {
-                
+        
                 sprintf (fmt, "%%-%ds ", widtharr[i]);
             
                 if ((debug1) && (fp_debug != (FILE *)NULL)) {
@@ -730,7 +828,25 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
                         fprintf (fp, "%s\t", nullval);
                     }
                 }     
+                else if (strcasecmp (outfmt, "json") == 0) {
+            
+                   if (i == 0)  {
+                        fprintf (fp, "{");
+                   }
+
+                   fprintf (fp, "\"%s\": null", namearr[i]);
+
+                   if (i < ncols-1)
+                        fprintf (fp, ",\n");
+
+                   if (i == ncols-1)
+                        fprintf (fp, "}");
+                }     
             }
+
+
+            // ---- DATA: string (-like) ----
+        
             else if ((strcasecmp (typearr[i],   "char") == 0) || 
                      (strcasecmp (typearr[i],   "date") == 0) ||
                      (strcasecmp (dbtypearr[i], "timestamp") == 0)) {
@@ -761,6 +877,22 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
                 if (strcasecmp (outfmt, "ipac") == 0) {
                     
                     sprintf (fmt, "%%-%s ", fmtarr[i]);
+
+                    sprintf(tempstr, fmt, strval);
+
+                    if(strlen(tempstr) > widtharr[i]+1)
+                    {
+                        sprintf (msg, "Column %d [%s], row %d: Formatted value [%s](%s) -> %d characters,  overflows column width [%d char].",
+                            i, namearr[i], l, strval, fmtarr[i], (int)strlen(tempstr), widtharr[i]);
+                    
+                        if ((debug1) && (fp_debug != (FILE *)NULL)) {
+                            fprintf (fp_debug, "ERROR: %s\n", msg);
+                            fflush (fp_debug);
+                        }
+
+                        PyErr_SetString (PyExc_Exception, msg);
+                        return NULL;
+                    }
                     
                     if ((debug1) && (fp_debug != (FILE *)NULL)) {
                         fprintf (fp_debug, "fmt= [%s]\n", fmt);
@@ -802,11 +934,90 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
                         fprintf (fp, "%s\t", strval);
                     }
                 } 
+                else if (strcasecmp (outfmt, "json") == 0) {
+                   if (i == 0) {
+                        fprintf (fp, "{");
+                   }
+
+                    // JSON strings have to be encoded to escape some
+                    // stuff (mostly the double quote character)
+
+                    inlen = strlen(strval);
+
+                    m=0;
+                    for (k=0; k<inlen; ++k) {
+
+                       charval = strval[k];
+
+                       if(charval == '\b') {
+                          jsonstr[m] = '\\';
+                          jsonstr[m+1] = 'b';
+                          m += 2;
+                       }
+
+                       else if(charval == '\f') {
+                          jsonstr[m] = '\\';
+                          jsonstr[m+1] = 'f';
+                          m += 2;
+                       }
+
+                       else if(charval == '\n') {
+                          jsonstr[m] = '\\';
+                          jsonstr[m+1] = 'n';
+                          m += 2;
+                       }
+
+                       else if(charval == '\r') {
+                          jsonstr[m] = '\\';
+                          jsonstr[m+1] = 'r';
+                          m += 2;
+                       }
+
+                       else if(charval == '\t') {
+                          jsonstr[m] = '\\';
+                          jsonstr[m+1] = 't';
+                          m += 2;
+                       }
+
+                       else if(charval == '"') {
+                          jsonstr[m] = '\\';
+                          jsonstr[m+1] = '"';
+                          m += 2;
+                       }
+
+                       else if(charval == '\\') {
+                          jsonstr[m] = '\\';
+                          jsonstr[m+1] = '\\';
+                          m += 2;
+                       }
+
+                       else {
+                          jsonstr[m] = charval;
+                          ++m;
+                       }
+                    }
+
+                    jsonstr[m] = '\0';
+
+                    fprintf (fp, "\"%s\": \"%s\"", namearr[i], jsonstr);
+
+                   if (i < ncols-1)
+                        fprintf (fp, ",\n");
+
+                   if (i == ncols-1) {
+                        fprintf (fp, "}");
+                   }
+                }     
             
             }
-            else if ((strcasecmp (typearr[i], "int"    ) == 0) || 
-                     (strcasecmp (typearr[i], "long"   ) == 0) ||
-                     (strcasecmp (typearr[i], "integer") == 0)) {
+
+
+            // ---- DATA: int (-like) ----
+        
+            else if ((strcasecmp (typearr[i], "int"     ) == 0) || 
+                     (strcasecmp (typearr[i], "long"    ) == 0) ||
+                     (strcasecmp (typearr[i], "longlong") == 0) ||
+                     (strcasecmp (typearr[i], "integer" ) == 0)) {
 
                 sprintf (fmt, "%%-%s", fmtarr[i]);
                         
@@ -814,10 +1025,8 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
                     fprintf (fp_debug, "fmt= [%s]\n", fmt);
                     fflush (fp_debug);
                 }
-                    
                 strcpy (strval, "");
                 if (PyLong_Check (item)) {
-               
                     intval = PyLong_AsLong (item);
                     sprintf (strval, fmt, intval);
                 }
@@ -830,7 +1039,25 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
                     
                 if (strcasecmp (outfmt, "ipac") == 0) {
                     
-                    fprintf (fp, "%s ", strval);
+                    sprintf(colfmt, "%%-%ds ", widtharr[i]);
+
+                    sprintf(tempstr, colfmt, strval);
+
+                    if(strlen(tempstr) > widtharr[i]+1)
+                    {
+                        sprintf (msg, "Column %d [%s], row %d: Formatted value [%s](%s) -> %d characters,  overflows column width [%d char].",
+                            i, namearr[i], l, strval, fmtarr[i], (int)strlen(tempstr), widtharr[i]);
+                    
+                        if ((debug1) && (fp_debug != (FILE *)NULL)) {
+                            fprintf (fp_debug, "ERROR: %s\n", msg);
+                            fflush (fp_debug);
+                        }
+
+                        PyErr_SetString (PyExc_Exception, msg);
+                        return NULL;
+                    }
+
+                    fprintf (fp, colfmt, strval);
                     
                     if (i == ncols-1) {
                         fprintf (fp, "\n");
@@ -877,7 +1104,27 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
                         fprintf (fp, "%s\t", strval);
                     }
                 }
+                else if (strcasecmp (outfmt, "json") == 0) {
+            
+                   sprintf (strval, "%d", intval);
+
+                   if (i == 0) 
+                        fprintf (fp, "{");
+
+                    fprintf (fp, "\"%s\": %s", namearr[i], strval);
+
+                   if (i < ncols-1)
+                        fprintf (fp, ",\n");
+
+                   if (i == ncols-1) {
+                        fprintf (fp, "}");
+                   }
+                }     
             }
+
+
+            // ---- DATA: double ----
+        
             else if ((strcasecmp (typearr[i], "float" ) == 0) || 
                      (strcasecmp (typearr[i], "double") == 0)) {
 
@@ -940,13 +1187,31 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
 
                 if (strcasecmp (outfmt, "ipac") == 0) {
         
+                    sprintf(colfmt, "%%-%ds ", widtharr[i]);
+
+                    sprintf(tempstr, colfmt, strval);
+
+                    if(strlen(tempstr) > widtharr[i]+1)
+                    {
+                        sprintf (msg, "Column %d [%s], row %d: Formatted value [%s](%s) -> %d characters,  overflows column width [%d char].",
+                            i, namearr[i], l, strval, fmtarr[i], (int)strlen(tempstr), widtharr[i]);
+                    
+                        if ((debug1) && (fp_debug != (FILE *)NULL)) {
+                            fprintf (fp_debug, "ERROR: %s\n", msg);
+                            fflush (fp_debug);
+                        }
+
+                        PyErr_SetString (PyExc_Exception, msg);
+                        return NULL;
+                    }
+
                     if ((debug1) && (fp_debug != (FILE *)NULL)) {
-                        fprintf (fp_debug, "ipac outfmt\n");
+                        fprintf (fp_debug, "ipac outfmt: [%s]  colfmt: [%s]\n", strval, colfmt);
                         fflush (fp_debug);
                     }
 
-                    fprintf (fp, "%s ", strval);
-                        
+                    fprintf (fp, colfmt, strval);
+
                     if (i == ncols-1) {
                         fprintf (fp, "\n");
                         if ((debug1) && (fp_debug != (FILE *)NULL)) {
@@ -979,12 +1244,34 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
                         fprintf (fp, "%s\t", strval);
                     }
                 }
+                else if (strcasecmp (outfmt, "json") == 0) {
+            
+                   if (i == 0) 
+                        fprintf (fp, "{");
+
+                    fprintf (fp, "\"%s\": %s", namearr[i], strval);
+
+                   if (i < ncols-1)
+                        fprintf (fp, ",\n");
+
+                   if (i == ncols-1) {
+                        fprintf (fp, "}");
+                   }
+                }     
             }
         }
 
         if (strcasecmp (outfmt, "votable") == 0) {
             fprintf (fp, "        </TR>\n");
             fflush (fp);
+        }
+        else if (strcasecmp(outfmt, "json") == 0) {
+            if (l == nrows_data-1 && istail == 1) {
+                fprintf (fp, "\n");
+            }
+            else {
+                fprintf (fp, ",\n");
+            }
         }
     }
 
@@ -995,18 +1282,24 @@ static PyObject *method_writerecs(PyObject *self, PyObject *args) {
         fflush (fp_debug);
     } 
 
-    if ((strcasecmp (outfmt, "votable") == 0) && (istail == 1)) {
-        fprintf (fp, "      </TABLEDATA>\n");
-        fprintf (fp, "    </DATA>\n");
-        fprintf (fp, "  </TABLE>\n");
-        fprintf (fp, "  </RESOURCE>\n");
-        fprintf (fp, "</VOTABLE>\n");
-    
-        if ((debug) && (fp_debug != (FILE *)NULL)) {
-            fprintf (fp_debug, "votable close brackets written\n");
-            fflush (fp_debug);
-        }     
+    if (istail == 1) {
+       if (strcasecmp (outfmt, "votable") == 0) {
+           fprintf (fp, "      </TABLEDATA>\n");
+           fprintf (fp, "    </DATA>\n");
+           fprintf (fp, "  </TABLE>\n");
+           fprintf (fp, "  </RESOURCE>\n");
+           fprintf (fp, "</VOTABLE>\n");
+       
+           if ((debug) && (fp_debug != (FILE *)NULL)) {
+               fprintf (fp_debug, "votable close brackets written\n");
+               fflush (fp_debug);
+           }     
+       }
+       else if (strcasecmp (outfmt, "json") == 0) {
+          fprintf (fp, "]\n");
+       }
     }
+
     fflush (fp);
     fclose (fp);
     

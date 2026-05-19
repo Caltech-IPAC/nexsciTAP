@@ -4,9 +4,9 @@ from setuptools import setup
 from distutils.extension import Extension
 
 setup(name='nexsciTAP', 
-    version='1.1.8', 
-    author='Mihseh Kong', 
-    author_email='mihseh@ipac.caltech.edu', 
+    version='3.0.0',
+    author='John Good', 
+    author_email='jcg@caltech.edu', 
     license='LICENSE', 
     keywords='astronomy database ADQL web-service', 
     url = 'https://github.com/Caltech-IPAC/nexsciTAP',

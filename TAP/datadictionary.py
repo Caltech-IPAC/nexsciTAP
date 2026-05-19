@@ -5,6 +5,8 @@
 
 import os
 import logging
+import re
+from astropy.io import ascii
 
 
 class dataDictionary:
@@ -12,6 +14,8 @@ class dataDictionary:
     pid = os.getpid()
 
     debug = 0
+
+    ddtbl = None
 
     status = ''
     msg = ''
@@ -33,10 +37,12 @@ class dataDictionary:
     colunits = {}
     colwidth = {}
 
+    connectInfo = None
+
     nfetch = 1000
 
 
-    def __init__(self, conn, table, **kwargs):
+    def __init__(self, conn, table, connectInfo, **kwargs):
 
         """
         A dataDictionary specifies the following properites of each column in
@@ -56,26 +62,103 @@ class dataDictionary:
 
             table(char):      database table name,
 
+            connectInfo:      DBMS connection info,
+
 
         Usage:
 
-          dd = dataDictionary(conn, table)
+          dd = dataDictionary(conn, table, connectInfo)
 
         """
+
+        self.connectInfo = connectInfo
 
         if('debug' in kwargs):
             self.debug = kwargs['debug']
 
         if self.debug:
-            logging.debug('')
             logging.debug('Enter dataDictionary.init')
+
+        self.ddtbl = None
+        if('ddtbl' in kwargs):
+            self.ddtbl = kwargs['ddtbl']
+
+        self.ddfile = None
+        if('ddfile' in kwargs):
+            self.ddfile = kwargs['ddfile']
 
         self.conn = conn
         self.dbtable = table
 
         if self.debug:
-            logging.debug('')
             logging.debug(f'dbtable = {self.dbtable:s}')
+            logging.debug(f'ddtbl   = ' + str(self.ddtbl))
+            logging.debug(f'ddfile  = ' + str(self.ddfile))
+
+
+        #
+        # If we have a DD table file, scan it instead of querying the TAP_SCHEMA table
+        #
+
+        if self.ddfile != None:
+
+            if self.debug:
+                logging.debug(f'Reading: {self.ddfile:s}')
+
+            tdata = ascii.read(self.ddfile, format='ipac')
+            tcolnames = tdata.colnames
+
+            if self.debug:
+                logging.debug('colnames: ' + str(tcolnames))
+
+            i = 0 
+
+            for trow in tdata:
+                    
+                dbname = ''
+                desc   = ''
+                if 'name' in tcolnames:
+                    dbname = trow['name'].lower()
+                    desc   = dbname
+                    
+                type = ''
+                if 'intype' in tcolnames:
+                    type = trow['intype']
+                    
+                unit = ''
+                if 'units' in tcolnames:
+                    unit = trow['units']
+
+                format = ''
+                if 'format' in tcolnames:
+                    format = trow['format']
+
+
+                width = 0
+                if 'width' in tcolnames:
+                    widthstr = trow['width']
+                else:
+                    widthstr = format
+
+                substr = re.search(r'\d+', widthstr)
+
+                if substr != None:
+                    width = int(substr.group())
+
+                if len(dbname) > width:
+                    width = len(dbname)
+                  
+
+                self.colname[i] = dbname
+                i = i+1
+
+                self.coltype [dbname] = type
+                self.coldesc [dbname] = desc
+                self.colunits[dbname] = unit
+                self.colfmt  [dbname] = format
+                self.colwidth[dbname] = width
+
+            return
 
         #
         # Construct and submit data dictionary query
@@ -84,21 +167,42 @@ class dataDictionary:
         cursor = self.conn.cursor()
         if self.debug:
             logging.debug('')
-            logging.debug('DBMS cursor:')
-            logging.debug('-------------------------------------------------')
-            logging.debug(cursor)
-            logging.debug('-------------------------------------------------')
+            logging.debug('Created DD query cursor.')
 
+        if self.ddtbl == None:
 
-        sql = "select * from TAP_SCHEMA.columns where table_name = " + \
-            "'" + self.dbtable + "'"
+            # Detect placeholder style from connection type
+            conn_type = self.conn.__class__.__module__
+            if 'cx_Oracle' in conn_type or 'oracledb' in conn_type:
+                placeholder = ':1'
+            elif 'psycopg2' in conn_type:
+                placeholder = '%s'
+            elif 'mysql' in conn_type:
+                placeholder = '%s'
+            else:
+                placeholder = '?'
 
-        if self.debug:
-            logging.debug('')
-            logging.debug(f'TAP_SCHEMA sql = {sql:s}')
+            sql = "select * from " + self.connectInfo["tap_schema"] + "." + self.connectInfo["columns_table"] + " where lower(table_name) = " \
+                + placeholder
+
+            if self.debug:
+                logging.debug('')
+                logging.debug(f'TAP_SCHEMA sql = {sql:s}')
+                logging.debug(f'  param = {self.dbtable:s}')
+
+        else:
+
+            sql = "select name as column_name, description as desc, units as unit, intype as datatype, format from " + self.ddtbl
+
+            if self.debug:
+                logging.debug('')
+                logging.debug(f'Internal DD table sql = {sql:s}')
 
         try:
-            cursor.execute(sql)
+            if self.ddtbl is None:
+                cursor.execute(sql, (self.dbtable,))
+            else:
+                cursor.execute(sql)
 
         except Exception as e:
 
@@ -114,7 +218,7 @@ class dataDictionary:
 
         if self.debug:
             logging.debug('')
-            logging.debug('select TAP_SCHEMA statement executed')
+            logging.debug('select TAP_SCHEMA/DD statement executed')
 
         #
         # { Extract column index
@@ -122,7 +226,7 @@ class dataDictionary:
 
         if self.debug:
             logging.debug('')
-            logging.debug('TAP_SCHEMA cursor description:')
+            logging.debug('TAP_SCHEMA/DD cursor description:')
             logging.debug('------------------------------------------------')
             logging.debug(cursor.description)
             logging.debug('------------------------------------------------')
@@ -198,21 +302,31 @@ class dataDictionary:
             #
             # { while loop
             #
-            rows = cursor.fetchmany()
+            
+            #rows = cursor.fetchmany(self.nfetch)
+            rows = cursor.fetchall()
 
             self.ncols = self.ncols + len(rows)
 
             if self.debug:
                 logging.debug('')
-                logging.debug(f'ncols = {self.ncols:d}')
+                logging.debug(f'ncols= {self.ncols:d}')
 
             i = 0
             for row in rows:
+            
                 #
                 # { for loop: each row in the file represents
                 #             a column in data dictionary
                 #
+                if self.debug:
+                    logging.debug('')
+                    logging.debug(f'i = {i:d}')
+
                 col_str = str(row[ind_colname]).strip().lower()
+
+                if col_str.startswith('"') and col_str.endswith('"'):
+                    col_str = col_str[1:-1]
 
                 self.colname[i] = col_str
 

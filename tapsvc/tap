@@ -1,0 +1,167 @@
+#!/bin/env python
+
+import sys
+import os
+
+import argparse
+import logging
+
+from TAP.tapstore  import tapStore
+from TAP.taputil   import tapUtil
+from TAP.tapquery  import tapQuery
+
+dbutils  = None
+dbconfig = None
+dbconn   = None
+dbadql   = None
+ddtbl    = None
+
+debug    = False
+
+
+def dbinit():
+
+    global dbutils
+    global dbconfig
+    global dbconn
+    global dbadql
+    global debug
+
+    try:
+        dbstore  = tapStore()
+        dbutils  = tapUtil(store=dbstore, debug=debug)
+        dbconfig = dbstore.getConfig()
+        dbconn   = dbstore.getConn()
+        dbadql   = dbstore.getADQL()
+
+    except Exception as e:
+        return 0, str(e)
+    
+    return 1, ''
+
+
+def dbquery(adql_string, filename, format):
+
+    global dbutils
+    global dbconfig
+    global dbconn
+    global dbadql
+    global ddtbl
+    global debug
+
+    msg = 'Query failed.'
+
+    try:
+        cursor = dbconn.cursor()
+        
+        if debug:
+            logging.debug('ADQL: ' + adql_string)
+
+        sql_string  = dbadql.sql(adql_string)
+        
+        if debug:
+            logging.debug('SQL:  ' + sql_string)
+
+        dbQuery = tapQuery(connectInfo=dbconfig.connectInfo,
+                           conn=dbconn, 
+                           query=sql_string, 
+                           filename=filename,
+                           ddtbl=ddtbl,
+                           format=format,
+                           debug=debug)
+
+        status  = dbQuery.stat.upper()
+
+        outfile = dbQuery.outpath
+        nrec    = dbQuery.ntot
+        msg     = dbQuery.returnMsg
+
+        if status == 'OK':
+            return status, nrec, outfile
+        else:
+            return status, 0, msg
+
+    except Exception as e:
+        status = 'ERROR'
+        return status, 0, str(e)
+
+
+def main():
+    
+    global dbutils
+    global dbconfig
+    global dbconn
+    global dbadql
+    global ddtbl
+    global debug
+
+    
+    # Parse the command line
+
+    parser = argparse.ArgumentParser(description="TAP command-line service.")
+
+    parser.add_argument("-d", "--debug",  nargs=1, default=None, help="Specify debug output file.")
+    parser.add_argument("-t", "--ddtbl",  nargs=1, default=None, help="External data dictionary information (overrides TAP_SCHEMA).")
+    parser.add_argument("-f", "--format", nargs=1, default=None, help="Output table format.")
+
+    parser.add_argument('posargs', nargs='+', help="Two arguments: ADQL (SQL) string and output filename.")
+
+    args = parser.parse_args()
+
+    debugfile = args.debug
+    if debugfile != None:
+        debugfile = debugfile[0]
+        debug = True
+
+    ddtbl = args.ddtbl
+    if ddtbl != None:
+        ddtbl = ddtbl[0]
+
+    format = args.format
+    if format != None:
+        format = format[0]
+    else:
+        format = 'ipac'
+
+    if len(args.posargs) < 2:
+        print('[struct stat="ERROR", msg="Need two positional arguments: ADQL (SQL) string and output filename."]')
+        sys.stdout.flush()
+        sys.exit(0)
+    else:
+        adql    = args.posargs[0]
+        outfile = args.posargs[1]
+
+    if debug:
+
+        logging.basicConfig(filename=debugfile,
+                            format='%(levelname)-8s %(relativeCreated)d>  '
+                            '%(filename)s %(lineno)d  '
+                            '(%(funcName)s):   %(message)s',
+                            level=logging.DEBUG)
+
+        logging.debug('Starting TAP service debugging.')
+
+    status, msg = dbinit()
+
+    if status == 0:
+        print('[struct stat="ERROR", msg="' + msg + '"]')
+        sys.stdout.flush()
+        sys.exit(0)
+
+
+    status, nrec, msg = dbquery(adql, outfile, format)
+
+    msg = msg.partition('\n')[0]
+
+    if status == 'ERROR':
+        print('[struct stat="ERROR", msg="' + msg + '"]')
+        sys.stdout.flush()
+        sys.exit(0)
+    else:
+        print('[struct stat="OK", nrec=' + str(nrec) + ']')
+        sys.stdout.flush()
+        sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()

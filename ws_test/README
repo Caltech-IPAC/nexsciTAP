@@ -1,0 +1,36 @@
+
+
+README (nexsciTAP/test)
+
+
+The purpose of this directory is to provide the simplest possible code base
+and framework for testing the nexsciTAP service.  The only prerequisites are
+a working nexsciTAP (actually any TAP) service and the program "wget".  The 
+user then defines a set of test queries (see the file "tests.dat") and vets
+the results the first time the tests are run (mixed sync and async).  Then
+any subsequent time the tests are run the framework takes care of rerunning
+the queries and comparing the results.
+
+For background on TAP processing, see Background.txt.  This provides context
+for understanding the query script.
+
+There are two bash scripts.  The first (run_query.bash) does all the heavy 
+lifting.  After first defining a set of bash functions that implement the 
+steps in the TAP processing scenario, it then takes the specific query given
+on the command-line and walks through the steps (either sync or async), 
+resulting in a result data file.  These results are stored in the "results"
+subdirectory the first time the query is run or compared to the data in that
+directory thereafter.
+
+This lets us rerun a formal set of tests quickly to verify the TAP server is 
+still working correctly after any updates.
+
+A second, smaller  bash script (run_all_tests.bash) reads through a set of 
+queries defined in an input file (here "tests.dat") and runs the above 
+run_query.bash script for each of them.  The example queries used here are
+for our own internal database.  They are easily modified for another site
+and database.
+
+For simplicity, the base URL for the TAP service is defined in a variable at
+the top of the run_query.bash script.  Change it there to your sites address.
+

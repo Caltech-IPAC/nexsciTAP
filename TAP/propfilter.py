@@ -7,73 +7,80 @@ import os
 import logging
 
 import datetime
+import time
 
 from TAP.writeresult import writeResult
 from TAP.datadictionary import dataDictionary
 from TAP.tablenames import TableNames
+from TAP.tablevalidator import TableValidator, TableValidationError
 
 
 class propFilter:
 
-    pid = os.getpid()
+    pid                    = os.getpid()
 
-    debug = 0
+    debug                  = 0
 
-    status = ''
-    msg = ''
+    status                 = ''
+    msg                    = ''
 
-    cookiestr = ''
-    userid = ''
-    encodedpass = ''
+    cookiestr              = ''
+    userid                 = ''
+    encodedpass            = ''
 
-    cookiename = ''
-    accesstbl = ''
-    usertbl = ''
+    cookiename             = ''
+    accesstbl              = ''
+    usertbl                = ''
 
-    propfilter = ''
+    propfilter             = ''
 
-    conn = None
-    dd = None
+    dbms                   = None
 
-    dbtable = ''
-    instrument = ''
-    datalevel = ''
+    conn                   = None
+    dd                     = None
 
-    nfetch = 1000
-    ninsert = 1000
+    dbtable                = ''
+    instrument             = ''
+    datalevel              = ''
 
-    racol = ''
-    deccol = ''
+    tmp_accessiddbtbl      = ''
+    tmp_fileidAlloweddbtbl = ''
 
-    userworkdir = ''
-    outpath = ''
-    inpath = ''
+    nfetch                 = 1000
+    ninsert                = 1000
 
-    format = 'votable'
-    maxrec = -1
-    coldesc = 0
+    racol                  = ''
+    deccol                 = ''
 
-    nrec = 0
-    ntot = 0
+    userworkdir            = ''
+    outpath                = ''
+    inpath                 = ''
 
-    nrows_in = 0
-    ncols_in = 0
-    colnames_in = None
-    query_in = ''
-    query = ''
+    format                 = 'votable'
+    maxrec                 = -1
+    coldesc                = 0
 
-    selectstr = ''
-    wherestr = ''
-    orderbystr = ''
-    groupbystr = ''
+    nrec                   = 0
+    ntot                   = 0
 
-    selectcols = []
-    orderbycols = []
-    groupbycols = []
+    nrows_in               = 0
+    ncols_in               = 0
+    colnames_in            = None
+    query_in               = ''
+    query                  = ''
 
-    time0 = None
-    time1 = None
-    delt = 0.0
+    selectstr              = ''
+    wherestr               = ''
+    orderbystr             = ''
+    groupbystr             = ''
+
+    selectcols             = []
+    orderbycols            = []
+    groupbycols            = []
+
+    time0                  = None
+    time1                  = None
+    delt                   = 0.0
 
 
     def __init__(self, **kwargs):
@@ -85,41 +92,43 @@ class propFilter:
         """
         propFilter filters out the proprietary data from the input table.
 
+
         Required keyword parameters:
 
             connectInfo:        Dictionary containing the info needed
                                 to make a "connection".  These parameters
                                 are different depending on the DBMS.
 
-            query(char): user query
+            query(char):        User query
 
-            workdir(char): user work directory
+            workdir(char):      User work directory
+
 
         Optional keyword parameters(for accessing proprietary data):
 
-            cookiename(char):  cookie name for the HTTP server,
+            cookiename(char):   Cookie name for the HTTP server,
 
-            cookiestr(char):   cookie string extracted from input HTTP cookie
+            cookiestr(char):    Cookie string extracted from input HTTP cookie
                                 containing KOA userid and encoded password,
 
-            usertbl(char):     DB table containing the userid and
+            usertbl(char):      DB table containing the userid and
                                 encoded password
 
-            accesstbl(char):   DB table containing the user access info
+            accesstbl(char):    DB table containing the user access info
 
-            accessid(char):   column name in accesstbl represent the user
-                               access info
+            accessid(char):     Column name in accesstbl represent the user
+                                access info
 
-            fileid(char):     column name in result represent the unique
-                               filename
+            fileid(char):       Column name in result represent the unique
+                                filename
 
-            format(char):     output format(default votable),
+            format(char):       Output format(default votable),
 
-            maxrec(int):      default -1 meaning return all records,
+            maxrec(int):        Default -1 meaning return all records,
 
-            racol(char):      RA column name,
+            racol(char):        RA column name,
 
-            deccol(char):     Dec column name,
+            deccol(char):       Dec column name,
 
         Usage:
 
@@ -168,6 +177,14 @@ class propFilter:
 
             self.connectInfo = kwargs['connectInfo']
 
+            self.tap_schema_file   = self.connectInfo['tap_schema_file']
+            self.tap_schema        = self.connectInfo['tap_schema']
+            self.schemas_table     = self.connectInfo['schemas_table']
+            self.tables_table      = self.connectInfo['tables_table']
+            self.columns_table     = self.connectInfo['columns_table']
+            self.keys_table        = self.connectInfo['keys_table']
+            self.key_columns_table = self.connectInfo['key_columns_table']
+
             self.dbms = self.connectInfo['dbms']
 
             if(self.dbms.lower() == 'oracle'):
@@ -210,9 +227,62 @@ class propFilter:
                     logging.debug(f'dbserver = {self.dbserver:s}')
                     logging.debug( 'userid   = [Not shown for security reasons].')
                     logging.debug( 'password = [Not shown for security reasons].')
+
                 #   Change to the following to temporarily debug login
+                    
                 #   logging.debug(f'userid   = {self.userid:s}')
                 #   logging.debug(f'password = {self.password:s}')
+
+
+
+            if(self.dbms.lower() == 'pgsql'):
+
+                import psycopg2
+
+                self.hostname = None
+                self.database = None
+                self.username = None
+                self.password = None
+
+                self.hostname = None
+                if ('hostname' in self.connectInfo):
+                    self.hostname = self.connectInfo['hostname']
+
+                if (self.hostname is None):
+                    self.msg = 'Failed to retrieve required input parameter'\
+                               ' [hostname].'
+                    self.status = 'error'
+                    raise Exception(self.msg)
+
+                self.database = None
+                if ('database' in self.connectInfo):
+                    self.database = self.connectInfo['database']
+
+                if (self.database is None):
+                    self.msg = 'Failed to retrieve required input parameter'\
+                               ' [database].'
+                    self.status = 'error'
+                    raise Exception(self.msg)
+
+                self.username = None
+                if ('username' in self.connectInfo):
+                    self.username = self.connectInfo['username']
+
+                if (self.username is None):
+                    self.msg = 'Failed to retrieve required input parameter'\
+                               ' [username].'
+                    self.status = 'error'
+                    raise Exception(self.msg)
+
+                self.password = None
+                if ('password' in self.connectInfo):
+                    self.password = self.connectInfo['password']
+
+                if (self.password is None):
+                    self.msg = 'Failed to retrieve required input parameter'\
+                               ' [password].'
+                    self.status = 'error'
+                    raise Exception(self.msg)
 
 
             if(self.dbms.lower() == 'sqlite3'):
@@ -353,6 +423,8 @@ class propFilter:
         # { Connect to DBMS
         #
 
+        # ORACLE
+
         if(self.dbms.lower() == 'oracle'):
 
             try:
@@ -373,6 +445,33 @@ class propFilter:
 
                 raise Exception(self.msg)
 
+
+        # PGSQL
+
+        elif(self.dbms.lower() == 'pgsql'):
+
+            try:
+                self.conn = psycopg2.connect (
+                    host=self.hostname, \
+                    database=self.database, \
+                    user=self.username, \
+                    password=self.password
+                )
+
+                if self.debug:
+                    logging.debug('')
+                    logging.debug('connected to pgsql DB ' + self.hostname)
+
+            except Exception as e:
+
+                self.status = 'error'
+                self.msg = 'Failed to connect to pgsql: ' + str(e)
+
+                raise Exception(self.msg)
+
+
+        # SQLITE3
+
         elif(self.dbms.lower() == 'sqlite3'):
 
             try:
@@ -382,7 +481,7 @@ class propFilter:
                     logging.debug('')
                     logging.debug('Connected to SQLite3, database ' + self.db)
 
-                cmd = 'ATTACH DATABASE ? AS TAP_SCHEMA'
+                cmd = 'ATTACH DATABASE ? AS ' + self.tap_schema_file
 
                 dbspec = (self.tap_schema,)
 
@@ -428,12 +527,28 @@ class propFilter:
 
             except Exception as e:
 
+                # ORA-00942: table inaccessible — raise TableValidationError
+                # so tap.py returns HTTP 403 with a clean message instead of
+                # leaking the raw Oracle error. Oracle-specific.
+                if 'ORA-00942' in str(e):
+                    try:
+                        tables = TableNames().extract_tables(self.query)
+                        tname = tables[0] if tables else 'unknown'
+                    except Exception as tex:
+                        if self.debug:
+                            logging.debug(
+                                f'ORA-00942: table name extraction failed: {str(tex):s}')
+                        tname = 'unknown'
+                    raise TableValidationError(
+                        f"Table '{tname}' is not available for querying. "
+                        f"Use {self.tap_schema}.{self.tables_table} to see available tables.")
+
                 errmsg = \
                     f'Input query [{self.query:s}] syntax error: {str(e):s}'
 
                 if self.debug:
                     logging.debug('')
-                    logging.debug(f'Exception __parseSql: {str(e):s}')
+                    logging.debug(f'Exception __parseSql__: {str(e):s}')
 
                 self.__encodeSqlerrmsg__(errmsg)
 
@@ -459,6 +574,49 @@ class propFilter:
         if self.debug:
             logging.debug('')
             logging.debug(f'dbtable = [{self.dbtable:s}]')
+
+        #
+        # Defense-in-depth: validate tables against TAP_SCHEMA.
+        #
+        # Exclude server-configured internal tables (access control
+        # tables used by propfilter) from validation.  These are NOT
+        # in TAP_SCHEMA.tables so they would be rejected, but
+        # propfilter needs them for proprietary-data filtering.
+        # Users still cannot query them directly: any query that
+        # enters through the non-propfilter path (tapQuery) will
+        # reject them because they are absent from TAP_SCHEMA.
+        #
+
+        internal_tables = set()
+        if self.accesstbl:
+            internal_tables.add(self.accesstbl.lower())
+        if self.usertbl:
+            internal_tables.add(self.usertbl.lower())
+
+        user_tables = [t for t in tables
+                       if t.lower() not in internal_tables]
+
+        if user_tables:
+            try:
+                validator = TableValidator(self.conn,
+                                           connectInfo=self.connectInfo,
+                                           debug=self.debug)
+                validator.validate(user_tables)
+
+            except TableValidationError:
+                # Re-raise as-is so tap.py can distinguish a table
+                # access rejection (403) from other query errors (400).
+                raise
+
+            except Exception as e:
+
+                if self.debug:
+                    logging.debug('')
+                    logging.debug(
+                        f'Table validation exception: {str(e):s}')
+
+                self.msg = str(e)
+                raise Exception(self.msg)
 
         #
         # Parse query: to extract query pieces for propfilter
@@ -508,7 +666,7 @@ class propFilter:
 
         self.dd = None
         try:
-            self.dd = dataDictionary(self.conn, self.dbtable, debug=self.debug)
+            self.dd = dataDictionary(self.conn, self.dbtable, self.connectInfo, ddtbl=None, debug=self.debug)
 
         except Exception as e:
 
@@ -524,11 +682,11 @@ class propFilter:
         # Create tmp_accessiddbtbl
         #
 
-        tmp_accessiddbtbl = 'tmp_' + self.accessid + str(os.getpid())
+        self.tmp_accessiddbtbl = 'tmp_' + self.accessid + str(os.getpid())
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'tmp_accessiddbtbl = {tmp_accessiddbtbl:s}')
+            logging.debug(f'tmp_accessiddbtbl = {self.tmp_accessiddbtbl:s}')
 
         if(len(self.userid) > 0):
 
@@ -537,7 +695,7 @@ class propFilter:
             #
 
             try:
-                self.__createTmpAccessiddb__(tmp_accessiddbtbl,
+                self.__createTmpAccessiddb__(self.tmp_accessiddbtbl,
                                              self.userid, self.accessid,
                                              self.accesstbl)
             except Exception as e:
@@ -560,18 +718,19 @@ class propFilter:
         # Create tmp_fileidAlloweddbtbl
         #
 
-        tmp_fileidAlloweddbtbl = 'tmp_fileidallowed' + str(os.getpid())
+        self.tmp_fileidAlloweddbtbl = 'tmp_fileidallowed' + str(os.getpid())
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'tmp_fileidAlloweddbtbl= {tmp_fileidAlloweddbtbl:s}')
+            logging.debug ( \
+                f'tmp_fileidAlloweddbtbl= {self.tmp_fileidAlloweddbtbl:s}')
 
         try:
 
-            self.__createTmpFileiddb__(tmp_fileidAlloweddbtbl,
+            self.__createTmpFileiddb__(self.tmp_fileidAlloweddbtbl,
                                        self.fileid, self.fileid_allowed,
                                        self.dbtable, self.wherestr,
-                                       self.accessid, tmp_accessiddbtbl)
+                                       self.accessid, self.tmp_accessiddbtbl)
         except Exception as e:
 
             self.msg = str(e)
@@ -588,7 +747,10 @@ class propFilter:
 
         sql = self.selectstr + " from " + self.dbtable + \
             " where " + self.fileid + " in(select " + self.fileid_allowed + \
-            " from " + tmp_fileidAlloweddbtbl + ")"
+            " from " + self.tmp_fileidAlloweddbtbl + ")"
+
+        if(len(self.wherestr) > 0):                                            
+            sql = sql + ' and (' + self.wherestr[6:] + ')'        
 
         if self.debug:
             logging.debug('')
@@ -678,12 +840,15 @@ class propFilter:
             wresult = writeResult(cursor,
                                   self.userworkdir,
                                   self.dd,
+                                  dbms=self.dbms,
                                   format=self.format,
                                   maxrec=self.maxrec,
                                   coldesc=self.coldesc,
                                   racol=self.racol,
-                                  deccol=self.deccol,
-                                  debug=self.debug)
+                                  deccol=self.deccol)
+                                  
+                                  #deccol=self.deccol,
+                                  #debug=self.debug)
 
         except Exception as e:
 
@@ -693,32 +858,127 @@ class propFilter:
 
             raise Exception(str(e))
 
+        finally:
+            cursor.close()
+
+            if self.debug:
+                logging.debug('')
+                logging.debug(f'writeResult cursor closed')
+
+
         self.outpath = wresult.outpath
         self.ntot = wresult.ntot
 
         #
-        #  Drop all tmp DB tables
+        #  Drop all tmp DB tables for oracle because oracle v.12.xxx's
+        #  global temporary table is permanent, not really temporary 
         #
 
-        try:
-            self.__dropDbtbl__(tmp_fileidAlloweddbtbl)
-        except Exception as e:
-            pass
-
-        if self.debug:
-            logging.debug('')
-            logging.debug('tmp_fileidAlloweddbtbl dropped')
-
-        if(len(self.userid) > 0):
-
+        if (self.dbms.lower() == 'oracle'):
+            
             try:
-                self.__dropDbtbl__(tmp_accessiddbtbl)
+                self.conn.close()
+            
+                if self.debug:
+                    logging.debug ('')
+                    logging.debug ('returned from oracle conn.close()')
+
             except Exception as e:
-                pass
+
+                if self.debug:
+                    logging.debug ('')
+                    logging.debug (f'conn.close exception: {str(e):s}')
+            
+        #
+        #  re-connect
+        #
+            time.sleep (2.0) 
+                
+            userid = self.connectInfo['userid']
+            dbserver = self.connectInfo['dbserver']
+            password = self.connectInfo['password']
+
+
 
             if self.debug:
+                logging.debug ('')
+                logging.debug (f'xxx0')
+                logging.debug (f'userid= {userid:s}')
+                logging.debug (f'password= {password:s}')
+                logging.debug (f'dbserver= {dbserver:s}')
+           
+            try:
+                self.conn = cx_Oracle.connect ( \
+                    userid, \
+                    password, \
+                    dbserver)
+
+                if self.debug:
+                    logging.debug('')
+                    logging.debug('re-connected to Oracle, database ' +
+                                  dbserver)
+                    logging.debug('')
+                    logging.debug( \
+                        f'tmp_fileidAlloeddbtbl= {self.tmp_fileidAlloweddbtbl:s}')
+
+            except Exception as e:
+
+                self.status = 'error'
+                self.msg = 'Failed to re-connect to cx_Oracle'
+
+                if self.debug:
+                    logging.debug('')
+                    logging.debug('Failed to re-connected to Oracle ')
+                    logging.debug(f'e= {str(e):s}')
+                
+                pass 
+            
+            try:
+                self.__dropDbtbl__(self.tmp_fileidAlloweddbtbl)
+                
+                if self.debug:
+                    logging.debug('')
+                    logging.debug( \
+                        'returned dropDbtbl: tmp_fileidAlloweddbtbl')
+
+            except Exception as e:
+                
+                if self.debug:
+                    logging.debug('')
+                    logging.debug( \
+                        f'drop fileidAlloweddbtbl exception: {str(e):s}')
+                pass
+        
+            if self.debug:
                 logging.debug('')
-                logging.debug('tmp_accessiddbtbl dropped')
+                logging.debug('tmp_fileidAlloweddbtbl dropped')
+
+            if(len(self.userid) > 0):
+
+                if self.debug:
+                    logging.debug('')
+                    logging.debug( \
+                        f'tmp_accessiddbtbl= {self.tmp_accessiddbtbl:s}')
+
+                try:
+                    self.__dropDbtbl__(self.tmp_accessiddbtbl)
+                
+                    if self.debug:
+                        logging.debug('')
+                        logging.debug( \
+                            'returned dropDbtbl: tmp_accessiddbtbl')
+
+                except Exception as e:
+                
+                    if self.debug:
+                        logging.debug('')
+                        logging.debug( \
+                            f'drop accessiddbtbl exception: {str(e):s}')
+                    pass
+
+                if self.debug:
+                    logging.debug('')
+                    logging.debug('tmp_accessiddbtbl dropped')
 
         return
 
@@ -757,8 +1017,8 @@ class propFilter:
                  "l2",
                  "eng"]
 
-        selectstr = ''
-        wherestr = ''
+        selectstr  = ''
+        wherestr   = ''
         orderbystr = ''
         groupbystr = ''
 
@@ -1034,6 +1294,10 @@ class propFilter:
         #  If cookiestr exists: validate userid/encodedpass
         #
 
+        if self.debug:
+            logging.debug(f'cookiename = ' + str(cookiename))
+            logging.debug(f'cookiestr  = ' + str(cookiestr))
+
         msg = ''
         ind = cookiestr.find(cookiename)
 
@@ -1068,8 +1332,10 @@ class propFilter:
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'userid = {self.userid:s}')
-            logging.debug(f'encodedpass = {self.encodedpass:s}')
+            logging.debug(f'substr1     = ' + str(substr1))
+            logging.debug(f'arr         = ' + str(arr))
+            logging.debug(f'userid      = ' + str(self.userid))
+            logging.debug(f'encodedpass = ' + str(self.encodedpass))
 
         if(self.userid == 'anon'):
             self.userid = ''
@@ -1319,18 +1585,24 @@ class propFilter:
 
     def __createTmpAccessiddb__(self, tmp_accessiddbtbl, userid, accessid,
                                 accesstbl, **kwargs):
+    #
+    # { createTmpAccessiddb
+    #
+        #
+        # first drop tmp_accessiddbtbl in case table with the same name 
+        # might already exist
+        #
 
-        #
-        # {
-        #
-
-        # Create tmp_accessiddbtbl, but first drop tmp_accessiddbtbl just in case
-        # it might already exist
-        #
+        # Drop temporary table (or try to)
 
         try:
             self.__dropDbtbl__(tmp_accessiddbtbl)
 
+            if self.debug:
+                logging.debug('')
+                logging.debug('returned dropDbtbl')
+                logging.debug(f'temp dbtbl dropped')
+        
         except Exception as e:
 
             self.msg = 'Failed to create tmp_accessiddbtbl: ' + str(e)
@@ -1340,14 +1612,23 @@ class propFilter:
             pass
 
 
-        sql = "create global temporary table " + tmp_accessiddbtbl + \
-            "(" + accessid + " varchar(22)) on commit preserve rows"
+        # Create temporary table
+
+        if (self.dbms.lower() == 'pgsql'):
+
+            sql = "create temporary table " + tmp_accessiddbtbl + \
+                " (" + accessid + " varchar(22)) on commit preserve rows"
+
+        else:
+            sql = "create global temporary table " + tmp_accessiddbtbl + \
+                "(" + accessid + " varchar(22)) on commit preserve rows"
 
         if self.debug:
             logging.debug('')
             logging.debug(f'temp table create sql= {sql:s}')
 
         cursor = self.conn.cursor()
+
         try:
             self.__executeSql__(cursor, sql)
 
@@ -1363,10 +1644,9 @@ class propFilter:
             logging.debug('')
             logging.debug('tmp_accessiddbtbl created')
 
-        #
+        
         # Insert into tmp_accessiddbtbl: select accessid allowed
         # by userid: accessidtbl
-        #
 
         sql = "insert into " + tmp_accessiddbtbl + \
             "(select lower(" + accessid + ") as " + accessid + \
@@ -1389,39 +1669,61 @@ class propFilter:
 
             raise Exception(self.msg)
 
-        return
 
-        #
-        # } end of createTmpAccessiddb def
-        #
+        #  check rowcount in tmp_accessiddbtbl 
+        
+        sql = "select * from " + tmp_accessiddbtbl
+
+        if self.debug:
+            logging.debug('')
+            logging.debug(f'temp table select sql= {sql:s}')
+
+        try:
+            self.__executeSql__(cursor, sql)
+
+        except Exception as e:
+
+            self.msg = 'Failed to insert data to tmp_accessiddbtbl: ' + str(e)
+            if self.debug:
+                logging.debug('')
+                logging.debug(f'{self.msg:s}')
+
+            raise Exception(self.msg)
+
+        rowcnt_tmpaccessid = cursor.rowcount
+
+        if self.debug:
+            logging.debug('')
+            logging.debug(f'rowcnt_tmpaccessid= {rowcnt_tmpaccessid:d}')
+
+        return
+    #
+    # } end createTmpAccessiddb def
+    #
 
 
     def __createTmpFileiddb__(self, tmp_fileiddbtbl, fileid, fileid_allowed,
                               dbtable, wherestr, accessid, tmp_accessiddbtbl,
                               **kwargs):
-
+    #
+    # { createTmpFileiddb
+    #
         #
-        # {
+        # first drop tmp_fileiddbtbl in case table with the same name
+        # already existed
         #
 
-        # Create tmp_fileiddbtbl, but first drop tmp_fileiddbtbl just in case
-        # it might already existed
-        #
+        if self.debug:
+            logging.debug('')
+            logging.debug(f'Enter createTmpFileiddb')
 
-        try:
-            self.__dropDbtbl__(tmp_fileiddbtbl)
-
-        except Exception as e:
-
-            self.msg = 'Failed to create tmp_fileiddbtbl: ' + str(e)
-            if self.debug:
-                logging.debug('')
-                logging.debug(f'{self.msg:s}')
-            pass
-
-
-        sql = "create global temporary table " + tmp_fileiddbtbl + \
-            "(" + fileid_allowed + " varchar(35)) on commit preserve rows"
+        if (self.dbms.lower() == 'pgsql'):
+            
+            sql = "create temporary table " + tmp_fileiddbtbl + \
+                "(" + fileid_allowed + " varchar(35)) on commit preserve rows"
+        else:
+            sql = "create global temporary table " + tmp_fileiddbtbl + \
+                "(" + fileid_allowed + " varchar(35)) on commit preserve rows"
 
         if self.debug:
             logging.debug('')
@@ -1450,30 +1752,34 @@ class propFilter:
 
         if(self.propfilter == 'koa'):
 
-            if(self.instrument.lower() == 'hires'):
-
-                if(len(self.userid) > 0):
-
-                    access_constraint = \
-                        "((current_date > add_months(date_obs, propmin))" + \
-                        " or(lower(" + accessid + ") in(select " + \
-                        accessid + " from " + tmp_accessiddbtbl + ")))"
-
-                else:
-                    access_constraint = \
-                        "(current_date > add_months(date_obs, propmin))"
-            else:
-                if(len(self.userid) > 0):
+            if(len(self.userid) > 0):
+                
+                if (self.dbms.lower() == 'oracle'):
 
                     access_constraint = \
                         "((current_date > add_months(date_obs, propint))" + \
                         " or(lower(" + accessid + ") in(select " + \
                         accessid + " from " + tmp_accessiddbtbl + ")))"
+                
+                elif (self.dbms.lower() == 'pgsql'):
 
-                else:
+                    access_constraint = "((current_date > " + \
+                        "(date_obs + (propint * '1 month'::interval)))" + \
+                        " or (lower(" + accessid + ") in (select " + \
+                        accessid + " from " + tmp_accessiddbtbl + ")))"
+                
+            else:
+                if (self.dbms.lower() == 'oracle'):
+
                     access_constraint = \
                         "(current_date > add_months(date_obs, propint))"
 
+                elif (self.dbms.lower() == 'pgsql'):
+
+                    access_constraint = "(current_date > " + \
+                        "(date_obs + (propint * '1 month'::interval)))"
+
+                    
             if self.debug:
                 logging.debug('')
                 logging.debug(
@@ -1490,37 +1796,89 @@ class propFilter:
 
                 if(len(self.userid) > 0):
 
-                    access_constraint = \
-                        "((current_date > add_months(obsdate, l0propint))" + \
-                        " or(lower(" + accessid + ") in(select " + \
-                        accessid + " from " + tmp_accessiddbtbl + ")))"
+                    if (self.dbms.lower() == 'oracle'):
+
+                        access_constraint = "((current_date > " + \
+                            "add_months(obsdate, l0propint))" + \
+                            " or(lower(" + accessid + ") in(select " + \
+                            accessid + " from " + tmp_accessiddbtbl + ")))"
+                
+                    elif (self.dbms.lower() == 'pgsql'):
+
+                        access_constraint = "((current_date > " + \
+                            "(obsdate + (l0propint * '1 month'::interval)))" + \
+                            " or (lower(" + accessid + ") in (select " + \
+                            accessid + " from " + tmp_accessiddbtbl + ")))"
+                
                 else:
-                    access_constraint = \
-                        "(current_date > add_months(obsdate, l0propint))"
+                    if (self.dbms.lower() == 'oracle'):
+
+                        access_constraint = \
+                            "(current_date > add_months(obsdate, l0propint))"
+                
+                    elif (self.dbms.lower() == 'pgsql'):
+
+                        access_constraint = "(current_date > " + \
+                            "(obsdate + (l0propint * '1 month'::interval)))"
+
 
             elif(self.datalevel.lower() == 'l1'):
 
                 if(len(self.userid) > 0):
 
-                    access_constraint = \
-                        "((current_date > add_months(obsdate, l1propint))" + \
-                        " or(lower(" + accessid + ") in(select " + \
-                        accessid + " from " + tmp_accessiddbtbl + ")))"
+                    if (self.dbms.lower() == 'oracle'):
+
+                        access_constraint = "((current_date > " + \
+                            "add_months(obsdate, l1propint))" + \
+                            " or(lower(" + accessid + ") in(select " + \
+                            accessid + " from " + tmp_accessiddbtbl + ")))"
+                
+                    elif (self.dbms.lower() == 'pgsql'):
+
+                        access_constraint = "((current_date > " + \
+                            "(obsdate + (l1propint * '1 month'::interval)))" + \
+                            " or (lower(" + accessid + ") in (select " + \
+                            accessid + " from " + tmp_accessiddbtbl + ")))"
+                
                 else:
-                    access_constraint = \
-                        "(current_date > add_months(obsdate, l1propint))"
+                    if (self.dbms.lower() == 'oracle'):
+
+                        access_constraint = \
+                            "(current_date > add_months(obsdate, l1propint))"
+                
+                    elif (self.dbms.lower() == 'pgsql'):
+
+                        access_constraint = "(current_date > " + \
+                            "(obsdate + (l1propint * '1 month'::interval)))"
 
             elif(self.datalevel.lower() == 'l2'):
 
                 if(len(self.userid) > 0):
 
-                    access_constraint = \
-                        "((current_date > add_months(obsdate, l2propint))" + \
-                        " or(lower(" + accessid + ") in(select " + \
-                        accessid + " from " + tmp_accessiddbtbl + ")))"
+                    if (self.dbms.lower() == 'oracle'):
+
+                        access_constraint = "((current_date > " + \
+                            "add_months(obsdate, l2propint))" + \
+                            " or(lower(" + accessid + ") in(select " + \
+                            accessid + " from " + tmp_accessiddbtbl + ")))"
+                
+                    elif (self.dbms.lower() == 'pgsql'):
+
+                        access_constraint = "((current_date > " + \
+                            "(obsdate + (l2propint * '1 month'::interval)))" + \
+                            " or (lower(" + accessid + ") in (select " + \
+                            accessid + " from " + tmp_accessiddbtbl + ")))"
+                
                 else:
-                    access_constraint = \
-                        "(current_date > add_months(obsdate, l2propint))"
+                    if (self.dbms.lower() == 'oracle'):
+
+                        access_constraint = \
+                            "(current_date > add_months(obsdate, l2propint))"
+                
+                    elif (self.dbms.lower() == 'pgsql'):
+
+                        access_constraint = "(current_date > " + \
+                            "(obsdate + (l2propint * '1 month'::interval)))"
 
             if self.debug:
                 logging.debug('')
@@ -1538,13 +1896,13 @@ class propFilter:
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'selectstr = {selectstr:s}')
+            logging.debug(f'conditional selectstr = {selectstr:s}')
 
         #
         # Test the selectstr
         #
 
-        cursor = self.conn.cursor()
+        #cursor = self.conn.cursor()
         try:
             self.__executeSql__(cursor, selectstr)
 
@@ -1558,6 +1916,15 @@ class propFilter:
                 logging.debug(f'{self.msg:s}')
 
             raise Exception(self.msg)
+        
+        rowcnt_conditional = cursor.rowcount
+        if self.debug:
+            logging.debug('')
+            logging.debug(f'rowcnt_conditional= {rowcnt_conditional:d}')
+
+
+        #finally:
+        #    cursor.close()
 
         sql = "insert into " + tmp_fileiddbtbl + \
             "(" + selectstr + ")"
@@ -1567,7 +1934,7 @@ class propFilter:
             logging.debug(f'fileid temp table insert sql= {sql:s}')
 
 
-        cursor = self.conn.cursor()
+        #cursor = self.conn.cursor()
 
         try:
             self.__executeSql__(cursor, sql)
@@ -1581,6 +1948,9 @@ class propFilter:
 
             raise Exception(self.msg)
 
+        #finally:
+        #    cursor.close()
+
         #
         # Select accessid from tmp_fileiddbtbl: just to verify
         #
@@ -1591,7 +1961,7 @@ class propFilter:
             logging.debug('')
             logging.debug(f'fileid temp table select sql = {sql:s}')
 
-        cursor = self.conn.cursor()
+        #cursor = self.conn.cursor()
         try:
             self.__executeSql__(cursor, sql)
 
@@ -1603,6 +1973,12 @@ class propFilter:
                 logging.debug(f'{self.msg:s}')
 
             raise Exception(self.msg)
+
+        rowcnt_tmpfileid = cursor.rowcount
+        if self.debug:
+            logging.debug('')
+            logging.debug(f'rowcnt_tmpfileid = {rowcnt_tmpfileid:d}')
+
 
         fileidpath = self.userworkdir + '/' + tmp_fileiddbtbl + '.tbl'
 
@@ -1622,12 +1998,14 @@ class propFilter:
 
             raise Exception(self.msg)
 
+        #finally:
+        #    cursor.close()
 
         return
 
-        #
-        # } end of createTmpFileiddb def
-        #
+    #
+    # } end of createTmpFileiddb def
+    #
 
 
     def __executeSql__(self, cursor, sql, **kwargs):
@@ -1741,11 +2119,13 @@ class propFilter:
                 logging.debug(f'table {dbtable:s} successfully dropped')
 
         except Exception as e:
-            pass
-
+            
             if self.debug:
                 logging.debug('')
                 logging.debug(f'drop table exception: {str(e):s}')
+            
+            pass
+    
         return
 
         #
