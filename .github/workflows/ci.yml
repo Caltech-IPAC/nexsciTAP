@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, develop]
+
+jobs:
+  test:
+    name: test (py${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install package and test deps
+        # `spatial_index` on PyPI has no wheels for Python 3.9+ and no
+        # source distribution, so `pip install .` cannot resolve it on the
+        # modern matrix. Install nexsciTAP with --no-deps and rely on the
+        # test fixture's spatial_index stub (tests/fixtures/stubs/) on
+        # PYTHONPATH for the constants TAP imports. configobj is the only
+        # actually-needed runtime dep and is in requirements-test.txt.
+        # ADQL is installed with --no-deps for the same reason.
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements-test.txt
+          pip install --no-deps "ADQL==1.0.6"
+          pip install --no-deps .
+
+      - name: Lint with ruff
+        run: ruff check .
+
+      - name: Run tests
+        run: pytest tests/ -v
+
+  wheel-platforms:
+    name: wheel build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build wheel
+        run: |
+          pip install --upgrade pip build
+          python -m build --wheel
+
+      - name: Verify wheel artifact
+        # See test job for spatial_index PyPI situation. We can't install
+        # the wheel's full deps on modern Python; just confirm the wheel
+        # was built and includes the C extension.
+        run: |
+          ls dist/
+          python -c "
+          import zipfile, glob
+          wheel = glob.glob('dist/*.whl')[0]
+          with zipfile.ZipFile(wheel) as z:
+              names = z.namelist()
+          assert any('writerecs' in n and n.endswith('.so') for n in names), \
+              f'C extension missing from wheel: {names}'
+          print(f'wheel OK: {wheel}')
+          print('contains C extension')
+          "

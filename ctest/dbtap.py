@@ -1,6 +1,6 @@
-from TAP.tapstore  import tapStore
-from TAP.taputil   import tapUtil
-from TAP.tapquery  import tapQuery
+from TAP.tapquery import tapQuery
+from TAP.tapstore import tapStore
+from TAP.taputil import tapUtil
 
 dbutils  = None
 dbconfig = None
@@ -20,9 +20,9 @@ def dbinit():
         dbconn   = dbstore.getConn()
         dbadql   = dbstore.getADQL()
 
-    except Exception as e:
+    except Exception:
         return 0
-    
+
     return 1
 
 
@@ -38,13 +38,13 @@ def dbquery(adql_string, filename):
     try:
         format = 'ipac'
 
-        cursor = dbconn.cursor()
-        
+        dbconn.cursor()
+
         sql_string  = dbadql.sql(adql_string)
 
         dbQuery = tapQuery(connectInfo=dbconfig.connectInfo,
-                           conn=dbconn, 
-                           query=sql_string, 
+                           conn=dbconn,
+                           query=sql_string,
                            filename=filename,
                            format=format)
 
@@ -59,6 +59,6 @@ def dbquery(adql_string, filename):
         else:
             return status, msg, 0
 
-    except Exception as e:
+    except Exception:
             return status, msg, 0
 

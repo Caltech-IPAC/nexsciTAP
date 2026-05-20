@@ -3,9 +3,10 @@
 #   https://github.com/Caltech-IPAC/nexsciTAP/blob/master/LICENSE
 
 
-import os
 import logging
+import os
 import re
+
 from astropy.io import ascii
 
 
@@ -92,8 +93,8 @@ class dataDictionary:
 
         if self.debug:
             logging.debug(f'dbtable = {self.dbtable:s}')
-            logging.debug(f'ddtbl   = ' + str(self.ddtbl))
-            logging.debug(f'ddfile  = ' + str(self.ddfile))
+            logging.debug('ddtbl   = ' + str(self.ddtbl))
+            logging.debug('ddfile  = ' + str(self.ddfile))
 
 
         #
@@ -111,20 +112,20 @@ class dataDictionary:
             if self.debug:
                 logging.debug('colnames: ' + str(tcolnames))
 
-            i = 0 
+            i = 0
 
             for trow in tdata:
-                    
+
                 dbname = ''
                 desc   = ''
                 if 'name' in tcolnames:
                     dbname = trow['name'].lower()
                     desc   = dbname
-                    
+
                 type = ''
                 if 'intype' in tcolnames:
                     type = trow['intype']
-                    
+
                 unit = ''
                 if 'units' in tcolnames:
                     unit = trow['units']
@@ -147,7 +148,7 @@ class dataDictionary:
 
                 if len(dbname) > width:
                     width = len(dbname)
-                  
+
 
                 self.colname[i] = dbname
                 i = i+1
@@ -182,7 +183,13 @@ class dataDictionary:
             else:
                 placeholder = '?'
 
-            sql = "select * from " + self.connectInfo["tap_schema"] + "." + self.connectInfo["columns_table"] + " where lower(table_name) = " \
+            # For SQLite the schema is ATTACHed under a name held in
+            # `tap_schema_file`; `tap_schema` is the file path. For
+            # Oracle/Postgres/MySQL `tap_schema` is the schema name itself.
+            schema_name = self.connectInfo.get("tap_schema_file") \
+                or self.connectInfo["tap_schema"]
+
+            sql = "select * from " + schema_name + "." + self.connectInfo["columns_table"] + " where lower(table_name) = " \
                 + placeholder
 
             if self.debug:
@@ -302,7 +309,7 @@ class dataDictionary:
             #
             # { while loop
             #
-            
+
             #rows = cursor.fetchmany(self.nfetch)
             rows = cursor.fetchall()
 
@@ -314,7 +321,7 @@ class dataDictionary:
 
             i = 0
             for row in rows:
-            
+
                 #
                 # { for loop: each row in the file represents
                 #             a column in data dictionary

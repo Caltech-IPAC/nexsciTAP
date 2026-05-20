@@ -13,9 +13,8 @@
 #
 import logging
 
-import datetime
-
 from TAP import writerecs
+
 
 class writeResult:
 
@@ -70,7 +69,7 @@ class writeResult:
         """
         cursor:       oracle query returned cursor containing data stream,
         workdir:      work directory for output files,
-        filename:     output file name. 
+        filename:     output file name.
         dd:           data dictionary for the output columns,
         coldes(0/1):  indictes whether to include column descriptions in the
                       output file header
@@ -103,8 +102,8 @@ class writeResult:
             logging.debug('')
             logging.debug('Enter writeResult:')
             logging.debug(f'self.debug= {self.debug:d}')
-        
-        
+
+
         self.cursor = cursor
         self.workdir = workdir
         self.dd = dd
@@ -116,7 +115,7 @@ class writeResult:
         if self.debug:
             logging.debug('')
             logging.debug(f'ncols_dd= {self.ncols_dd:d}')
-        
+
         if('racol' in kwargs):
             self.racol = kwargs['racol']
 
@@ -125,7 +124,7 @@ class writeResult:
 
         if('deccol' in kwargs):
             self.deccol = kwargs['deccol']
-            
+
             if (self.dd != None):
                 self.ind_deccol = self.__getDDIndex__(self.dd, self.deccol)
 
@@ -134,12 +133,12 @@ class writeResult:
 
         if('dbms' in kwargs):
             self.dbms = kwargs['dbms']
-        
+
         if self.debug:
             logging.debug('')
             logging.debug(f'dbms= {self.dbms:s}')
-        
-        
+
+
         if('format' in kwargs):
             self.format = kwargs['format']
 
@@ -149,7 +148,7 @@ class writeResult:
         if self.debug:
             logging.debug('')
             logging.debug('here0-2')
-        
+
         self.coldesc = 0
         if('coldesc' in kwargs):
             self.coldesc = kwargs['coldesc']
@@ -172,7 +171,7 @@ class writeResult:
             logging.debug(f'      arraysize   = {self.arraysize:d}')
 
         self.status = ''
-       
+
         #
         # open querypath for output
         #
@@ -191,9 +190,9 @@ class writeResult:
                 resulttbl = 'result.tsv'
             elif(self.format == 'json'):
                 resulttbl = 'result.json'
-        
+
             self.outpath = self.workdir + '/' + resulttbl
- 
+
         if self.debug:
             pathstr = str(self.outpath)
             logging.debug('')
@@ -220,14 +219,14 @@ class writeResult:
             logging.debug('------------------------------------------------')
 
         for desc in self.cursor.description:
-            name = desc[0]
+            desc[0]
             coltype = desc[1]
-            dispsize = desc[2]
-            internalsz = desc[3]
+            desc[2]
+            desc[3]
             precision = desc[4]
-            scale = desc[5] 
-            nullok = desc[6]
-        
+            scale = desc[5]
+            desc[6]
+
 
 
         #
@@ -255,9 +254,9 @@ class writeResult:
         #    varchr, sting -- char,
         #    int, integer, long, etc.. -- int (32bit),
         #
-        #    oracle: dbtype == NUMBER, check first batch of data to see if 
-        #        it is int or float: if any number in this batch is float, 
-        #        consider the column dtype as double 
+        #    oracle: dbtype == NUMBER, check first batch of data to see if
+        #        it is int or float: if any number in this batch is float,
+        #        consider the column dtype as double
         #
         #    pgsql: dbtype == decimal, assume it is double
         #
@@ -268,19 +267,19 @@ class writeResult:
 
 
         dbdatatype = None
-        precision  = None 
+        precision  = None
         scale      = None
-        size       = None 
+        size       = None
 
         i = 0
         for col in self.cursor.description:
         #
         # { cursor description for loop:
-        # 
+        #
         #   cursor description is a list with ncols tuples:
         #   each tuple contains each output colname's name, datatype,
-        #   dbdatatype, size, precision, scale but most DBMSs' 
-        #   implementation are incomplete, only name and dbdatatype 
+        #   dbdatatype, size, precision, scale but most DBMSs'
+        #   implementation are incomplete, only name and dbdatatype
         #   are reliably implemented.
         #
 
@@ -317,14 +316,14 @@ class writeResult:
 
             if self.debug:
                 logging.debug('')
-                logging.debug(f'analyze description array:')
+                logging.debug('analyze description array:')
                 logging.debug(f'dbms= {self.dbms:s}')
 
 
             if (self.dbms.lower() == 'oracle'):
             #
             # { oracle datatype from descriptor
-            #    
+            #
                 if self.debug:
                     logging.debug('')
                     logging.debug('oracle:')
@@ -341,7 +340,7 @@ class writeResult:
                 ind = dbdatatypestr.find("VARCHAR")
                 if(ind != -1):
                     dbdatatype = 'VARCHAR'
-                
+
                 ind = dbdatatypestr.find("STRING")
                 if(ind != -1):
                     dbdatatype = 'STRING'
@@ -369,7 +368,7 @@ class writeResult:
                 ind = dbdatatypestr.find("FLOAT")
                 if(ind != -1):
                     dbdatatype = 'FLOAT'
-                
+
                 if self.debug:
                     logging.debug('')
                     logging.debug(f'dbdatatype = {dbdatatype:s}')
@@ -381,7 +380,7 @@ class writeResult:
             elif (self.dbms.lower() == 'pgsql'):
             #
             # { pgsql datatype from descriptor
-            #    
+            #
                 if self.debug:
                     logging.debug('')
                     logging.debug('pgsql:')
@@ -439,18 +438,18 @@ class writeResult:
             elif (self.dbms.lower() == 'mysql'):
             #
             # { mysql datatype from descriptor
-            #    
+            #
                 if self.debug:
                     logging.debug('')
-                    logging.debug(f'mysql:')
+                    logging.debug('mysql:')
                     logging.debug('col[1]:')
                     logging.debug(col[1])
 
                 coltype = int(col[1])
-                
+
                 if (coltype == 253):
                     dbdatatype = 'VARCHAR'
-             
+
                 if (coltype == 3):
                     dbdatatype = 'LONG'
 
@@ -479,10 +478,10 @@ class writeResult:
             elif (self.dbms.lower() == 'sqlite3'):
             #
             # { mysql datatype from descriptor
-            #    
+            #
                 if self.debug:
                     logging.debug('')
-                    logging.debug(f'sqlite3:')
+                    logging.debug('sqlite3:')
 
                 dbdatatype = ''
             #
@@ -495,14 +494,14 @@ class writeResult:
                     logging.debug(f'dbdatatype = {dbdatatype:s}')
                     logging.debug(f'size       = {size:d}')
 
-                except Exception as e:
-                    logging.debug(f'dbdatatype not set.')
+                except Exception:
+                    logging.debug('dbdatatype not set.')
                     pass
 
 
             if(col[2] is not None):
                 size = int(col[2])
-            
+
                 if self.debug:
                     logging.debug(f'size= {size:d}')
 
@@ -562,7 +561,7 @@ class writeResult:
                 try:
                     if len(units) <= 0:
                         units = ''
-                except Exception as e:
+                except Exception:
                     units = ''
 
                 isddcolarr.append(1)
@@ -582,10 +581,10 @@ class writeResult:
 
                     if self.debug:
                         logging.debug('')
-                        logging.debug(f'char type col in dd')
+                        logging.debug('char type col in dd')
                         logging.debug('size=')
                         logging.debug(size)
-                
+
                     if (len(colname) > width):
                         width = len(colname)
 
@@ -671,7 +670,7 @@ class writeResult:
                     width = 80
                     if ((size is not None) and (size > 0)):
                         width = size
-  
+
                     if(len(colname) > width):
                         width = len(colname)
 
@@ -840,7 +839,7 @@ class writeResult:
                 # { dbdatatype == numeric: this is pgsql oid=1700 special dtype,
                 #  if no dd, then we assume it is a double number, although
                 #  this dbdatatype is often used to represent a large integer.
-                # 
+                #
 
                     coltype = 'double'
                     dbtype = dbdatatype
@@ -856,7 +855,7 @@ class writeResult:
                     fmt = str(width) + '.14e'
 
                 #
-                # } end dbdatatype == numeric 
+                # } end dbdatatype == numeric
                 #
 
                 else:
@@ -883,12 +882,12 @@ class writeResult:
                 #
 
                 #
-                # Special cases: if colname == 'RA' or 'DEC' use 
+                # Special cases: if colname == 'RA' or 'DEC' use
                 #                racol, decol in dd
                 #
 
                 if (dd is not None):
-                
+
                     if(colname.lower() == 'ra'):
 
                         if((dbdatatype == 'NUMBER') and \
@@ -948,7 +947,7 @@ class writeResult:
         # to avoid excess data transfer)
         #
 
-        len_arr = len(namearr)
+        len(namearr)
 
         ddlist.append(namearr)
         ddlist.append(typearr)
@@ -984,14 +983,14 @@ class writeResult:
             try:
                 if self.debug:
                     logging.debug('')
-                    logging.debug(f'Calling writerecs()[1]:')
-                    logging.debug(f'format:   ' + str(self.format))
-                    logging.debug(f'ddlist:   ' + str(ddlist))
-                    logging.debug(f'rowslist: ' + str(rowslist))
-                    logging.debug(f'ishdr:    ' + str(self.ishdr))
-                    logging.debug(f'coldesc:  ' + str(self.coldesc))
-                    logging.debug(f'overflow: ' + str(self.overflow))
-                    logging.debug(f'istail:   ' + str(self.istail))
+                    logging.debug('Calling writerecs()[1]:')
+                    logging.debug('format:   ' + str(self.format))
+                    logging.debug('ddlist:   ' + str(ddlist))
+                    logging.debug('rowslist: ' + str(rowslist))
+                    logging.debug('ishdr:    ' + str(self.ishdr))
+                    logging.debug('coldesc:  ' + str(self.coldesc))
+                    logging.debug('overflow: ' + str(self.overflow))
+                    logging.debug('istail:   ' + str(self.istail))
 
                 istatus = writerecs.writerecs(self.outpath, self.format,
                                               ddlist, rowslist, self.ishdr,
@@ -1074,7 +1073,7 @@ class writeResult:
 
             #if (self.dbms.lower() == 'mysql'):
             #    rows = cursor.fetchmany (self.cursor.arraysize)
-            #else: 
+            #else:
             #    rows = cursor.fetchmany(self.cursor.arraysize)
 
             rowslist = []
@@ -1109,14 +1108,14 @@ class writeResult:
 
                         if self.debug:
                             logging.debug('')
-                            logging.debug(f'Calling writerecs()[2]:')
-                            logging.debug(f'format:   ' + str(self.format))
-                            logging.debug(f'ddlist:   ' + str(ddlist))
-                            logging.debug(f'rowslist: ' + str(rowslist))
-                            logging.debug(f'ishdr:    ' + str(self.ishdr))
-                            logging.debug(f'coldesc:  ' + str(self.coldesc))
-                            logging.debug(f'overflow: ' + str(self.overflow))
-                            logging.debug(f'istail:   ' + str(self.istail))
+                            logging.debug('Calling writerecs()[2]:')
+                            logging.debug('format:   ' + str(self.format))
+                            logging.debug('ddlist:   ' + str(ddlist))
+                            logging.debug('rowslist: ' + str(rowslist))
+                            logging.debug('ishdr:    ' + str(self.ishdr))
+                            logging.debug('coldesc:  ' + str(self.coldesc))
+                            logging.debug('overflow: ' + str(self.overflow))
+                            logging.debug('istail:   ' + str(self.istail))
 
                         istatus = writerecs.writerecs(self.outpath, self.format,
                               ddlist, rowslist, self.ishdr,
@@ -1139,7 +1138,7 @@ class writeResult:
                         raise Exception(str(e))
 
                     if self.debug:
-                        logging.debug (f'return')
+                        logging.debug ('return')
                         logging.debug('')
 
                     return
@@ -1152,12 +1151,12 @@ class writeResult:
                     if self.debug:
                         logging.debug ( \
                             f'nrec = {nrec:d} and ibatch = {ibatch:d}')
-                        logging.debug (f'break to write last batch of data')
+                        logging.debug ('break to write last batch of data')
 
                     break
 
                 #
-                # } end batch > 0 
+                # } end batch > 0
                 #
             #
             # } end nrec = 0
@@ -1167,11 +1166,11 @@ class writeResult:
             # the column "description" block returned by the DBMS
             # does not give any datatypes.  For those cases where
             # we don't have a priori schema information, we have to
-            # wait for the first data return to determine types. 
+            # wait for the first data return to determine types.
 
             # This is complicated by the possibility that for some
             # records some columns are sometimes NULL (value 'None').
-            # So while we don't want to scan all the data, we have 
+            # So while we don't want to scan all the data, we have
             # to scan until we find some value for every column.
 
             if ((ibatch == 0) and (self.dbms.lower() == 'sqlite')):
@@ -1246,7 +1245,7 @@ class writeResult:
                         #
                         # {if pgsql dbtype = 'numeric', dtype will be decimal,
                         # make it integer or float depending on the python type
-                       # of typearr value 
+                       # of typearr value
                         #
                             dtype = type (row[i]).__name__
 
@@ -1292,12 +1291,12 @@ class writeResult:
 
 
                         #
-                        # For DBMSs like Oracle that store numbers as generic 
+                        # For DBMSs like Oracle that store numbers as generic
                         # NUMBER type, we need to try to distinguish between
-                        # int and double by checking the output row[i]'s 
+                        # int and double by checking the output row[i]'s
                         # python datatype -- which might not be completely
-                        # accurate so we check the whole column to make 
-                        # summary determination 
+                        # accurate so we check the whole column to make
+                        # summary determination
                         #
                         if ((self.dbms.lower() == 'oracle') and \
                             (ibatch == 0) and \
@@ -1349,7 +1348,7 @@ class writeResult:
             if self.debug:
                 logging.debug('----------------------------------------')
 
-                
+
             #
             # The following block determines the NUMBER type ORACLE arrays's
             # datatype -- whether the column should be double or int based
@@ -1418,21 +1417,21 @@ class writeResult:
 
                 if self.debug:
                     logging.debug('')
-                    logging.debug(f'Calling writerecs()[3]:')
-                    logging.debug(f'format:   ' + str(self.format))
-                    logging.debug(f'ddlist:   ' + str(ddlist))
-                    logging.debug(f'rowslist: ' + str(rowslist))
-                    logging.debug(f'ishdr:    ' + str(self.ishdr))
-                    logging.debug(f'coldesc:  ' + str(self.coldesc))
-                    logging.debug(f'overflow: ' + str(self.overflow))
-                    logging.debug(f'istail:   ' + str(self.istail))
-                    logging.debug(f'cursor.arraysize' + str(self.cursor.arraysize))
+                    logging.debug('Calling writerecs()[3]:')
+                    logging.debug('format:   ' + str(self.format))
+                    logging.debug('ddlist:   ' + str(ddlist))
+                    logging.debug('rowslist: ' + str(rowslist))
+                    logging.debug('ishdr:    ' + str(self.ishdr))
+                    logging.debug('coldesc:  ' + str(self.coldesc))
+                    logging.debug('overflow: ' + str(self.overflow))
+                    logging.debug('istail:   ' + str(self.istail))
+                    logging.debug('cursor.arraysize' + str(self.cursor.arraysize))
 
                 istatus = writerecs.writerecs(self.outpath, self.format,
                                               ddlist, rowslist, self.ishdr,
                                               self.coldesc, self.overflow,
                                               self.istail)
-                
+
                 if self.debug:
                     logging.debug('returned writerecs.writerecs')
 

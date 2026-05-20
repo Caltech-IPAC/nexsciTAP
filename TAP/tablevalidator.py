@@ -32,7 +32,15 @@ class TableValidator:
         self.tables_table = 'tables'
 
         if connectInfo is not None:
-            if 'tap_schema' in connectInfo:
+            # `tap_schema_file` is the ATTACH-AS name for SQLite ATTACHed
+            # schemas (set in tapquery.py:395). For Oracle/Postgres/MySQL
+            # there's no ATTACH and `tap_schema` is the schema name itself.
+            # For SQLite, `tap_schema` is the FILE PATH and using it directly
+            # in a `SELECT ... FROM <path>.tables` reference produces a SQL
+            # syntax error. Prefer the more-specific key when it's set.
+            if 'tap_schema_file' in connectInfo:
+                self.tap_schema = connectInfo['tap_schema_file']
+            elif 'tap_schema' in connectInfo:
                 self.tap_schema = connectInfo['tap_schema']
             if 'tables_table' in connectInfo:
                 self.tables_table = connectInfo['tables_table']

@@ -1,0 +1,45 @@
+# TAP.conf template for CI tests.
+#
+# The pytest `tap_conf` fixture in tests/conftest.py substitutes the
+# placeholders below with absolute paths into the per-session tmpdir.
+#
+# Placeholders:
+#   {TEST_WORKDIR}      — working dir for TAP request artifacts
+#   {TEST_HTTP_URL}     — http://localhost:NNNN (fixture-allocated)
+#   {TEST_DB_PATH}      — absolute path to test_data.db
+#   {TEST_TAP_SCHEMA}   — absolute path to tap_schema.db
+
+[WEB]
+    TAP_WORKDIR={TEST_WORKDIR}
+    TAP_WORKURL=/workspace
+
+    HTTP_URL={TEST_HTTP_URL}
+    HTTP_PORT=0
+    CGI_PGM=TAP
+
+
+# Default configuration instance — no `instance=` HTTP parameter needed.
+[DBMS]
+    DBMS=sqlite3
+    DB={TEST_DB_PATH}
+    TAP_SCHEMA={TEST_TAP_SCHEMA}
+    TAP_SCHEMA_FILE=TAP_SCHEMA
+
+    # Propfilter setup — exercises the propflag guard added in PR #17.
+    ACCESS_TBL=test_access
+    USERS_TBL=test_users
+    FILEID=l0filename
+    ACCESSID=program
+    PROPFILTER=neid
+    RACOL=ra
+    DECCOL=dec
+
+
+[SPTIND]
+    MODE=HTM
+    LEVEL=20
+    XCOL=x
+    YCOL=y
+    ZCOL=z
+    COLNAME=sptind
+    ENCODING=BASE10
