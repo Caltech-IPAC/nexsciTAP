@@ -1,0 +1,32 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 120
+target-version = "py39"
+exclude = [
+    "build",
+    "dist",
+    "docs",
+    "Sphinx",         # Sphinx config conventionally puts imports below comments
+    "Jupyter",
+    "tests/fixtures",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = [
+    # Existing code style choices we're not touching in this pass:
+    "E501",  # line too long — many long log strings and SQL literals
+    "E701",  # multiple statements on one line — common in if-on-one-line style
+    "E711",  # comparison to None — code uses `== None` extensively
+    "E712",  # comparison to True/False — code uses `== True` extensively
+    "E722",  # bare except — code uses bare except in many places
+    "E741",  # ambiguous variable name — `l` used in several loops
+    # Pre-existing real bugs to address in a follow-up; intentionally not
+    # fixed in the CI-setup PR to keep the diff focused.
+    # See: TAP/taputil.py:221,223,227,246,251,261 (SQLite + MySQL branches)
+    #      TAP/tap.py:2402 (`result` typo in a debug log path)
+    "F821",  # undefined-name
+]

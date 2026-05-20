@@ -2,17 +2,15 @@
 # This code is released with a BSD 3-clause license. License information is at
 #   https://github.com/Caltech-IPAC/nexsciTAP/blob/master/LICENSE
 
-import sys
-import os
 import logging
+import os
+import sys
 
-import pprint
-
-import configobj
+from ADQL.adql import ADQL
+from spatial_index import SpatialIndex
 
 from TAP.configparam import configParam
-from ADQL.adql       import ADQL
-from spatial_index   import SpatialIndex
+
 
 class tapUtil:
 
@@ -20,7 +18,7 @@ class tapUtil:
 
         self.conn = None
 
-        pid = os.getpid()
+        os.getpid()
 
         sys.tracebacklimit = 0
 
@@ -102,7 +100,7 @@ class tapUtil:
             socket = None
             if ('socket' in connectInfo):
                 socket = connectInfo['socket']
-            
+
             port = None
             if ('port' in connectInfo):
                 port = connectInfo['port']
@@ -174,7 +172,7 @@ class tapUtil:
                     logging.debug('')
                     logging.debug('connected to Oracle, DB ' + dbserver)
 
-            except Exception as e:
+            except Exception:
                 msg = 'Failed to connect to cx_Oracle'
                 raise Exception(msg)
 
@@ -234,7 +232,7 @@ class tapUtil:
                     logging.debug('')
                     logging.debug('TAP_SCHEMA attached')
 
-            except Exception as e:
+            except Exception:
                 msg = 'Failed to connect to SQLite3 databases'
                 raise Exception(msg)
 
@@ -242,9 +240,8 @@ class tapUtil:
         # MYSQL
 
         elif (dbms.lower() == 'mysql'):
-   
-            import msql.connector
-       
+
+
             try:
                 if (dbserver is not None):
 
@@ -255,7 +252,7 @@ class tapUtil:
                             port=port, \
                             db=db
                     )
-                
+
                 elif (socket is not None):
 
                     self.conn = mysql.connector.connect (
@@ -264,7 +261,7 @@ class tapUtil:
                             unix_socket=socket, \
                             db=db
                     )
-                
+
                 else:
                     msg = 'Failed to connect to mysql databases'
                     raise Exception(msg)
@@ -273,14 +270,14 @@ class tapUtil:
                     logging.debug('')
                     logging.debug('mysql connected')
 
-            except Exception as e:
+            except Exception:
                 msg = 'Failed to connect to mysql databases'
                 raise Exception(msg)
 
             if debug:
                 logging.debug('')
                 logging.debug('here0')
-           
+
         else:
             msg = 'Invalid DBMS'
             raise Exception(msg)

@@ -2,24 +2,19 @@
 # This code is released with a BSD 3-clause license. License information is at
 #   https://github.com/Caltech-IPAC/nexsciTAP/blob/master/LICENSE
 
-import sys
-import os
-import logging
-
-import datetime
-
 import argparse
-import configobj
-
-from TAP.datadictionary import dataDictionary
-from TAP.writeresult    import writeResult
-from TAP.tablenames     import TableNames
-from TAP.tablevalidator import TableValidator, TableValidationError
-from TAP.configparam    import configParam
+import logging
+import os
+import sys
 
 from ADQL.adql import ADQL
-
 from spatial_index import SpatialIndex
+
+from TAP.configparam import configParam
+from TAP.datadictionary import dataDictionary
+from TAP.tablenames import TableNames
+from TAP.tablevalidator import TableValidationError, TableValidator
+from TAP.writeresult import writeResult
 
 
 class tapQuery:
@@ -80,8 +75,8 @@ class tapQuery:
             conn:              We will need the above connectInfo for it's
                                formatting info but we may have already made
                                the DBMS connection elsewhere (for more involved
-                               processing scenarios).  In that case we can 
-                               optionally pass in the connection itself 
+                               processing scenarios).  In that case we can
+                               optionally pass in the connection itself
                                instead of creating it here.
             query(char):       the sql query to be executed,
             workdir(char):     user work directory
@@ -101,8 +96,8 @@ class tapQuery:
                               workdir=userworkdir,
                               filename=filename,
                               maxrec=maxrec,
-                              ddtbl=ddtbl,  
-                              ddtbl=ddfile,  
+                              ddtbl=ddtbl,
+                              ddtbl=ddfile,
                               format=format,
                               racol=racol,
                               deccol=deccol)
@@ -120,7 +115,7 @@ class tapQuery:
             self.ddfile = kwargs['ddfile']
 
         if self.debug:
-            logging.debug(f'Enter tapQuery')
+            logging.debug('Enter tapQuery')
             logging.debug(f'self.debug = {self.debug:d}')
 
 
@@ -149,15 +144,15 @@ class tapQuery:
         # Otherwise collect the info for making the connection and make it.
 
         else:
-            
+
             # Collect DBMS-specific keyword parameters
             #
             # There are two use modes for getting these parameters.  Most of the time we let this code do everything;
             # getting the connection paramters and making the actual connection ('conn' parameter) to whichever DBMS
             # we are using.  But sometimes we have a more complicated scenario (like using and populating temporary
-            # tables as part of the processing).  The we will have run tapUtil() to do this same setup and used the 
+            # tables as part of the processing).  The we will have run tapUtil() to do this same setup and used the
             # database connection for these other steps before we get here.  The all of the code here and the section
-            # below where we connect to the database will have already been executed there. 
+            # below where we connect to the database will have already been executed there.
 
 
             # ORACLE
@@ -166,7 +161,7 @@ class tapQuery:
 
                 import cx_Oracle
 
-                self.dbserver = None 
+                self.dbserver = None
                 if('dbserver' in self.connectInfo):
                     self.dbserver = self.connectInfo['dbserver']
 
@@ -176,7 +171,7 @@ class tapQuery:
                     self.status = 'error'
                     raise Exception(self.msg)
 
-                self.userid = None 
+                self.userid = None
                 if ('userid' in self.connectInfo):
                     self.userid = self.connectInfo['userid']
 
@@ -208,7 +203,7 @@ class tapQuery:
 
                 import sqlite3
 
-                self.db = None 
+                self.db = None
                 if ('db' in self.connectInfo):
                     self.db = self.connectInfo['db']
 
@@ -218,7 +213,7 @@ class tapQuery:
                     self.status = 'error'
                     raise Exception(self.msg)
 
-                self.tap_schema = None 
+                self.tap_schema = None
                 if('tap_schema' in self.connectInfo):
                     self.tap_schema = self.connectInfo['tap_schema']
 
@@ -232,20 +227,20 @@ class tapQuery:
                     logging.debug(f'db= {self.db:s}')
                     logging.debug(f'tap_schema= {self.tap_schema:s}')
 
-            
+
             # MYSQL
 
             elif self.dbms.lower() == 'mysql':
 
                 import mysql.connector
-            
-                self.dbserver = None 
+
+                self.dbserver = None
                 self.port     = 3306
                 self.socket   = None
                 self.db       = None
                 self.userid   = None
                 self.password = None
-                
+
                 if ('dbserver' in self.connectInfo):
                     self.dbserver = self.connectInfo['dbserver']
 
@@ -260,10 +255,10 @@ class tapQuery:
 
                 if ((self.dbserver is None) and \
                     (self.socket is None)):
-                    
+
                     self.msg = 'Failed to retrieve required input DB server ' \
                         'parameter [dbserver] or [socket]'
-                    
+
                     self.status = 'error'
                     raise Exception(self.msg)
 
@@ -306,7 +301,7 @@ class tapQuery:
 
                 import psycopg2
 
-                self.hostname = None 
+                self.hostname = None
                 if('hostname' in self.connectInfo):
                     self.hostname = self.connectInfo['hostname']
 
@@ -316,7 +311,7 @@ class tapQuery:
                     self.status = 'error'
                     raise Exception(self.msg)
 
-                self.database = None 
+                self.database = None
                 if('database' in self.connectInfo):
                     self.database = self.connectInfo['database']
 
@@ -326,7 +321,7 @@ class tapQuery:
                     self.status = 'error'
                     raise Exception(self.msg)
 
-                self.username = None 
+                self.username = None
                 if('username' in self.connectInfo):
                     self.username = self.connectInfo['username']
 
@@ -336,7 +331,7 @@ class tapQuery:
                     self.status = 'error'
                     raise Exception(self.msg)
 
-                self.password = None 
+                self.password = None
                 if('password' in self.connectInfo):
                     self.password = self.connectInfo['password']
 
@@ -379,14 +374,14 @@ class tapQuery:
                     if self.debug:
                         logging.debug('connected to Oracle, DB ' + self.dbserver)
 
-                except Exception as e:
+                except Exception:
 
                     self.status = 'error'
                     self.msg = 'Failed to connect to cx_Oracle'
 
                     raise Exception(self.msg)
 
-          
+
             # SQLITE3
 
             elif self.dbms.lower() == 'sqlite3':
@@ -411,7 +406,7 @@ class tapQuery:
                     if self.debug:
                         logging.debug('TAP_SCHEMA attached')
 
-                except Exception as e:
+                except Exception:
 
                     self.status = 'error'
                     self.msg = 'Failed to connect to SQLite3 databases'
@@ -422,7 +417,7 @@ class tapQuery:
             # MYSQL
 
             elif self.dbms.lower() == 'mysql':
-           
+
                 try:
                     if (self.dbserver is not None):
 
@@ -433,7 +428,7 @@ class tapQuery:
                             port=self.port, \
                             db=self.db
                         )
-                    
+
                     elif (self.socket is not None):
 
                         self.conn = mysql.connector.connect (
@@ -442,7 +437,7 @@ class tapQuery:
                             unix_socket=self.socket, \
                             db=self.db
                         )
-                    
+
                     else:
                         self.status = 'error'
                         self.msg = 'Failed to connect to mysql databases'
@@ -451,7 +446,7 @@ class tapQuery:
                     if self.debug:
                         logging.debug('mysql connected')
 
-                except Exception as e:
+                except Exception:
 
                     self.status = 'error'
                     self.msg = 'Failed to connect to mysql databases'
@@ -460,7 +455,7 @@ class tapQuery:
 
                 if self.debug:
                     logging.debug('here0')
-               
+
 
             # POSTGRESQL
 
@@ -485,10 +480,10 @@ class tapQuery:
                     raise Exception(self.msg)
 
 
- 
+
         # Get the query and query processing parameters (format, workspace, coordinate columns, etc.)
 
-        self.sql = None 
+        self.sql = None
         if('query' in kwargs):
             self.sql = kwargs['query']
 
@@ -514,7 +509,7 @@ class tapQuery:
             if('filename' in kwargs):
                 logging.debug(f'filename= {self.filename:s}')
             else:
-                logging.debug(f'filename= None')
+                logging.debug('filename= None')
 
             logging.debug(f'sql= {self.sql:s}')
 
@@ -540,7 +535,7 @@ class tapQuery:
             try:
                 self.maxrec = int(maxrecstr)
 
-            except Exception as e:
+            except Exception:
 
                 self.msg = "Failed to convert input maxrec value [" + \
                     maxrecstr + "] to integer."
@@ -553,7 +548,7 @@ class tapQuery:
 
         # Extract DB table name from query
 
-        self.dbtable = None 
+        self.dbtable = None
 
         tn = TableNames()
         tables = tn.extract_tables(self.sql)
@@ -626,12 +621,12 @@ class tapQuery:
                 if self.debug:
                     logging.debug('DD successfully retrieved.')
 
-            except Exception as e:
+            except Exception:
 
                 if self.debug:
                     logging.debug('dataDictionary retrieval failure.')
 
-                self.msg = f'dataDictionary retrieval failure.'
+                self.msg = 'dataDictionary retrieval failure.'
 
                 raise Exception(self.msg)
 
@@ -643,19 +638,19 @@ class tapQuery:
         #
 
         cursor = self.conn.cursor()
-        
+
         if self.debug:
             logging.debug(f'sql = {self.sql:s}')
             logging.debug('call execut sql')
 
         self.msg = self.__executeSql__(cursor, self.sql, debug=1)
-    
+
         if self.debug:
             logging.debug('returned executeSql')
 
         if len(self.msg) > 0:
             raise Exception(self.msg)
-            
+
 
     #
     # Call writeResult
@@ -703,10 +698,9 @@ class tapQuery:
         # {
         #
 
-        debug = 0
 
         if('debug' in kwargs):
-            debug = kwargs['debug']
+            kwargs['debug']
 
         if self.debug:
             logging.debug('Enter executeSql')
@@ -725,7 +719,7 @@ class tapQuery:
 
         try:
             cursor.execute(sql)
-            
+
         except Exception as e:
             return_message = str(e).replace('"', "'")
 
@@ -734,10 +728,10 @@ class tapQuery:
 
         try:
             self.conn.rollback()
-        
-        except Exception as e:
+
+        except Exception:
             pass
-            
+
         return return_message
 
         #

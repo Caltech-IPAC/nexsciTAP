@@ -3,13 +3,10 @@
 #   https://github.com/Caltech-IPAC/nexsciTAP/blob/master/LICENSE
 
 
-import sys
-import os
-import logging
-
-import datetime
-
 import argparse
+import logging
+import os
+import sys
 
 
 class vosiTables:
@@ -27,7 +24,7 @@ class vosiTables:
     returnMsg = ""
 
     arraysize = 10000
-    
+
     #
     # DD columns
     #
@@ -52,28 +49,28 @@ class vosiTables:
     coldesc = 0
 
     nschema = 0
-    
+
     schema_namearr = []
     schema_descarr = []
-    
-    
+
+
     def __init__(self, **kwargs):
-    
+
     #
     # { vosiTables.init method
     #
 
         """
-        vosiTables class generates the VOSI compatible XML outputs for TAP 
-        query with endpoint TAP/tables 
+        vosiTables class generates the VOSI compatible XML outputs for TAP
+        query with endpoint TAP/tables
 
         Required keyword input parameters:
 
-            connectInfo (python dictionary):    
-                a python dictionary containing info needed to make 
-                a "connection" to a DBMS.  
-            
-            ourpath(char):    output table file path 
+            connectInfo (python dictionary):
+                a python dictionary containing info needed to make
+                a "connection" to a DBMS.
+
+            ourpath(char):    output table file path
 
         Usage:
 
@@ -86,13 +83,13 @@ class vosiTables:
                  debug=debug)
         """
 
-        self.dbms = '' 
+        self.dbms = ''
         self.dbserver = ''
         self.userid = ''
         self.password = ''
         self.outpath = ''
-        self.debug = 0 
-   
+        self.debug = 0
+
         self.db = ''
         self.tap_schema = ''
 
@@ -127,19 +124,19 @@ class vosiTables:
         #
         # Get keyword parameters
         #
-          
+
         if ((self.dbms is None) or (len(self.dbms) == 0)):
             self.msg = 'Database name missing.'
             self.status = 'error'
             #self.__printVosiError__ (self.msg)
-            
+
             raise Exception (self.msg)
 
         if self.debug:
             logging.debug('')
             logging.debug(f'dbms= {self.dbms:s}')
-   
-   
+
+
         if (self.dbms.lower() == 'oracle'):
 
             if ((self.dbserver is None) or (len(self.dbserver) == 0)):
@@ -148,33 +145,33 @@ class vosiTables:
                 #self.__printVosiError__ (self.msg)
                 raise Exception (self.msg)
 
-     
+
             if self.debug:
                 logging.debug('')
                 logging.debug(f'dbserver= {self.dbserver:s}')
-        
+
             if ((self.userid is None) or (len(self.userid) == 0)):
                 self.msg = 'Database userid missing.'
                 self.status = 'error'
                 #self.__printVosiError__ (self.msg)
                 raise Exception (self.msg)
 
-     
+
             if self.debug:
                 logging.debug('')
                 logging.debug(f'userid= {self.userid:s}')
-        
+
             if ((self.password is None) or (len(self.password) == 0)):
                 self.msg = 'Database password missing.'
                 self.status = 'error'
                 #self.__printVosiError__ (self.msg)
                 raise Exception (self.msg)
 
-     
+
             if self.debug:
                 logging.debug('')
                 logging.debug(f'password= {self.password:s}')
-        
+
         elif (self.dbms.lower() == 'sqlite3'):
 
             if ((self.db is None) or (len(self.db) == 0)):
@@ -183,30 +180,30 @@ class vosiTables:
                 #self.__printVosiError__ (self.msg)
                 raise Exception (self.msg)
 
-     
+
             if self.debug:
                 logging.debug('')
                 logging.debug(f'db= {self.db:s}')
-        
+
             if ((self.tap_schema is None) or (len(self.tap_schema) == 0)):
-                
+
                 self.msg = 'Database table name missing.'
                 self.status = 'error'
                 #self.__printVosiError__ (self.msg)
                 raise Exception (self.msg)
 
-     
+
             if self.debug:
                 logging.debug('')
                 logging.debug(f'tap_schema= {self.tap_schema:s}')
-      
+
 
         if ((len(self.outpath) == 0) or (self.outpath is None)):
             self.msg = 'Required output path is missing.'
             #self.__printVosiError__ (self.msg)
             raise Exception (self.msg)
 
-     
+
         if self.debug:
             logging.debug('')
             logging.debug(f'outpath= {self.outpath:s}')
@@ -234,7 +231,7 @@ class vosiTables:
                     logging.debug('')
                     logging.debug('connected to Oracle, DB ' + self.dbserver)
 
-            except Exception as e:
+            except Exception:
 
                 self.status = 'error'
                 self.msg = 'Failed to connect to cx_Oracle'
@@ -301,7 +298,7 @@ class vosiTables:
                     logging.debug('')
                     logging.debug('TAP_SCHEMA attached')
 
-            except Exception as e:
+            except Exception:
 
                 self.status = 'error'
                 self.msg = 'Failed to connect to SQLite3 databases'
@@ -319,10 +316,10 @@ class vosiTables:
         #
         # } end Connect to DBMS
         #
-        
+
         #
         # start loop for constructing output:
-        # 
+        #
         #   -- vosi header: tableset tag,
         #   -- query for schemas: schema tag,
         #   -- for each schema, query tables: table tag,
@@ -333,25 +330,25 @@ class vosiTables:
         #   -- end table tag,
         #   -- end schema tag
         #   -- end tableset tag
-        
+
         #
         #   open ouput file in workdir for vosi table output
         #
         #vositblpath = self.workdir + '/vositable.xml'
         vositblpath = self.outpath
-        
+
         if self.debug:
             logging.debug('')
             logging.debug(f'vositblpath = {vositblpath:s}')
 
-          
+
         fp = None
         try:
             fp = open (vositblpath, 'w')
             os.chmod(vositblpath, 0o664)
 
         except Exception as e:
-        
+
             if self.debug:
                 logging.debug('')
                 logging.debug(f'open voditblpath exception: {str(e):s}')
@@ -392,7 +389,7 @@ class vosiTables:
             if self.debug:
                 logging.debug('')
                 logging.debug(f'executeSql exception: {str(e):s}')
-            
+
             #self.__printVosiError__ (str(e))
             raise Exception (str(e))
 
@@ -409,7 +406,7 @@ class vosiTables:
 
             self.__getSchemaQueryArr__ (cursor, \
                                     debug=self.debug)
-        
+
             if self.debug:
                 logging.debug('')
                 logging.debug('returned getSchemaDesc')
@@ -423,9 +420,9 @@ class vosiTables:
             #self.__printVosiError__ (str(e))
             raise Exception (str(e))
 
-       
+
         self.nschema = len (self.schema_namearr)
-        
+
         if self.debug:
             logging.debug('')
             logging.debug(f'nschema= {self.nschema:d}')
@@ -436,7 +433,7 @@ class vosiTables:
                 logging.debug(f'{i:d} schema_name={self.schema_namearr[i]:s}')
                 logging.debug(f'schema_description={self.schema_descarr[i]:s}')
 
-        for ischema in range (0, self.nschema): 
+        for ischema in range (0, self.nschema):
         #
         # { ischema loop
         #
@@ -448,9 +445,9 @@ class vosiTables:
                 self.schema_namearr[ischema] + "</name>\n")
             fp.write("        <description>" + \
                 self.schema_descarr[ischema] + "</description>\n")
-            fp.flush() 
-    
-        
+            fp.flush()
+
+
         #
         #   2. execute table sql
         #
@@ -476,7 +473,7 @@ class vosiTables:
                 if self.debug:
                     logging.debug('')
                     logging.debug(f'executeSql exception: {str(e):s}')
-            
+
                 #self.__printVosiError__ (str(e))
                 raise Exception (str(e))
 
@@ -487,15 +484,15 @@ class vosiTables:
                 logging.debug('')
                 logging.debug('call getTableQueryArr')
 
-        # 
-        #   3. getSqlresult of table sql 
+        #
+        #   3. getSqlresult of table sql
         #      re-initialize arrays
         #
 
             table_namearr = []
             table_descarr = []
             table_typearr = []
-    
+
             ntable = 0
             try:
                 ntable = self.__getTableQueryArr__(cursor, table_namearr, \
@@ -506,7 +503,7 @@ class vosiTables:
                 if self.debug:
                     logging.debug('')
                     logging.debug(f'getTableQueryArr exception: {str(e):s}')
-            
+
                 #self.__printVosiError__ (str(e))
                 raise Exception (str(e))
 
@@ -515,9 +512,9 @@ class vosiTables:
                 logging.debug('')
                 logging.debug('returned getTableQueryArr')
                 logging.debug(f'ntable= {ntable:d}')
-          
-          
-                for itable in range (0, ntable): 
+
+
+                for itable in range (0, ntable):
                     logging.debug ('')
                     logging.debug (f'itable= {itable:d}')
                     logging.debug (
@@ -526,15 +523,15 @@ class vosiTables:
                         f'table_desc= {table_descarr[itable]:s}')
                     logging.debug (
                         f'table_type= {table_typearr[itable]:s}')
-    
+
             #
             #    for each table:
             #
 
-            for itable in range (0, ntable): 
+            for itable in range (0, ntable):
             #
             # { itable loop
-            #   
+            #
             #    1. write header block for each table,
             #
                 fp.write("        <table type=\"" + \
@@ -553,13 +550,13 @@ class vosiTables:
                 #    "from TAP_SCHEMA.columns " + \
                 #    "where table_name='" + table_namearr[itable] + \
                 #    "' order by column_index"
-                
+
                 self.sql = "select column_name, datatype, arraysize, " + \
                     "xtype, description, utype, unit, ucd, indexed, " + \
                     "principal, std, column_index from " + self.tap_schema + "." + self.columns_table + " " + \
                     "where table_name='" + table_namearr[itable] + \
                     "' order by column_index"
-                
+
                 if self.debug:
                     logging.debug('')
                     logging.debug(f'sql = {self.sql:s}')
@@ -575,7 +572,7 @@ class vosiTables:
                     if self.debug:
                         logging.debug('')
                         logging.debug(f'executeSql exception: {str(e):s}')
-            
+
                     #self.__printVosiError__ (str(e))
                     raise Exception (str(e))
 
@@ -596,7 +593,7 @@ class vosiTables:
                         logging.debug('')
                         logging.debug(
                             f'writeOneTableResult exception: {str(e):s}')
-            
+
                     #self.__printVosiError__ (str(e))
                     raise Exception (str(e))
 
@@ -607,7 +604,7 @@ class vosiTables:
 
             #
             #    4. execute foreignkey sq
-            #    5. getSqlresult of foreignkey sql 
+            #    5. getSqlresult of foreignkey sql
             #    -- write foreignkey result
 
                 self.sql = "select key_id as foreignKey, " + \
@@ -617,11 +614,11 @@ class vosiTables:
                     "from " + self.tap_schema + "." + self.keys_table + " " + \
                     "NATURAL JOIN " + self.tap_schema + "." + self.key_columns_table + " " + \
                     "where from_table='" + table_namearr[itable] + "'"
-                
+
                 if self.debug:
                     logging.debug('')
-                    logging.debug(f'foreign key sql:');
-                    logging.debug(f'sql= {self.sql:s}');
+                    logging.debug('foreign key sql:')
+                    logging.debug(f'sql= {self.sql:s}')
                     logging.debug('call execute sql')
 
                 cursor = self.conn.cursor()
@@ -634,7 +631,7 @@ class vosiTables:
                     if self.debug:
                         logging.debug('')
                         logging.debug(f'executeSql exception: {str(e):s}')
-            
+
                     #self.__printVosiError__ (str(e))
                     raise Exception (str(e))
 
@@ -655,7 +652,7 @@ class vosiTables:
                         logging.debug('')
                         logging.debug(
                             f'writeForeignKey exception: {str(e):s}')
-            
+
                     #self.__printVosiError__ (str(e))
                     raise Exception (str(e))
 
@@ -670,24 +667,24 @@ class vosiTables:
             #    6. write end block for each table
             #
                 fp.write("        </table>\n")
-                fp.flush() 
-            
+                fp.flush()
+
             #
             # } end itable loop
             #
-            
+
             #
             #    2. write end block for each schema
             #
             fp.write("    </schema>\n")
-            fp.flush() 
+            fp.flush()
 
         #
         # } end ischema loop and write end block for xml file
         #
         fp.write("</vosi:tableset>\n")
-        fp.flush() 
-        
+        fp.flush()
+
     #
     # } end vosiTables.init
     #
@@ -702,7 +699,7 @@ class vosiTables:
     #   table_name, description, and table_type;
     #
         debug = 0
-        
+
         if('debug' in kwargs):
             debug = kwargs['debug']
 
@@ -710,7 +707,6 @@ class vosiTables:
             logging.debug('')
             logging.debug('Enter getTableQueryArr')
 
-        size = 0
 
         table_colname = []
         table_dbtype = []
@@ -752,7 +748,6 @@ class vosiTables:
 
 
             dbtype = ''
-            size = None
 
             dbdatatypestr = str(col[1])
 
@@ -813,7 +808,7 @@ class vosiTables:
                 logging.debug(f'nrec = {nrec:d}')
                 logging.debug('')
 
-            
+
             for ll in range(0, nrec):
 
             #
@@ -821,7 +816,7 @@ class vosiTables:
             #
 
                 row = rows[ll]
-                
+
                 if debug:
                     logging.debug ('')
                     logging.debug (f'len(row)= {len(row):d}')
@@ -845,13 +840,13 @@ class vosiTables:
                     if debug:
                         logging.debug (f'i= {i:d}, data= {data:s}')
                         logging.debug (f'table_colname= {table_colname[i]:s}')
-                    
+
                     if (table_colname[i].lower() == 'table_name'):
                         table_namearr.append (data)
-                    
+
                     elif (table_colname[i].lower() == 'description'):
                         table_descarr.append (data)
-                    
+
                     elif (table_colname[i].lower() == 'table_type'):
                         table_typearr.append (data)
 
@@ -863,7 +858,7 @@ class vosiTables:
 
             #
             # } end of ll loop
-            #      
+            #
             if debug:
                 logging.debug('')
                 logging.debug(table_namearr)
@@ -871,7 +866,7 @@ class vosiTables:
                 logging.debug(table_typearr)
                 logging.debug('----------------------------------------')
 
-            
+
             ntot = ntot + nrec
 
             if(len(rows) < cursor.arraysize):
@@ -891,11 +886,11 @@ class vosiTables:
     #
 
 
-   
+
     def __getSchemaQueryArr__ (self, cursor,  **kwargs):
     #
     # { vosiTables.getSchemaQueryArr
-    #   
+    #
     #   this query contains only two columns:
     #   schema_name and schema_description
     #
@@ -906,12 +901,12 @@ class vosiTables:
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'Enter __getSchemaQueryArr__\n')
+            logging.debug('Enter __getSchemaQueryArr__\n')
 
         size = 0
         nfetch = self.arraysize
         cursor.arraysize = nfetch
-        
+
         if debug:
             logging.debug('')
             logging.debug(f'nfetch= {nfetch:d}')
@@ -938,7 +933,7 @@ class vosiTables:
             #
 
             colname = str(col[0]).lower()
-  
+
             if debug:
                 logging.debug('')
                 logging.debug(f'colname(lower) = {colname:s}')
@@ -951,8 +946,6 @@ class vosiTables:
 
             dbdatatype = ''
             size = None
-            precision = None
-            scale = None
 
             dbdatatypestr = str(col[1])
 
@@ -1079,7 +1072,7 @@ class vosiTables:
             #
 
                 row = rows[ll]
-                
+
                 if debug:
                     logging.debug(row)
                     logging.debug(f'row[0]= {row[0]:s}')
@@ -1088,7 +1081,7 @@ class vosiTables:
 
                 self.schema_namearr.append(row[0])
                 self.schema_descarr.append(row[1])
-                
+
                 if debug:
                     logging.debug(row)
                     logging.debug(self.schema_namearr)
@@ -1167,7 +1160,6 @@ class vosiTables:
             #
 
             dbdatatype = ''
-            size = None
 
             dbdatatypestr = str(col[1])
 
@@ -1191,7 +1183,7 @@ class vosiTables:
             #
             # } end  extract dbdatatype from col_array: col[1]
             #
-  
+
             i = i + 1
 
         #
@@ -1234,13 +1226,13 @@ class vosiTables:
                 #
 
                 row = rows[ll]
-                data = '' 
+                data = ''
 
                 fp.write("            <column>\n")
-               
+
                 col_name = ''
                 for i in range(0, len(row)):
-                
+
                     if (row[i] is None):
                         data = 'None'
                     elif (dbtype[i] == 'STRING'):
@@ -1260,65 +1252,65 @@ class vosiTables:
                         if self.debug:
                             logging.debug('')
                             logging.debug(f'll= {ll:d} col_name= {col_name:s} data= {data:s}')
-                    
+
 
                     if (colnamearr[i] == 'column_name'):
                         fp.write("                <name>" + data + "</name>\n")
-                
+
                     elif (colnamearr[i] == 'description'):
                         fp.write("                <description>" + \
                             "<![CDATA[" + data + "]]></description>\n")
-                
+
                     elif (colnamearr[i] == 'datatype'):
                         fp.write ("                " + \
                             "<dataType xsi:type=\"vod:VOTableType\">" + \
                             data + "</dataType>\n")
-           
+
                     elif (colnamearr[i] == 'arraysize'):
                         if (data != 'None'):
                             fp.write ("                <arraysize>" + data + \
                                 "</arraysize>\n")
-                
+
                     elif (colnamearr[i] == 'xtype'):
                         if (data != 'None'):
                             fp.write ("                <xtype>" + data + \
                                 "</xtype>\n")
-                
+
                     elif (colnamearr[i] == 'utype'):
                         if (data != 'None'):
                             fp.write("                <utype>" + data + \
                             "</utype>\n")
-                
+
                     elif (colnamearr[i] == 'unit'):
                         if (data != 'None'):
                             fp.write("                <unit>" + data + \
                             "</unit>\n")
-                
+
                     elif (colnamearr[i] == 'ucd'):
                         if (data != 'None'):
                             fp.write ("                <ucd>" + data + \
                             "</ucd>\n")
-                
+
                     elif (colnamearr[i] == 'indexed'):
                         if (data != 'None'):
                             fp.write ("                <indexed>" + data + \
                             "</indexed>\n")
-                
+
                     elif (colnamearr[i] == 'principal'):
                         if (data != 'None' and data != 0 and data != '0'):
                             fp.write("                " + \
                                 "<principal>" + data + "</principal>\n")
-                
+
                     elif (colnamearr[i] == 'std'):
                         if (data != 'None'):
                             fp.write ("                <std>" + data + \
                                 "</std>\n")
-                
+
                     elif (colnamearr[i] == 'column_index'):
                         if (data != 'None' and data != 0 and data != '0'):
                             fp.write("                " + "<column_index>" + data + \
                                 "</column_index>\n")
-                
+
                 irow = irow + 1
 
                 #if col_datatype == 'timestamp':
@@ -1327,7 +1319,7 @@ class vosiTables:
                 #    col_datatype = 'char'
 
                 fp.write("            </column>\n")
-       
+
 
                 #
                 # } end of ll loop
@@ -1336,7 +1328,7 @@ class vosiTables:
             ntot = ntot + nrec
 
             if(len(rows) < cursor.arraysize):
-                break 
+                break
 
             if self.debug:
                 logging.debug('')
@@ -1354,12 +1346,12 @@ class vosiTables:
 
 
     def __writeForeignKey__ (self, cursor, fp,  **kwargs):
-        
+
     #
     # {vosiTables.writeForeignKey
     #
         debug = 0
-        
+
         if('debug' in kwargs):
             debug = kwargs['debug']
 
@@ -1404,7 +1396,6 @@ class vosiTables:
             #
 
             dbdatatype = ''
-            size = None
 
             dbdatatypestr = str(col[1])
 
@@ -1427,7 +1418,7 @@ class vosiTables:
             #
             # } end  extract dbdatatype from col_array: col[1]
             #
-  
+
             i = i + 1
 
         #
@@ -1466,16 +1457,15 @@ class vosiTables:
                 #
 
                 row = rows[ll]
-    
-                keyid = ''
+
                 targettbl = ''
                 fromcol = ''
                 targetcol= ''
                 desc = ''
 
-                data = '' 
+                data = ''
                 for i in range(0, len(row)):
-                
+
                     if (row[i] is None):
                         data = 'None'
                     elif (dbtype[i] == 'STRING'):
@@ -1488,7 +1478,7 @@ class vosiTables:
                         logging.debug(f'i= {i:d}, data= {data:s}')
 
                     if (i == 0):
-                        keyid = data
+                        pass
                     elif (i == 1):
                         targettbl = data
                     elif (i == 2):
@@ -1499,14 +1489,14 @@ class vosiTables:
                         desc = data
 
                 irow = irow + 1
-            
+
                 #
                 #    for row, write column block
                 #
                 fp.write("            <foreignKey>\n")
                 fp.write("                <targetTable>" + targettbl + \
                     "</targetTable>\n")
-                
+
                 fp.write("                <fkColumn>\n")
                 fp.write("                    <fromColumn>" + fromcol + \
                     "</fromColumn>\n")
@@ -1525,7 +1515,7 @@ class vosiTables:
             ntot = ntot + nrec
 
             if(len(rows) < cursor.arraysize):
-                break 
+                break
 
             if debug:
                 logging.debug('')
@@ -1585,7 +1575,7 @@ class vosiTables:
         httphdr = "HTTP/1.1 500 ERROR\r"
 
         #print("HTTP/1.1 200 OK\r")
-        
+
         print(httphdr)
 
         print("Content-type: text/xml\r")
@@ -1628,19 +1618,19 @@ def main():
 
     parser.add_argument('--dbserver', required=False,
                         help='Oracle database server (dbserver) to use.')
-    
+
     parser.add_argument('--userid', required=False,
                         help='Oracle dbserver userid (userid) to use.')
-    
+
     parser.add_argument('--password', required=False,
                         help='Oracle dbserver (password) to use.')
-    
+
     parser.add_argument('--db', required=False,
                         help='Sqlite database name to use.')
-    
+
     parser.add_argument('--tap_schema', required=False,
                         help='Sqlite database table name to use.')
-    
+
     parser.add_argument('--outpath', required=True,
                         help='outpath for the result.')
 
@@ -1662,47 +1652,47 @@ def main():
     if (args.dbms is not None):
         dbms = args.dbms
     print (f'dbms= {dbms:s}')
-    
+
     if (args.dbserver is not None):
         dbserver = args.dbserver
     print (f'dbserver= {dbserver:s}')
-    
+
     if (args.userid is not None):
         userid = args.userid
     print (f'userid= {userid:s}')
-    
-    
+
+
     if (args.password is not None):
         password = args.password
     print (f'password= {password:s}')
-    
-    
+
+
     if (args.outpath is not None):
         outpath = args.outpath
     print (f'outpath= {outpath:s}')
-    
-    
+
+
     if (args.debug is not None):
         debug = args.debug
     print (f'debug= {debug:s}')
-    
+
     if (args.db is not None):
         db = args.db
     print (f'db= {db:s}')
-    
+
     if (args.tap_schema is not None):
         tap_schema = args.tap_schema
     print (f'tap_schema= {tap_schema:s}')
-    
-    
+
+
     if debug:
         debugfname = './vosi.debug'
 
         logging.basicConfig(filename=debugfname, \
             level=logging.DEBUG)
 
-        print (f'debug turned on')
-        
+        print ('debug turned on')
+
         logging.debug('')
         logging.debug('debug turned on')
         logging.debug(f'dbms= {dbms:s}')
@@ -1713,13 +1703,12 @@ def main():
         logging.debug(f'debug= {debug:s}')
 
 
-    vositbl = None
     try:
         if debug:
             logging.debug('')
             logging.debug('call vosiTables')
-        
-        vositbl = vosiTables (dbms=dbms, \
+
+        vosiTables (dbms=dbms, \
             dbserver=dbserver, \
             userid=userid, \
             password=password, \
