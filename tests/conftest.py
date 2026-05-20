@@ -103,12 +103,18 @@ class _NphCGIHandler(http.server.BaseHTTPRequestHandler):
         from urllib.parse import urlsplit
 
         parts = urlsplit(self.path)
-        # Anything after the script mount point is PATH_INFO.
-        # (Our tests use /cgi-bin/TAP/nph-tap.py/sync etc.)
+        # Two URL patterns are supported, both mapping to nph-tap.py:
+        #   /cgi-bin/TAP/nph-tap.py/<sync|async>   — direct CGI URL
+        #   /TAP/<sync|async>                      — short form pyNEID uses,
+        #                                            mimicking the Apache
+        #                                            rewrite KOA/NEID/NEA
+        #                                            run in production.
         path = parts.path
         marker = "/nph-tap.py"
         if marker in path:
             path_info = path.split(marker, 1)[1]
+        elif path.startswith("/TAP/"):
+            path_info = path[len("/TAP"):]  # keep leading slash
         else:
             path_info = ""
 
