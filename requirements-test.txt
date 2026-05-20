@@ -11,3 +11,8 @@ sqlparse
 astropy
 beautifulsoup4
 xmltodict
+
+# pyneid is not currently used — tests/test_pyneid_compat.py is skipped
+# at module level until async-flow fixture support lands. Listed as a
+# reminder; comment back in when re-enabling.
+# pyneid
