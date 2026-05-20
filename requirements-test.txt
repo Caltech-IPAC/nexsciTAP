@@ -1,4 +1,13 @@
 pytest>=7
 ruff>=0.1
 requests
+
+# Runtime deps. These are not declared in setup.py's install_requires (a
+# separate cleanup) but the package imports them. The CI install uses
+# --no-deps for nexsciTAP itself (to avoid the spatial_index PyPI hole),
+# so we list everything actually-needed here.
 configobj
+sqlparse
+astropy
+beautifulsoup4
+xmltodict
