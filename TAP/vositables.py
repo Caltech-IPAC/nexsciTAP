@@ -214,6 +214,12 @@ class vosiTables:
         #
         # { Connect to DBMS
         #
+        if('connectInfo' in kwargs):                                                                                          
+            self.connectInfo = kwargs['connectInfo']
+        else:
+            self.msg = 'Required connectInfo dict is missing.'
+            raise Exception (self.msg)
+
         self.tap_schema_file   = self.connectInfo['tap_schema_file']
         self.tap_schema        = self.connectInfo['tap_schema']
         self.schemas_table     = self.connectInfo['schemas_table']
