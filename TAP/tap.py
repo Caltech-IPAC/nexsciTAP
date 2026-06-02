@@ -212,7 +212,7 @@ class Tap:
 
         if self.debug:
             logging.debug('')
-            logging.debug('nexsciTAP version 1.2.1\n\n')
+            logging.debug('nexsciTAP version 3.0.1\n\n')
             logging.debug('HTTP request keywords:\n')
 
         self.lang      = 'ADQL'
@@ -2974,7 +2974,7 @@ class Tap:
                 logging.debug('')
                 logging.debug('call vosiTables')
 
-            vosiTables (dbms=dbms, \
+            vosiTables (connectInfo=self.config.connectInfo, dbms=dbms, \
                 dbserver=dbserver, \
                 userid=userid, \
                 password=password, \
