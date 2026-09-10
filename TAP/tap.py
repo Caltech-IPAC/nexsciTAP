@@ -543,6 +543,21 @@ class Tap:
         self.statdict['resulturl'] = ''
 
         #
+        #{ availability and capabilities are static VOSI documents: they need
+        #  no workspace, so answer them before workspace resolution.  Going
+        #  through it treated the empty jobid as a workspace name and failed
+        #  with a 500 whenever <workdir>/TAP did not already exist.
+        #
+        if (self.tapcontext == 'availability'):
+            self.__printVosiAvailability__ ()
+
+        if (self.tapcontext == 'capabilities'):
+            self.__printVosiCapability__ ()
+        #
+        #} end VOSI static endpoints
+        #
+
+        #
         # sync or async without input workspace id: make workspace,
         # otherwise retrieve workspace from getstatus id
         #
@@ -632,16 +647,6 @@ class Tap:
             logging.debug(f'workspace   = {self.workspace:s}')
             logging.debug(f'userWorkdir = {self.userWorkdir:s}')
 
-        #
-        #{ if tapcontext is one of vosiEnpoint, take care of take care of VOSI
-        #  output and return 
-        #
-        if (self.tapcontext == 'availability'):
-            self.__printVosiAvailability__ ()
-
-        if (self.tapcontext == 'capabilities'):
-            self.__printVosiCapability__ ()
-        
         #
         # vositable: make up vositbl filepath
         #
@@ -2820,6 +2825,17 @@ class Tap:
         # { printVosiAvailability
         #
 
+        #
+        #    nph- CGI: emit the full HTTP response ourselves.  The status
+        #    line and each header must end in CRLF (print supplies the LF),
+        #    and a bare CRLF line closes the header block -- nginx and
+        #    Cloudflare reject the response otherwise.
+        #
+
+        print ("HTTP/1.1 200 OK\r")
+        print ("Content-type: text/xml\r")
+        print ("\r")
+
         print ('<?xml version="1.0" encoding="UTF-8"?>')
         print ('')
         print ('<vosi:availability')
@@ -2842,6 +2858,17 @@ class Tap:
         #
         # { printVosiCapability
         #
+
+        #
+        #    nph- CGI: emit the full HTTP response ourselves.  The status
+        #    line and each header must end in CRLF (print supplies the LF),
+        #    and a bare CRLF line closes the header block -- nginx and
+        #    Cloudflare reject the response otherwise.
+        #
+
+        print ("HTTP/1.1 200 OK\r")
+        print ("Content-type: text/xml\r")
+        print ("\r")
 
         print ('<?xml version="1.0" encoding="UTF-8"?>')
         print ('')
