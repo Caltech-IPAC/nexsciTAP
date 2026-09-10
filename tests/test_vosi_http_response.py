@@ -9,10 +9,18 @@ through a forgiving client library.
 """
 from __future__ import annotations
 
+import os
 import socket
+import subprocess
+import sys
+from pathlib import Path
 from urllib.parse import urlsplit
 
 import pytest
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+FIXTURES = Path(__file__).parent / "fixtures"
+STUBS = FIXTURES / "stubs"
 
 
 def _raw_get(server: str, path: str) -> bytes:
@@ -87,3 +95,58 @@ def test_vosi_body_still_intact(tap_server: str, path: str, root_element: bytes)
     body = raw.split(b"\r\n\r\n", 1)[1]
     assert body.lstrip().startswith(b'<?xml version="1.0" encoding="UTF-8"?>')
     assert root_element in body
+
+
+def _run_cgi_with_workdir(tmp_path, fixture_root, path_info: str) -> bytes:
+    """Run the CGI directly against a *pristine* TAP_WORKDIR.
+
+    The session `tap_server` fixture shares one workdir across the whole
+    suite, so by the time these tests run `<workdir>/TAP` has already been
+    created by earlier sync requests. That hides the fresh-deployment case,
+    which is exactly where the workspace-resolution bug bit. Point the CGI at
+    an empty workdir so the no-workspace path is exercised deterministically.
+    """
+    workdir = tmp_path / "workdir"
+    workdir.mkdir()
+    conf = tmp_path / "TAP.conf"
+    conf.write_text(
+        (FIXTURES / "TAP.conf.template").read_text().format(
+            TEST_WORKDIR=str(workdir),
+            TEST_HTTP_URL="http://127.0.0.1:8099",
+            TEST_DB_PATH=str(fixture_root / "test_data.db"),
+            TEST_TAP_SCHEMA=str(fixture_root / "tap_schema.db"),
+        )
+    )
+
+    env = os.environ.copy()
+    env.update({
+        "TAP_CONF": str(conf),
+        "PATH_INFO": path_info,
+        "REQUEST_METHOD": "GET",
+        "QUERY_STRING": "",
+        "PYTHONPATH": os.pathsep.join([str(REPO_ROOT), str(STUBS)]),
+    })
+    proc = subprocess.run(
+        [sys.executable, str(fixture_root / "cgi-bin" / "TAP" / "nph-tap.py")],
+        env=env, capture_output=True, timeout=60,
+    )
+    assert (workdir / "TAP").exists() is False, (
+        "the VOSI endpoints must not create a workspace"
+    )
+    return proc.stdout
+
+
+@pytest.mark.parametrize("path", VOSI_PATHS)
+def test_vosi_works_without_existing_workspace(tmp_path, fixture_root, path):
+    """A fresh deployment, where <workdir>/TAP does not yet exist, still works.
+
+    These endpoints previously fell through to the "retrieve workspace from
+    jobid" branch with an empty jobid, resolving to <workdir>/TAP and
+    returning a 500 whenever that directory was absent.
+    """
+    raw = _run_cgi_with_workdir(tmp_path, fixture_root, path.replace("/TAP", "", 1))
+    assert raw.startswith(b"HTTP/1.1 200 OK\r\n"), (
+        f"{path} on a pristine workdir must return a CRLF-terminated 200; "
+        f"got {raw[:120]!r}"
+    )
+    assert b"500" not in raw.split(b"\r\n", 1)[0]
