@@ -211,7 +211,7 @@ class vosiTables:
         #
         # { Connect to DBMS
         #
-        if('connectInfo' in kwargs):                                                                                          
+        if('connectInfo' in kwargs):
             self.connectInfo = kwargs['connectInfo']
         else:
             self.msg = 'Required connectInfo dict is missing.'
