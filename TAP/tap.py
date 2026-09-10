@@ -3044,14 +3044,16 @@ class Tap:
 
         #
         #    nph- CGI: emit the full HTTP response ourselves.  The status
-        #    line and each header must end in CRLF (print supplies the LF),
-        #    and a bare CRLF line closes the header block -- nginx and
-        #    Cloudflare reject the response otherwise.
+        #    line and each header must end in CRLF, and a bare CRLF line
+        #    closes the header block -- nginx and Cloudflare reject the
+        #    response otherwise.  The terminator is spelled out via end=
+        #    rather than a trailing \r leaning on print's implicit \n,
+        #    so the CRLF requirement is visible at a glance.
         #
 
-        print ("HTTP/1.1 200 OK\r")
-        print ("Content-type: text/xml\r")
-        print ("\r")
+        print ('HTTP/1.1 200 OK', end='\r\n')
+        print ('Content-type: text/xml', end='\r\n')
+        print ('', end='\r\n')
 
         print ('<?xml version="1.0" encoding="UTF-8"?>')
         print ('')
@@ -3078,14 +3080,16 @@ class Tap:
 
         #
         #    nph- CGI: emit the full HTTP response ourselves.  The status
-        #    line and each header must end in CRLF (print supplies the LF),
-        #    and a bare CRLF line closes the header block -- nginx and
-        #    Cloudflare reject the response otherwise.
+        #    line and each header must end in CRLF, and a bare CRLF line
+        #    closes the header block -- nginx and Cloudflare reject the
+        #    response otherwise.  The terminator is spelled out via end=
+        #    rather than a trailing \r leaning on print's implicit \n,
+        #    so the CRLF requirement is visible at a glance.
         #
 
-        print ("HTTP/1.1 200 OK\r")
-        print ("Content-type: text/xml\r")
-        print ("\r")
+        print ('HTTP/1.1 200 OK', end='\r\n')
+        print ('Content-type: text/xml', end='\r\n')
+        print ('', end='\r\n')
 
         print ('<?xml version="1.0" encoding="UTF-8"?>')
         print ('')
