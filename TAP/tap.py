@@ -3052,7 +3052,7 @@ class Tap:
         #
 
         print ('HTTP/1.1 200 OK', end='\r\n')
-        print ('Content-type: text/xml', end='\r\n')
+        print ('Content-type: application/xml', end='\r\n')
         print ('', end='\r\n')
 
         print ('<?xml version="1.0" encoding="UTF-8"?>')
@@ -3088,7 +3088,7 @@ class Tap:
         #
 
         print ('HTTP/1.1 200 OK', end='\r\n')
-        print ('Content-type: text/xml', end='\r\n')
+        print ('Content-type: application/xml', end='\r\n')
         print ('', end='\r\n')
 
         print ('<?xml version="1.0" encoding="UTF-8"?>')

@@ -77,7 +77,7 @@ def test_vosi_declares_xml_content_type(tap_server: str, path: str):
     """A Content-type header is present and announces XML."""
     raw = _raw_get(tap_server, path)
     head = raw.split(b"\r\n\r\n", 1)[0].lower()
-    assert b"content-type: text/xml" in head, (
+    assert b"content-type: application/xml" in head, (
         f"{path} is missing an XML Content-type header; got {head!r}"
     )
 
