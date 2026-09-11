@@ -543,6 +543,21 @@ class Tap:
         self.statdict['resulturl'] = ''
 
         #
+        #{ availability and capabilities are static VOSI documents: they need
+        #  no workspace, so answer them before workspace resolution.  Going
+        #  through it treated the empty jobid as a workspace name and failed
+        #  with a 500 whenever <workdir>/TAP did not already exist.
+        #
+        if (self.tapcontext == 'availability'):
+            self.__printVosiAvailability__ ()
+
+        if (self.tapcontext == 'capabilities'):
+            self.__printVosiCapability__ ()
+        #
+        #} end VOSI static endpoints
+        #
+
+        #
         # sync or async without input workspace id: make workspace,
         # otherwise retrieve workspace from getstatus id
         #
@@ -632,16 +647,6 @@ class Tap:
             logging.debug(f'workspace   = {self.workspace:s}')
             logging.debug(f'userWorkdir = {self.userWorkdir:s}')
 
-        #
-        #{ if tapcontext is one of vosiEnpoint, take care of take care of VOSI
-        #  output and return 
-        #
-        if (self.tapcontext == 'availability'):
-            self.__printVosiAvailability__ ()
-
-        if (self.tapcontext == 'capabilities'):
-            self.__printVosiCapability__ ()
-        
         #
         # vositable: make up vositbl filepath
         #
@@ -1900,7 +1905,7 @@ class Tap:
 
         if(outtype == 'xml'):
 
-            print("Content-type: text/xml\r")
+            print("Content-type: application/xml\r")
             print("\r")
 
             print('<?xml version="1.0" encoding="UTF-8"?>')
@@ -2000,7 +2005,7 @@ class Tap:
         if(len(key) == 0):
 
             print("HTTP/1.1 200 OK\r")
-            print("Content-type: text/xml\r")
+            print("Content-type: application/xml\r")
             print("\r")
             print(data)
             sys.exit()
@@ -2256,7 +2261,7 @@ class Tap:
         if(format == 'json'):
             print("Content-type: application/json\r")
         elif(format == 'votable'):
-            print("Content-type: text/xml\r")
+            print("Content-type: application/xml\r")
         else:
             print("Content-type: text/plain\r")
         print("\r")
@@ -2305,7 +2310,7 @@ class Tap:
         
         print(httphdr)
 
-        print("Content-type: text/xml\r")
+        print("Content-type: application/xml\r")
         print("\r")
 
         print('<?xml version="1.0" encoding="UTF-8"?>')
@@ -2323,7 +2328,7 @@ class Tap:
         """
         if(fmt == 'votable'):
 
-            print("Content-type: text/xml\r")
+            print("Content-type: application/xml\r")
             print("\r")
 
             print('<?xml version="1.0" encoding="UTF-8"?>')
@@ -2427,7 +2432,7 @@ class Tap:
         if(format == 'json'):
             print("Content-type: application/json\r")
         elif(format == 'votable'):
-            print("Content-type: text/xml\r")
+            print("Content-type: application/xml\r")
         else:
             print("Content-type: text/plain\r")
         print("\r")
@@ -2820,6 +2825,20 @@ class Tap:
         # { printVosiAvailability
         #
 
+        #
+        #    nph- CGI: emit the full HTTP response ourselves.  The status
+        #    line and each header must end in CRLF, and a bare CRLF line
+        #    closes the header block -- nginx and Cloudflare reject the
+        #    response otherwise.  The terminator is spelled out via end=
+        #    rather than a trailing \r leaning on print's implicit \n,
+        #    so the CRLF requirement is visible at a glance.
+        #
+
+        print ('HTTP/1.1 200 OK', end='\r\n')
+        print ('Content-type: application/xml', end='\r\n')
+        print ('Connection: close', end='\r\n')
+        print ('', end='\r\n')
+
         print ('<?xml version="1.0" encoding="UTF-8"?>')
         print ('')
         print ('<vosi:availability')
@@ -2829,6 +2848,7 @@ class Tap:
         print ('    <vosi:available>true</vosi:available>')
         print ('    <vosi:note>TAP service available.</vosi:note>')
         print ('</vosi:availability>')
+        print (end='\r\n')
 
         sys.exit()
 
@@ -2842,6 +2862,20 @@ class Tap:
         #
         # { printVosiCapability
         #
+
+        #
+        #    nph- CGI: emit the full HTTP response ourselves.  The status
+        #    line and each header must end in CRLF, and a bare CRLF line
+        #    closes the header block -- nginx and Cloudflare reject the
+        #    response otherwise.  The terminator is spelled out via end=
+        #    rather than a trailing \r leaning on print's implicit \n,
+        #    so the CRLF requirement is visible at a glance.
+        #
+
+        print ('HTTP/1.1 200 OK', end='\r\n')
+        print ('Content-type: application/xml', end='\r\n')
+        print ('Connection: close', end='\r\n')
+        print (end='\r\n')
 
         print ('<?xml version="1.0" encoding="UTF-8"?>')
         print ('')
@@ -2945,6 +2979,7 @@ class Tap:
         print ('  </capability>')
         print ('')
         print ('</vosi:capabilities>') 
+        print (end='\r\n')
         
         sys.exit()
     
