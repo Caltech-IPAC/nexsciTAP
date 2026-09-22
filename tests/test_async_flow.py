@@ -131,6 +131,61 @@ def test_async_job_runs_to_completion(tap_server, fixture_root: Path):
     assert written, f"job completed but wrote no result file: {results}"
 
 
+def _post_phase(statusurl: str, phase: str):
+    return requests.post(
+        f"{statusurl}/phase",
+        data={"PHASE": phase},
+        allow_redirects=False,
+        timeout=30,
+    )
+
+
+def _results(fixture_root: Path, workspace: str) -> list:
+    workdir = fixture_root / "workdir" / "TAP" / workspace
+    return [p for p in workdir.glob("*") if p.name != "status.xml"]
+
+
+def test_async_abort_is_terminal(tap_server, fixture_root: Path):
+    """ABORT must end the job, not run it.
+
+    Every phase shares one response path at the end of the async block,
+    and that path used to fall through into the query. So a POST of
+    PHASE=ABORT wrote ABORTED, answered the client, and then ran the
+    job anyway, overwriting the phase the client had just been told.
+    """
+    statusurl = _submit(tap_server)
+    assert _phase(statusurl) == "PENDING"
+
+    resp = _post_phase(statusurl, "ABORT")
+    assert resp.status_code == 303, resp.text[:500]
+
+    job = _status(statusurl)
+    assert job.find("uws:phase", UWS).text == "ABORTED"
+
+    workspace = job.find("uws:jobId", UWS).text
+    time.sleep(1.0)
+    assert _phase(statusurl) == "ABORTED", "the aborted job kept running"
+    assert not _results(fixture_root, workspace), \
+        "the aborted job wrote a result"
+
+
+def test_async_unknown_phase_is_terminal(tap_server, fixture_root: Path):
+    """An unrecognized phase reports ERROR and runs nothing."""
+    statusurl = _submit(tap_server)
+
+    resp = _post_phase(statusurl, "SPIN")
+    assert resp.status_code == 303, resp.text[:500]
+
+    job = _status(statusurl)
+    assert job.find("uws:phase", UWS).text == "ERROR"
+
+    workspace = job.find("uws:jobId", UWS).text
+    time.sleep(1.0)
+    assert _phase(statusurl) == "ERROR", "the rejected job kept running"
+    assert not _results(fixture_root, workspace), \
+        "the rejected job wrote a result"
+
+
 def test_async_detach_does_not_signal_the_web_server():
     """Regression guard against the SIGKILL-the-parent detach.
 

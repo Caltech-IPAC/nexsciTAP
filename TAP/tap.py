@@ -1280,17 +1280,42 @@ class Tap:
             # } end async bogus value case
             #
 
-            if self.debug:
-                logging.debug('')
-                logging.debug ('call writeStatusMsg')
-                logging.debug (f'statuspath= {self.statuspath:s}')
+            if (self.param['phase'] == 'RUN'):
 
+                #
+                # Publish the job, answer the client, and keep running
+                # the query in a detached child.
+                #
 
-            self.__respondAsyncAndDetach__()
+                self.__respondAsyncAndDetach__()
 
-            if self.debug:
-                logging.debug('')
-                logging.debug('async response sent; running job detached')
+                if self.debug:
+                    logging.debug('')
+                    logging.debug('async response sent; job running detached')
+
+            else:
+
+                #
+                # ABORT and unrecognized phases are terminal: the branch
+                # above has already decided the phase, so write it,
+                # answer the client and stop. Falling through to the
+                # query path below would run the job the client just
+                # aborted and overwrite ABORTED (or ERROR) with
+                # COMPLETED.
+                #
+
+                if self.debug:
+                    logging.debug('')
+                    logging.debug ('terminal async phase= '
+                                   f"{self.statdict['phase']:s}")
+                    logging.debug (f'statuspath= {self.statuspath:s}')
+
+                self.__writeStatusMsg__(self.statuspath, self.statdict,
+                                        self.param)
+
+                self.__printAsyncResponse__(self.statusurl)
+
+                sys.exit()
 
         #
         # } end async submit case
@@ -2802,23 +2827,50 @@ class Tap:
 
             self.statdict['process_id'] = pid
 
-            self.__writeStatusMsg__(self.statuspath, self.statdict,
-                                    self.param)
-
-            self.__printAsyncResponse__(self.statusurl)
-
-            #
-            # The child blocks until this byte arrives, so a fast query
-            # cannot overwrite the status document written just above.
-            #
+            published = False
 
             try:
-                os.write(writefd, b'1')
+                self.__writeStatusMsg__(self.statuspath, self.statdict,
+                                        self.param)
 
-            except OSError as e:
-                logging.error(f'Could not release async worker: {str(e)}')
+                published = True
 
-            os.close(writefd)
+                self.__printAsyncResponse__(self.statusurl)
+
+            except Exception as e:
+
+                #
+                # Most likely the client or the proxy hung up while the
+                # response was going out. Nothing can be sent about it
+                # now; the job's own fate is decided in the finally
+                # clause below.
+                #
+
+                logging.error(f'Async response failed: {str(e)}')
+
+            finally:
+
+                #
+                # The child blocks on this byte, so a fast query cannot
+                # overwrite the status document written above. Once the
+                # job is published the child has to be released even if
+                # the response itself failed: a client that hung up does
+                # not make the job go away, and a child that exits here
+                # would leave the job stuck in EXECUTING forever. If the
+                # status write is what failed, the byte is withheld and
+                # the child exits, because there is no job document for
+                # it to update.
+                #
+
+                if published:
+                    try:
+                        os.write(writefd, b'1')
+
+                    except OSError as e:
+                        logging.error(
+                            f'Could not release async worker: {str(e)}')
+
+                os.close(writefd)
 
             sys.exit(0)
         #
