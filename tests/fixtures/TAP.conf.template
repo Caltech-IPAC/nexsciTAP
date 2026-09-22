@@ -5,7 +5,8 @@
 #
 # Placeholders:
 #   {TEST_WORKDIR}      — working dir for TAP request artifacts
-#   {TEST_HTTP_URL}     — http://localhost:NNNN (fixture-allocated)
+#   {TEST_HTTP_HOST}    — 127.0.0.1
+#   {TEST_HTTP_PORT}    — fixture-allocated port
 #   {TEST_DB_PATH}      — absolute path to test_data.db
 #   {TEST_TAP_SCHEMA}   — absolute path to tap_schema.db
 
@@ -13,8 +14,12 @@
     TAP_WORKDIR={TEST_WORKDIR}
     TAP_WORKURL=/workspace
 
-    HTTP_URL={TEST_HTTP_URL}
-    HTTP_PORT=0
+    # configparam appends HTTP_PORT to HTTP_URL for any port other than
+    # 80/443, and that composed value is what the async status and result
+    # URLs are built from. Keep the two apart here or the job URLs come
+    # back with the port twice.
+    HTTP_URL=http://{TEST_HTTP_HOST}
+    HTTP_PORT={TEST_HTTP_PORT}
     CGI_PGM=TAP
 
 

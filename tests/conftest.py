@@ -66,7 +66,8 @@ def tap_conf(fixture_root: Path) -> Path:
     template = (FIXTURES / "TAP.conf.template").read_text()
     conf = template.format(
         TEST_WORKDIR=str(fixture_root / "workdir"),
-        TEST_HTTP_URL=f"http://127.0.0.1:{port}",
+        TEST_HTTP_HOST="127.0.0.1",
+        TEST_HTTP_PORT=str(port),
         TEST_DB_PATH=str(fixture_root / "test_data.db"),
         TEST_TAP_SCHEMA=str(fixture_root / "tap_schema.db"),
     )
@@ -146,6 +147,12 @@ class _NphCGIHandler(http.server.BaseHTTPRequestHandler):
             env=env,
         )
         stdout, stderr = proc.communicate(input=body)
+
+        # A CGI that dies has only stderr to say so, and swallowing it
+        # makes a 500 from the script indistinguishable from a 500 the
+        # script meant to send. Surface it on the test runner's stderr.
+        if stderr:
+            sys.stderr.write(stderr.decode("utf-8", "replace"))
 
         # Forward raw subprocess stdout to the socket. The script is
         # responsible for emitting a valid HTTP status line + headers.
