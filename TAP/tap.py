@@ -1262,18 +1262,11 @@ class Tap:
                 logging.debug (f'statuspath= {self.statuspath:s}')
 
 
-            self.__writeStatusMsg__(self.statuspath, self.statdict,
-                                    self.param)
+            self.__respondAsyncAndDetach__()
 
             if self.debug:
                 logging.debug('')
-                logging.debug ('call printAsyncResponse')
-
-            self.__printAsyncResponse__(self.statusurl)
-            
-            if self.debug:
-                logging.debug('')
-                logging.debug(f'returned printAsyncResponse')
+                logging.debug('async response sent; running job detached')
 
         #
         # } end async submit case 
@@ -2495,25 +2488,186 @@ class Tap:
     def __printAsyncResponse__(self, statusurl, **kwargs):
 
         #
-        # async: return statusurl and kill the parent process
+        # async: point the client at the job's status URL.
+        #
+        # The body is one line, but it still needs a Content-Length. This
+        # is an nph- script, so nothing downstream supplies one, and a
+        # reverse proxy in front of the CGI has no other way to tell
+        # where the response ends. Earlier versions omitted it and let
+        # the connection dying stand in for the end of the message.
         #
 
-        print("HTTP/1.1 303 See Other\r")
-        print("Location: %s\r\n\r" % statusurl)
-        print("Redirect Location: %s" % statusurl)
+        body = 'Redirect Location: %s\n' % statusurl
+
+        sys.stdout.write('HTTP/1.1 303 See Other\r\n')
+        sys.stdout.write('Location: %s\r\n' % statusurl)
+        sys.stdout.write('Content-Type: text/plain\r\n')
+        sys.stdout.write('Content-Length: %d\r\n'
+                         % len(body.encode('utf-8')))
+        sys.stdout.write('Connection: close\r\n')
+        sys.stdout.write('\r\n')
+        sys.stdout.write(body)
         sys.stdout.flush()
-
-        time.sleep(2.0)
-
-        #
-        # Shut down parent program
-        #
-
-        os.kill(os.getppid(), signal.SIGKILL)
 
         if self.debug:
             logging.debug('')
-            logging.debug('parent process killed')
+            logging.debug(f'async response sent: statusurl= {statusurl:s}')
+
+        return
+
+
+    def __respondAsyncAndDetach__(self, **kwargs):
+
+        #
+        # { An async submit has to finish an HTTP response now and keep
+        #   executing the query afterwards, and under CGI those two pull
+        #   against each other: the web server completes the response
+        #   when the script closes stdout, and mod_cgi terminates the
+        #   script once the request is cleaned up. The process that runs
+        #   the query can therefore be neither the one holding stdout nor
+        #   part of the request.
+        #
+        #   So fork. The parent names the child as the job's runId,
+        #   writes the status document, sends the 303 and exits, which
+        #   ends the response the way any other CGI would. The child
+        #   leaves the request's process group, points its standard
+        #   streams away from the server pipe, waits for the parent to
+        #   confirm the job is published, and returns to run the query.
+        #
+        #   Earlier versions sent the response and then SIGKILLed
+        #   os.getppid(). Under CGI that parent is the web server child
+        #   serving the request: killing it truncates the response, and
+        #   behind a reverse proxy it leaves the proxy holding a dead
+        #   upstream connection, which the proxy reports as 503 on the
+        #   next request or two routed over it.
+        #
+
+        try:
+            readfd, writefd = os.pipe()
+            pid = os.fork()
+
+        except OSError as e:
+
+            #
+            # No fork available: answer the request from this process and
+            # run the job here. The response is still well formed; the
+            # job now lives and dies with the request.
+            #
+
+            logging.error(f'Could not fork async worker: {str(e)}')
+
+            self.__writeStatusMsg__(self.statuspath, self.statdict,
+                                    self.param)
+
+            self.__printAsyncResponse__(self.statusurl)
+
+            return
+
+        if (pid > 0):
+        #
+        # { parent: publish the job, answer the client, exit
+        #
+            os.close(readfd)
+
+            self.statdict['process_id'] = pid
+
+            self.__writeStatusMsg__(self.statuspath, self.statdict,
+                                    self.param)
+
+            self.__printAsyncResponse__(self.statusurl)
+
+            #
+            # The child blocks until this byte arrives, so a fast query
+            # cannot overwrite the status document written just above.
+            #
+
+            try:
+                os.write(writefd, b'1')
+
+            except OSError as e:
+                logging.error(f'Could not release async worker: {str(e)}')
+
+            os.close(writefd)
+
+            sys.exit(0)
+        #
+        # } end parent
+        #
+
+        #
+        # { child: detach from the request, then run the query
+        #
+        os.close(writefd)
+
+        self.pid = os.getpid()
+        self.statdict['process_id'] = self.pid
+
+        self.__detachFromServer__()
+
+        published = b''
+
+        try:
+            published = os.read(readfd, 1)
+
+        except OSError as e:
+            logging.error(f'Async worker handshake failed: {str(e)}')
+
+        os.close(readfd)
+
+        if (len(published) == 0):
+
+            #
+            # The parent exited before it published the job, so there is
+            # no status document for this run to update.
+            #
+
+            logging.error('Async parent exited before publishing the job')
+
+            os._exit(1)
+
+        if self.debug:
+            logging.debug('')
+            logging.debug(f'async worker detached: pid= {self.pid:d}')
+
+        return
+        #
+        # } end child
+        #
+
+
+    def __detachFromServer__(self, **kwargs):
+
+        #
+        # Give up the web server's request context: leave the request's
+        # process group so the server cannot reap this process along with
+        # the request, and replace the inherited stdio with /dev/null so
+        # the response the parent just sent is neither held open by nor
+        # corrupted from here.
+        #
+
+        try:
+            os.setsid()
+
+        except OSError as e:
+            logging.error(f'setsid failed in async worker: {str(e)}')
+
+        try:
+            sys.stdout.flush()
+            sys.stderr.flush()
+
+        except (OSError, ValueError) as e:
+            logging.error(f'Could not flush async worker stdio: {str(e)}')
+
+        devnull = os.open(os.devnull, os.O_RDWR)
+
+        try:
+            os.dup2(devnull, 0)
+            os.dup2(devnull, 1)
+            os.dup2(devnull, 2)
+
+        finally:
+            if (devnull > 2):
+                os.close(devnull)
 
         return
 
