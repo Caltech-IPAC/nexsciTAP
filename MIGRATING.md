@@ -16,8 +16,8 @@ line a day to stderr (the web server's error log):
 | `nea-vosi-headers` | `/availability` and `/capabilities` send a status line and headers | the document only |
 | `nea-errors` | errors are VOTable documents; a table not in TAP_SCHEMA returns 400 | plain text; 403 |
 | `nea-tables` | `/tables` uses VODataService `<flag>` elements | per-column `<principal>`, `<indexed>`, `<std>`, `<column_index>`, `<arraysize>` |
-| `nea-votable` | VOTable results are `application/xml`, non-char FIELDs carry no DESCRIPTION | `text/xml`, with descriptions and units |
-| `nea-uws` | job documents use `executionDuration`, `application/xml`, no `Z` on `destruction` | `executionduration`, `text/xml`, `Z` |
+| `nea-votable` | VOTable results are `application/xml`, non-char FIELDs carry no DESCRIPTION (units are still written) | `text/xml`, with descriptions on every FIELD |
+| `nea-uws` | job documents use `executionDuration`, `application/xml`, no `Z` on `destruction`; the 303 that starts a job (`PHASE=RUN`) carries no `Content-Type`, `Content-Length` or `Connection` lines, because the response ends when the CGI exits; `/async/<id>/executionDuration` (camelCase) is accepted as well as `/executionduration` | `executionduration`, `text/xml`, `Z`; the 303 carries `Content-Type: text/plain`, `Content-Length` and `Connection: close`; only `/executionduration` is a valid key |
 
 ## Moving to the 3.x layout
 
@@ -25,7 +25,7 @@ line a day to stderr (the web server's error log):
 
    | 1.x | 3.x |
    |---|---|
-   | `[webserver]` `TAP_WORKDIR`, `TAP_WORKURL`, `HTTP_URL`, `HTTP_PORT`, `CGI_PGM` | `[WEB]`, same keys |
+   | `[webserver]` `TAP_WORKDIR`, `TAP_WORKURL`, `HTTP_URL`, `HTTP_PORT`, `CGI_PGM`, `ArraySize`, `INFOMSG` | `[WEB]`, same keys |
    | `[webserver]` `DBMS` | `[DBMS]` `DBMS` |
    | the `[oracle]` / `[sqlite3]` section's keys | `[DBMS]`, same keys |
    | `[webserver]` `COOKIENAME`, `RACOL`, `DECCOL` | `[DBMS]`, same keys |
@@ -40,6 +40,24 @@ line a day to stderr (the web server's error log):
 2. Remove names from `COMPAT` one at a time, each as an announced change for
    that service's users.
 3. When `COMPAT` is empty, remove the key.
+
+## Known differences from 1.2
+
+Compatibility mode reproduces 1.2's responses, with these exceptions:
+
+- Errors raised before `TAP.conf` is read (a missing or broken `TAP.conf`, a
+  malformed request path) use the 3.x error format, since the mode isn't known
+  yet.
+- `/availability` and `/capabilities` create a workspace directory per
+  request, so workspace cleanup must cover them.
+- The async job document escapes quotes in the query text as `&#x27;`; it
+  parses to the same XML.
+- A job's `status.xml` written under one mode is read correctly under the
+  other (either spelling of the duration element), so switching `nea-uws` off
+  doesn't break jobs in flight.
+
+`COMPAT` is read only from `[WEB]`; placing it in any other section, including
+a 1.x `[webserver]`, is a configuration error.
 
 ## Release plan
 

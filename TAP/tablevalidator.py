@@ -37,7 +37,8 @@ class TableValidator:
             # there's no ATTACH and `tap_schema` is the schema name itself.
             # For SQLite, `tap_schema` is the FILE PATH and using it directly
             # in a `SELECT ... FROM <path>.tables` reference produces a SQL
-            # syntax error. Prefer the more-specific key when it's set.
+            # syntax error. So `tap_schema_file` is used only for SQLite
+            # (dbms == 'sqlite3'); other databases use `tap_schema`.
             if connectInfo.get('dbms') == 'sqlite3' and 'tap_schema_file' in connectInfo:
                 self.tap_schema = connectInfo['tap_schema_file']
             elif 'tap_schema' in connectInfo:
