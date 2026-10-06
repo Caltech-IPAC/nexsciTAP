@@ -2,7 +2,7 @@
 
 configparam always passes tap_schema_file='TAP_SCHEMA.db' (SQLite's attach
 name).  Using it for Oracle produced 'FROM TAP_SCHEMA.db.tables' and
-ORA-03048 on every query (found with nea-box, 2026-10-05).
+ORA-03048 on every query (found by comparing against a production deployment, 2026-10-05).
 """
 import contextlib
 

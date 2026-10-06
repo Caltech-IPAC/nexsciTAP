@@ -9,7 +9,7 @@ DBMS=oracle
 TAP_WORKDIR={work}/
 TAP_WORKURL=/workspace/
 HTTP_PORT=80
-COOKIENAME=vmexoweb28080
+COOKIENAME=tapcookie
 CGI_PGM=/TAP
 RACOL=ra
 DECCOL=dec
@@ -23,7 +23,7 @@ ADQL_COLNAME=htm20
 ADQL_ENCODING=BASE10
 HTTP_URL=https://exoplanetarchive.ipac.caltech.edu
 [oracle]
-ServerName=exoops1
+ServerName=tapdb
 UserID=exo_tap
 Password=secret
 """
@@ -37,10 +37,10 @@ CGI_PGM=/TAP
 {compat}
 [DBMS]
 DBMS=oracle
-ServerName=exoops1
+ServerName=tapdb
 UserID=exo_tap
 Password=secret
-COOKIENAME=vmexoweb28080
+COOKIENAME=tapcookie
 RACOL=ra
 DECCOL=dec
 [SPTIND]
