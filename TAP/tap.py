@@ -19,6 +19,7 @@ from ADQL.adql import ADQL
 from bs4 import BeautifulSoup
 from spatial_index import SpatialIndex
 
+from TAP import compat  # noqa: F401  (used from Task 3)
 from TAP.configparam import configParam
 from TAP.propfilter import propFilter
 from TAP.tablenames import TableNames
@@ -143,6 +144,7 @@ class Tap:
 
     uwsheader   = ''
 
+    compat = frozenset()     # active compat names; set once TAP.conf loads
 
     def __init__(self, **kwargs):
 
@@ -470,6 +472,7 @@ class Tap:
         self.config = None
         try:
             self.config = configParam(self.configpath, instance=self.instance, debug=self.debug)
+            self.compat = self.config.compat
 
             if self.debug:
                 logging.debug('')

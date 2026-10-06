@@ -9,6 +9,8 @@ import pprint
 
 import configobj
 
+from TAP import compat
+
 
 class configParam:
 
@@ -71,6 +73,7 @@ class configParam:
             raise Exception(self.msg)
 
         confobj = configobj.ConfigObj(self.configpath)
+        confobj, self.compat = compat.load_config(confobj)
 
         if self.debug:
             logging.debug('')
@@ -647,6 +650,7 @@ class configParam:
         self.connectInfo['columns_table']     = self.columns_table
         self.connectInfo['keys_table']        = self.keys_table
         self.connectInfo['key_columns_table'] = self.key_columns_table
+        self.connectInfo['compat']            = self.compat
         self.connectInfo['port']              = self.dbport
         self.connectInfo['socket']            = self.socket
         self.connectInfo['dbschema']          = self.dbschema
