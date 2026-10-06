@@ -50,7 +50,9 @@ def fixture_root(tmp_path_factory) -> Path:
 
     build_test_db.build_all(str(root))
 
-    (root / "workdir").mkdir()
+    # tap.py resolves a VOSI request's workspace as <workdir>/TAP and
+    # fails with a 500 if it is missing; a deployed service always has it.
+    (root / "workdir" / "TAP").mkdir(parents=True)
     cgi_dir = root / "cgi-bin" / "TAP"
     cgi_dir.mkdir(parents=True)
     shutil.copy(FIXTURES / "nph-tap.py", cgi_dir / "nph-tap.py")
@@ -66,7 +68,8 @@ def tap_conf(fixture_root: Path) -> Path:
     template = (FIXTURES / "TAP.conf.template").read_text()
     conf = template.format(
         TEST_WORKDIR=str(fixture_root / "workdir"),
-        TEST_HTTP_URL=f"http://127.0.0.1:{port}",
+        TEST_HTTP_HOST="127.0.0.1",
+        TEST_HTTP_PORT=str(port),
         TEST_DB_PATH=str(fixture_root / "test_data.db"),
         TEST_TAP_SCHEMA=str(fixture_root / "tap_schema.db"),
     )
@@ -136,6 +139,10 @@ class _NphCGIHandler(http.server.BaseHTTPRequestHandler):
             "CONTENT_LENGTH": str(content_length),
             "HTTP_HOST": self.headers.get("Host", ""),
         })
+        # A server may carry its own TAP.conf (legacy_tap_server does);
+        # otherwise the process-wide TAP_CONF set by tap_server applies.
+        if getattr(self.server, "tap_conf", None):
+            env["TAP_CONF"] = self.server.tap_conf
 
         import subprocess
         proc = subprocess.Popen(
@@ -146,6 +153,12 @@ class _NphCGIHandler(http.server.BaseHTTPRequestHandler):
             env=env,
         )
         stdout, stderr = proc.communicate(input=body)
+
+        # A CGI that dies has only stderr to say so, and swallowing it
+        # makes a 500 from the script indistinguishable from a 500 the
+        # script meant to send. Surface it on the test runner's stderr.
+        if stderr:
+            sys.stderr.write(stderr.decode("utf-8", "replace"))
 
         # Forward raw subprocess stdout to the socket. The script is
         # responsible for emitting a valid HTTP status line + headers.
@@ -206,3 +219,37 @@ def tap_server(fixture_root: Path, tap_conf: Path):
         os.chdir(original_cwd)
 
 
+@pytest.fixture(scope="session")
+def legacy_tap_server(fixture_root: Path, tap_server: str):
+    """The same SQLite data behind NEA's 1.x TAP.conf layout: compat mode on.
+
+    Depends on tap_server for PYTHONPATH and the working directory it sets.
+    """
+    port = _free_port()
+    workdir = fixture_root / "workdir-legacy"
+    (workdir / "TAP").mkdir(parents=True, exist_ok=True)  # as in fixture_root
+    conf = (FIXTURES / "TAP.conf.legacy.template").read_text().format(
+        TEST_WORKDIR=str(workdir),
+        TEST_HTTP_HOST="127.0.0.1",
+        TEST_HTTP_PORT=str(port),
+        TEST_DB_PATH=str(fixture_root / "test_data.db"),
+        TEST_TAP_SCHEMA=str(fixture_root / "tap_schema.db"),
+    )
+    conf_path = fixture_root / "TAP.legacy.conf"
+    conf_path.write_text(conf)
+    httpd = http.server.HTTPServer(("127.0.0.1", port), _NphCGIHandler)
+    httpd.allow_reuse_address = True
+    httpd.nph_script_path = str(fixture_root / "cgi-bin" / "TAP" / "nph-tap.py")
+    httpd.tap_conf = str(conf_path)
+    thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+    thread.start()
+    for _ in range(50):
+        try:
+            with socket.create_connection(("127.0.0.1", port), timeout=0.2):
+                break
+        except OSError:
+            time.sleep(0.05)
+    try:
+        yield f"http://127.0.0.1:{port}"
+    finally:
+        httpd.shutdown()
