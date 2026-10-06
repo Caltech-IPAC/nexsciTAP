@@ -2491,7 +2491,7 @@ class Tap:
                         if(format == 'json'):
                             print("Content-type: application/json\r")
                         elif(format == 'votable'):
-                            print("Content-type: text/xml\r")
+                            print("Content-type: %s\r" % compat.votable_content_type(self.compat))
                         else:
                             print("Content-type: text/plain\r")
                         print("\r")
@@ -2690,7 +2690,7 @@ class Tap:
         if(format == 'json'):
             print("Content-type: application/json\r")
         elif(format == 'votable'):
-            print("Content-type: text/xml\r")
+            print("Content-type: %s\r" % compat.votable_content_type(self.compat))
         else:
             print("Content-type: text/plain\r")
         print("\r")

@@ -17,3 +17,14 @@ def test_error_document_inactive_is_none():
 def test_table_denied_status():
     assert compat.table_denied_status(compat.ALL) == '400'
     assert compat.table_denied_status(compat.NONE) == '403'
+
+
+def test_votable_content_type():
+    assert compat.votable_content_type(compat.ALL) == 'application/xml'
+    assert compat.votable_content_type(compat.NONE) == 'text/xml'
+
+
+def test_field_description_blanks_only_non_char_columns():
+    assert compat.field_description(compat.ALL, 'Julian date', 'double') == ''
+    assert compat.field_description(compat.ALL, 'Program ID', 'char') == 'Program ID'
+    assert compat.field_description(compat.NONE, 'Julian date', 'double') == 'Julian date'

@@ -49,3 +49,21 @@ def test_unknown_table_unchanged_in_default_mode(tap_server):
     r = _sync(tap_server, "select * from not_a_table")
     assert r.status_code == 403
     assert r.headers["Content-Type"] == "text/plain"
+
+
+NONCHAR = "select obsjd, l0propint from data_l0"
+
+
+def test_votable_is_neas_form(legacy_tap_server):
+    r = _sync(legacy_tap_server, NONCHAR, fmt="votable")
+    assert r.status_code == 200, r.text[:300]
+    assert r.headers["Content-Type"] == "application/xml"
+    assert "<DESCRIPTION>" not in r.text
+    assert '<FIELD ID="obsjd" datatype="double" name="obsjd"/>' in r.text
+
+
+def test_votable_unchanged_in_default_mode(tap_server):
+    r = _sync(tap_server, NONCHAR, fmt="votable")
+    assert r.status_code == 200, r.text[:300]
+    assert r.headers["Content-Type"] == "text/xml"
+    assert "Julian date of observation." in r.text

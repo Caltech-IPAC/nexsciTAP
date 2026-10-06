@@ -131,3 +131,23 @@ def error_document(active, errmsg, errcode):
             + '</INFO>\n'
             + '</RESOURCE>\n'
             + '</VOTABLE>\n')
+
+
+# --- nea-votable ------------------------------------------------------------
+
+def votable_content_type(active):
+    """Content type for VOTable results: NEA sends application/xml."""
+    return 'application/xml' if 'nea-votable' in active else 'text/xml'
+
+
+def field_description(active, desc, coltype):
+    """NEA's VOTables carry no DESCRIPTION for non-char columns.
+
+    The C writer prints the plain <FIELD .../> form when a non-char column's
+    description is empty (writerecsmodule.c, non-char branch), so blanking it
+    here reproduces NEA's FIELDs without touching the C API.  Char columns
+    already match.
+    """
+    if 'nea-votable' in active and coltype != 'char':
+        return ''
+    return desc
