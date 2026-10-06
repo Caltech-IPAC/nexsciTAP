@@ -574,6 +574,21 @@ class Tap:
         self.statdict['resulturl'] = ''
 
         #
+        #{ availability and capabilities are static VOSI documents: they need
+        #  no workspace, so answer them before workspace resolution.  Going
+        #  through it treated the empty jobid as a workspace name and failed
+        #  with a 500 whenever <workdir>/TAP did not already exist.
+        #
+        if (self.tapcontext == 'availability'):
+            self.__printVosiAvailability__ ()
+
+        if (self.tapcontext == 'capabilities'):
+            self.__printVosiCapability__ ()
+        #
+        #} end VOSI static endpoints
+        #
+
+        #
         # sync or async without input workspace id: make workspace,
         # otherwise retrieve workspace from getstatus id
         #
@@ -662,16 +677,6 @@ class Tap:
             logging.debug('')
             logging.debug(f'workspace   = {self.workspace:s}')
             logging.debug(f'userWorkdir = {self.userWorkdir:s}')
-
-        #
-        #{ if tapcontext is one of vosiEnpoint, take care of take care of VOSI
-        #  output and return
-        #
-        if (self.tapcontext == 'availability'):
-            self.__printVosiAvailability__ ()
-
-        if (self.tapcontext == 'capabilities'):
-            self.__printVosiCapability__ ()
 
         #
         # vositable: make up vositbl filepath

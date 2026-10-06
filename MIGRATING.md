@@ -13,7 +13,7 @@ line a day to stderr (the web server's error log):
 
 | Name | With it (1.2 behavior) | Without it (3.x behavior) |
 |---|---|---|
-| `nea-vosi-headers` | `/availability` and `/capabilities` send a status line and headers | the document only |
+| `nea-vosi-headers` | `/availability` and `/capabilities` also send `Connection: close`, and end with an extra CRLF | status line and `Content-type` only |
 | `nea-errors` | errors are VOTable documents; a table not in TAP_SCHEMA returns 400 | plain text; 403 |
 | `nea-tables` | `/tables` uses VODataService `<flag>` elements | per-column `<principal>`, `<indexed>`, `<std>`, `<column_index>`, `<arraysize>` |
 | `nea-votable` | VOTable results are `application/xml`, non-char FIELDs carry no DESCRIPTION (units are still written) | `text/xml`, with descriptions on every FIELD |

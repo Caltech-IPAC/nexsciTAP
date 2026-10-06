@@ -99,11 +99,17 @@ def load_config(conf):
 # --- nea-vosi-headers -------------------------------------------------------
 
 def vosi_head(active):
-    """Status line and headers NEA's nph- CGI writes before a VOSI document."""
-    if 'nea-vosi-headers' not in active:
-        return ''
-    return ('HTTP/1.1 200 OK\r\nContent-type: application/xml\r\n'
-            'Connection: close\r\n\r\n')
+    """Status line and headers written before a VOSI document.
+
+    nph- CGI: the script emits the whole HTTP response.  The status line and
+    each header end in CRLF, and a bare CRLF closes the header block; nginx
+    and Cloudflare reject the response otherwise.  NEA also sends
+    Connection: close.
+    """
+    head = 'HTTP/1.1 200 OK\r\nContent-type: application/xml\r\n'
+    if 'nea-vosi-headers' in active:
+        head += 'Connection: close\r\n'
+    return head + '\r\n'
 
 
 def vosi_tail(active):

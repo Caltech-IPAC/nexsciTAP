@@ -20,10 +20,12 @@ def test_vosi_documents_carry_neas_headers(legacy_tap_server):
         assert raw.endswith(b"</vosi:" + ep.encode() + b">\n\r\n"), raw[-80:]
 
 
-def test_vosi_documents_unchanged_in_default_mode(tap_server):
+def test_vosi_documents_in_default_mode_have_plain_headers(tap_server):
+    head = b"HTTP/1.1 200 OK\r\nContent-type: application/xml\r\n\r\n"
     for ep in ("availability", "capabilities"):
         raw = raw_get(tap_server, "/cgi-bin/TAP/nph-tap.py/" + ep)
-        assert raw.startswith(XML_DECL), raw[:200]
+        assert raw.startswith(head + XML_DECL), raw[:200]
+        assert raw.endswith(b"</vosi:" + ep.encode() + b">\n"), raw[-80:]
 
 
 DENIED = "Table 'not_a_table' is not available for querying."
