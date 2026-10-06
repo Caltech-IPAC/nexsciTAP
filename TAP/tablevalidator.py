@@ -38,7 +38,7 @@ class TableValidator:
             # For SQLite, `tap_schema` is the FILE PATH and using it directly
             # in a `SELECT ... FROM <path>.tables` reference produces a SQL
             # syntax error. Prefer the more-specific key when it's set.
-            if 'tap_schema_file' in connectInfo:
+            if connectInfo.get('dbms') == 'sqlite3' and 'tap_schema_file' in connectInfo:
                 self.tap_schema = connectInfo['tap_schema_file']
             elif 'tap_schema' in connectInfo:
                 self.tap_schema = connectInfo['tap_schema']
