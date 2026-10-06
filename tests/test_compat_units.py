@@ -1,4 +1,7 @@
 """compat.py's pure functions, active and inactive."""
+import datetime
+import io
+
 from TAP import compat
 
 
@@ -47,3 +50,30 @@ def test_vosi_tables_class():
     from TAP import compat_vositables, vositables
     assert compat.vosi_tables_class(compat.ALL) is compat_vositables.vosiTables
     assert compat.vosi_tables_class(compat.NONE) is vositables.vosiTables
+
+
+def test_warning_once_per_day(tmp_path):
+    out = io.StringIO()
+    day1, day2 = datetime.date(2026, 10, 6), datetime.date(2026, 10, 7)
+    assert compat.warn_once_per_day(compat.ALL, str(tmp_path), day1, out) is True
+    assert compat.warn_once_per_day(compat.ALL, str(tmp_path), day1, out) is False
+    assert compat.warn_once_per_day(compat.ALL, str(tmp_path), day2, out) is True
+    lines = out.getvalue().splitlines()
+    assert len(lines) == 2
+    assert lines[0].startswith('nexsciTAP: compatibility mode active (nea-errors, ')
+    assert lines[0].endswith('see MIGRATING.md')
+    assert (tmp_path / 'TAP' / '.compat-warned-2026-10-06').exists()
+
+
+def test_no_warning_without_compat(tmp_path):
+    out = io.StringIO()
+    assert compat.warn_once_per_day(compat.NONE, str(tmp_path), None, out) is False
+    assert out.getvalue() == '' and not (tmp_path / 'TAP').exists()
+
+
+def test_warning_never_fails_a_request(tmp_path):
+    blocker = tmp_path / 'file'          # a file where the work dir should be
+    blocker.write_text('x')
+    out = io.StringIO()
+    assert compat.warn_once_per_day(compat.ALL, str(blocker), None, out) is False
+    assert compat.warn_once_per_day(compat.ALL, None, None, out) is False

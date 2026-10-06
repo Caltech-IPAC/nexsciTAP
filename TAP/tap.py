@@ -472,6 +472,7 @@ class Tap:
         try:
             self.config = configParam(self.configpath, instance=self.instance, debug=self.debug)
             self.compat = self.config.compat
+            compat.warn_once_per_day(self.compat, self.config.workdir)
 
             if self.debug:
                 logging.debug('')

@@ -6,7 +6,10 @@ function returns what the default code does unless its behavior is active,
 so call sites hold no conditionals, and retiring compat means deleting this
 module and compat_vositables.py.  See MIGRATING.md for the plan.
 """
+import datetime
 import html
+import os
+import sys
 
 import configobj
 
@@ -189,3 +192,28 @@ def vosi_tables_class(active):
     else:
         from TAP.vositables import vosiTables
     return vosiTables
+
+
+# --- deprecation ------------------------------------------------------------
+
+def warn_once_per_day(active, workdir, today=None, stream=None):
+    """While compat is active, one stderr line (Apache's error_log) per day.
+
+    A stamp file <TAP_WORKDIR>/TAP/.compat-warned-<date>, created exclusively,
+    marks the day, so concurrent requests warn once.  Any failure is
+    swallowed: the warning must never fail a request.
+    """
+    if not active:
+        return False
+    try:
+        day = (today or datetime.date.today()).isoformat()
+        stamp = os.path.join(workdir, 'TAP', '.compat-warned-' + day)
+        os.makedirs(os.path.dirname(stamp), exist_ok=True)
+        with open(stamp, 'x'):
+            pass
+        (stream or sys.stderr).write(
+            'nexsciTAP: compatibility mode active (%s); see MIGRATING.md\n'
+            % ', '.join(sorted(active)))
+        return True
+    except Exception:
+        return False
