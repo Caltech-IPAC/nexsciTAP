@@ -665,6 +665,7 @@ class tapQuery:
                                   maxrec=self.maxrec,
                                   arraysize=self.arraysize,
                                   coldesc=self.coldesc,
+                                  compat=self.connectInfo.get('compat', frozenset()),
                                   racol=self.racol,
                                   deccol=self.deccol,
                                   dbms=self.dbms, \

@@ -13,7 +13,7 @@
 #
 import logging
 
-from TAP import writerecs
+from TAP import compat, writerecs
 
 
 class writeResult:
@@ -152,6 +152,8 @@ class writeResult:
         self.coldesc = 0
         if('coldesc' in kwargs):
             self.coldesc = kwargs['coldesc']
+
+        self.compat = kwargs.get('compat', compat.NONE)
 
         self.arraysize = 10000
         if('arraysize' in kwargs):
@@ -932,7 +934,7 @@ class writeResult:
             fmtarr.append(fmt)
             widtharr.append(width)
             unitsarr.append(units)
-            descarr.append(desc)
+            descarr.append(compat.field_description(self.compat, desc, coltype))
 
             i = i + 1
 

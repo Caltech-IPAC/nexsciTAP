@@ -19,12 +19,12 @@ from ADQL.adql import ADQL
 from bs4 import BeautifulSoup
 from spatial_index import SpatialIndex
 
+from TAP import compat
 from TAP.configparam import configParam
 from TAP.propfilter import propFilter
 from TAP.tablenames import TableNames
 from TAP.tablevalidator import TableValidationError, TableValidator
 from TAP.tapquery import tapQuery
-from TAP.vositables import vosiTables
 
 
 class Tap:
@@ -143,6 +143,7 @@ class Tap:
 
     uwsheader   = ''
 
+    compat = frozenset()     # active compat names; set once TAP.conf loads
 
     def __init__(self, **kwargs):
 
@@ -470,6 +471,8 @@ class Tap:
         self.config = None
         try:
             self.config = configParam(self.configpath, instance=self.instance, debug=self.debug)
+            self.compat = self.config.compat
+            compat.warn_once_per_day(self.compat, self.config.workdir)
 
             if self.debug:
                 logging.debug('')
@@ -870,7 +873,8 @@ class Tap:
                     logging.debug('case: getStatus')
 
                 try:
-                    self.__getStatus__(self.workdir, self.id, self.statuskey, \
+                    self.__getStatus__(self.workdir, self.id,
+                                       compat.uws_url_key(self.compat, self.statuskey), \
                                        self.param)
                 except Exception as e:
 
@@ -977,7 +981,7 @@ class Tap:
                 self.statdict['starttime'] = job['uws:startTime']
                 self.statdict['endtime'] = job['uws:endTime']
                 self.statdict['destruction'] = job['uws:destruction']
-                self.statdict['duration'] = job['uws:executionduration']
+                self.statdict['duration'] = compat.duration_value(job)
 
                 if self.debug:
                     logging.debug ('')
@@ -1072,7 +1076,7 @@ class Tap:
 
                 starttime = stime.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-4]
                 destruction = \
-                    destructtime.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-4] + 'Z'
+                    destructtime.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-4] + compat.destruction_suffix(self.compat)
 
                 if self.debug:
                     logging.debug('')
@@ -1500,7 +1504,7 @@ class Tap:
         try:
             TableValidator.validate_statement(query_adql, debug=self.debug)
         except Exception as e:
-            errcode = '403' if isinstance(e, TableValidationError) else '400'
+            errcode = compat.table_denied_status(self.compat) if isinstance(e, TableValidationError) else '400'
             if(self.tapcontext == 'async'):
                 self.phase = 'ERROR'
                 self.__writeAsyncError__(str(e), self.statuspath,
@@ -1742,7 +1746,7 @@ class Tap:
                 # TableValidationError means the query referenced a table
                 # not in TAP_SCHEMA — access denied (403). All other errors
                 # are bad requests (400).
-                errcode = '403' if isinstance(e, TableValidationError) else '400'
+                errcode = compat.table_denied_status(self.compat) if isinstance(e, TableValidationError) else '400'
 
                 if(self.tapcontext == 'async'):
 
@@ -1803,7 +1807,7 @@ class Tap:
                 # TableValidationError means the query referenced a table
                 # not in TAP_SCHEMA — access denied (403). All other errors
                 # are bad requests (400).
-                errcode = '403' if isinstance(e, TableValidationError) else '400'
+                errcode = compat.table_denied_status(self.compat) if isinstance(e, TableValidationError) else '400'
 
                 if(self.tapcontext == 'async'):
 
@@ -2064,7 +2068,7 @@ class Tap:
 
         if(outtype == 'xml'):
 
-            print("Content-type: text/xml\r")
+            print("Content-type: %s\r" % compat.uws_content_type(self.compat))
             print("\r")
             print('<?xml version="1.0" encoding="UTF-8"?>')
 
@@ -2166,7 +2170,7 @@ class Tap:
                 logging.debug('Return status.xml to user and exit.')
 
             print("HTTP/1.1 200 OK\r")
-            print("Content-type: text/xml\r")
+            print("Content-type: %s\r" % compat.uws_content_type(self.compat))
             print("\r")
             print(data)
             sys.exit()
@@ -2264,7 +2268,7 @@ class Tap:
             # { Single value return
             #
             retval = 'None'
-            keystr = 'uws:' + key
+            keystr = 'uws:' + compat.uws_key(job, key)
             outstr = ''
 
             if((key == 'phase')
@@ -2488,7 +2492,7 @@ class Tap:
                         if(format == 'json'):
                             print("Content-type: application/json\r")
                         elif(format == 'votable'):
-                            print("Content-type: text/xml\r")
+                            print("Content-type: %s\r" % compat.votable_content_type(self.compat))
                         else:
                             print("Content-type: text/plain\r")
                         print("\r")
@@ -2552,6 +2556,12 @@ class Tap:
         errcode = '200'
         if ('errcode' in kwargs):
             errcode = kwargs['errcode']
+
+        nea = compat.error_document(self.compat, errmsg, errcode)
+        if nea is not None:          # nea-errors replaces the whole response
+            sys.stdout.write(nea)
+            sys.stdout.flush()
+            sys.exit()
 
         httphdr = "HTTP/1.1 " + str(errcode)  + " ERROR\r"
         print(httphdr)
@@ -2681,7 +2691,7 @@ class Tap:
         if(format == 'json'):
             print("Content-type: application/json\r")
         elif(format == 'votable'):
-            print("Content-type: text/xml\r")
+            print("Content-type: %s\r" % compat.votable_content_type(self.compat))
         else:
             print("Content-type: text/plain\r")
         print("\r")
@@ -2757,10 +2767,7 @@ class Tap:
 
         sys.stdout.write('HTTP/1.1 303 See Other\r\n')
         sys.stdout.write('Location: %s\r\n' % statusurl)
-        sys.stdout.write('Content-Type: text/plain\r\n')
-        sys.stdout.write('Content-Length: %d\r\n'
-                         % len(body.encode('utf-8')))
-        sys.stdout.write('Connection: close\r\n')
+        sys.stdout.write(compat.async_submit_headers(self.compat, body))
         sys.stdout.write('\r\n')
         sys.stdout.write(body)
         sys.stdout.flush()
@@ -3039,7 +3046,8 @@ class Tap:
 
         fp.write(f"    <uws:endTime>{statdict['endtime']:s}</uws:endTime>\n")
 
-        fp.write(f"    <uws:executionduration>{statdict['duration']:d}</uws:executionduration>\n")
+        el = compat.duration_element(self.compat)
+        fp.write(f"    <uws:{el}>{statdict['duration']:d}</uws:{el}>\n")
 
         if (statdict['destruction'] is None):
             fp.write('    <uws:destruction xsi:nil="true"/>\n')
@@ -3180,7 +3188,7 @@ class Tap:
                 logging.debug('')
                 logging.debug('call vosiTables')
 
-            vosiTables (connectInfo=self.config.connectInfo, dbms=dbms, \
+            compat.vosi_tables_class(self.compat) (connectInfo=self.config.connectInfo, dbms=dbms, \
                 dbserver=dbserver, \
                 userid=userid, \
                 password=password, \
@@ -3243,6 +3251,7 @@ class Tap:
         # { printVosiAvailability
         #
 
+        sys.stdout.write(compat.vosi_head(self.compat))
         print ('<?xml version="1.0" encoding="UTF-8"?>')
         print ('')
         print ('<vosi:availability')
@@ -3253,6 +3262,7 @@ class Tap:
         print ('    <vosi:note>TAP service available.</vosi:note>')
         print ('</vosi:availability>')
 
+        sys.stdout.write(compat.vosi_tail(self.compat))
         sys.exit()
 
         #
@@ -3266,6 +3276,7 @@ class Tap:
         # { printVosiCapability
         #
 
+        sys.stdout.write(compat.vosi_head(self.compat))
         print ('<?xml version="1.0" encoding="UTF-8"?>')
         print ('')
         print ('<vosi:capabilities')
@@ -3369,6 +3380,7 @@ class Tap:
         print ('')
         print ('</vosi:capabilities>')
 
+        sys.stdout.write(compat.vosi_tail(self.compat))
         sys.exit()
 
         #
