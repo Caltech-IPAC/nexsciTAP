@@ -20,8 +20,6 @@ NONE = frozenset()
 # 1.x [webserver] keys that 3.x reads from [WEB].
 _WEB_KEYS = ('TAP_WORKDIR', 'TAP_WORKURL', 'HTTP_URL', 'HTTP_PORT', 'CGI_PGM',
              'ArraySize', 'INFOMSG')
-# 1.x [webserver] keys that 3.x reads from the connection section.
-_DB_KEYS_FROM_WEB = ('COOKIENAME', 'RACOL', 'DECCOL')
 # 1.x ADQL_* keys and their 3.x [SPTIND] names.
 _SPTIND_KEYS = {'ADQL_MODE': 'MODE', 'ADQL_LEVEL': 'LEVEL', 'ADQL_XCOL': 'XCOL',
                 'ADQL_YCOL': 'YCOL', 'ADQL_ZCOL': 'ZCOL',
@@ -70,9 +68,13 @@ def translate_legacy(conf):
     new['WEB'] = {k: web[k] for k in _WEB_KEYS if k in web}
     db = {'DBMS': dbms}
     db.update({k: v for k, v in conf[dbms].items() if not k.startswith('ADQL_')})
-    for k in _DB_KEYS_FROM_WEB:
-        if k in web:
-            db[k] = web[k]
+    # Every other [webserver] key goes to the connection section, where 3.x
+    # reads COOKIENAME, RACOL, DECCOL and the proprietary-filter keys
+    # (PROPFILTER, ACCESS_TBL, USERS_TBL, FILEID, ACCESSID).  Nothing is
+    # dropped: a lost PROPFILTER would serve proprietary rows to anyone.
+    for k, v in web.items():
+        if k not in _WEB_KEYS and k != 'DBMS' and not k.startswith('ADQL_'):
+            db[k] = v
     if dbms == 'sqlite3':
         db.setdefault('TAP_SCHEMA_FILE', 'TAP_SCHEMA')   # 3.x's SQLite ATTACH name
     new['DBMS'] = db

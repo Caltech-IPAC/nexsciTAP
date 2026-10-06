@@ -92,6 +92,31 @@ def test_legacy_oracle_reads_like_its_3x_equivalent(tmp_path):
     assert current.connectInfo['compat'] == compat.NONE
 
 
+PROPRIETARY_KEYS = ('ACCESS_TBL=access_tbl\nUSERS_TBL=users_tbl\nFILEID=fileid\n'
+                    'ACCESSID=accessid\nPROPFILTER=koa\n')
+
+
+def test_legacy_proprietary_filter_keys_are_kept(tmp_path):
+    # A 1.x config keeps the proprietary-filter keys in [webserver]; 3.x reads
+    # them from the connection section.  Dropping them serves proprietary rows.
+    legacy = configParam(write(tmp_path, 'legacy.conf', LEGACY_ORACLE.replace(
+        'CGI_PGM=/TAP\n', 'CGI_PGM=/TAP\n' + PROPRIETARY_KEYS)))
+    current = configParam(write(tmp_path, 'current.conf', CURRENT_ORACLE.replace(
+        'DECCOL=dec\n', 'DECCOL=dec\n' + PROPRIETARY_KEYS), compat=''))
+    assert legacy.propfilter == 'koa'
+    assert (legacy.accesstbl, legacy.usertbl, legacy.fileid, legacy.accessid) == \
+        ('access_tbl', 'users_tbl', 'fileid', 'accessid')
+    assert state(legacy) == state(current)
+
+
+def test_every_legacy_webserver_key_is_kept(tmp_path):
+    # Keys the translator has no list entry for still reach configParam.
+    text = LEGACY_ORACLE.replace('CGI_PGM=/TAP\n', 'CGI_PGM=/TAP\nSOME_FUTURE_KEY=x\n')
+    conf = compat.translate_legacy(__import__('configobj').ConfigObj(
+        write(tmp_path, 'TAP.conf', text)))
+    assert conf['DBMS']['SOME_FUTURE_KEY'] == 'x'
+
+
 def test_explicit_compat_list(tmp_path):
     cp = configParam(write(tmp_path, 'TAP.conf', CURRENT_ORACLE,
                            compat='COMPAT = nea-errors, nea-uws'))
