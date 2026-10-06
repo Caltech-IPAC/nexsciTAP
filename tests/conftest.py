@@ -101,6 +101,9 @@ class _NphCGIHandler(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
         self._run_cgi()
 
+    def do_DELETE(self):
+        self._run_cgi()
+
     def _run_cgi(self):
         # Parse PATH_INFO and QUERY_STRING from self.path.
         from urllib.parse import urlsplit

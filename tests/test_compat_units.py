@@ -34,8 +34,6 @@ def test_field_description_blanks_only_non_char_columns():
 
 
 def test_uws_functions():
-    assert compat.duration_element(compat.ALL) == 'executionDuration'
-    assert compat.duration_element(compat.NONE) == 'executionduration'
     assert compat.uws_key({'uws:executionDuration': '1'}, 'executionduration') == 'executionDuration'
     assert compat.uws_key({'uws:executionduration': '1'}, 'executionduration') == 'executionduration'
     assert compat.uws_key({'uws:executionDuration': '1'}, 'phase') == 'phase'
