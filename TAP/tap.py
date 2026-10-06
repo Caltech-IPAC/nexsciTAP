@@ -2766,10 +2766,7 @@ class Tap:
 
         sys.stdout.write('HTTP/1.1 303 See Other\r\n')
         sys.stdout.write('Location: %s\r\n' % statusurl)
-        sys.stdout.write(compat.async_submit_content_type(self.compat))
-        sys.stdout.write('Content-Length: %d\r\n'
-                         % len(body.encode('utf-8')))
-        sys.stdout.write('Connection: close\r\n')
+        sys.stdout.write(compat.async_submit_headers(self.compat, body))
         sys.stdout.write('\r\n')
         sys.stdout.write(body)
         sys.stdout.flush()

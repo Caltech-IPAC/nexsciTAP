@@ -80,7 +80,7 @@ def _completed_job(server):
 
     The 303 to the initial submit (job left PENDING) is written by a different
     code path and carries no Content-Type in either mode; the one answering
-    PHASE=RUN is what ``async_submit_content_type`` controls.
+    PHASE=RUN is what ``async_submit_headers`` controls.
     """
     sub = requests.post(tap_async_url(server),
                         data={"query": "select obsjd from data_l0", "format": "csv"},
@@ -101,6 +101,8 @@ def _completed_job(server):
 def test_uws_is_neas_form(legacy_tap_server):
     run, url = _completed_job(legacy_tap_server)
     assert "Content-Type" not in run.headers
+    assert "Content-Length" not in run.headers
+    assert "Connection" not in run.headers
     r = requests.get(url, timeout=30)
     assert r.headers["Content-Type"] == "application/xml"
     job = ET.fromstring(r.text)
@@ -115,6 +117,8 @@ def test_uws_is_neas_form(legacy_tap_server):
 def test_uws_unchanged_in_default_mode(tap_server):
     run, url = _completed_job(tap_server)
     assert run.headers["Content-Type"] == "text/plain"
+    assert int(run.headers["Content-Length"]) == len(run.content)
+    assert run.headers["Connection"] == "close"
     r = requests.get(url, timeout=30)
     assert r.headers["Content-Type"] == "text/xml"
     job = ET.fromstring(r.text)

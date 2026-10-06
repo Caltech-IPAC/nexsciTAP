@@ -42,8 +42,12 @@ def test_uws_functions():
     assert compat.destruction_suffix(compat.NONE) == 'Z'
     assert compat.uws_content_type(compat.ALL) == 'application/xml'
     assert compat.uws_content_type(compat.NONE) == 'text/xml'
-    assert compat.async_submit_content_type(compat.ALL) == ''
-    assert compat.async_submit_content_type(compat.NONE) == 'Content-Type: text/plain\r\n'
+    body = 'Redirect Location: https://x/\u00e9\n'
+    assert len(body.encode('utf-8')) != len(body)
+    assert compat.async_submit_headers(compat.ALL, body) == ''
+    assert compat.async_submit_headers(compat.NONE, body) == (
+        'Content-Type: text/plain\r\nContent-Length: %d\r\nConnection: close\r\n'
+        % len(body.encode('utf-8')))
 
 
 def test_vosi_tables_class():

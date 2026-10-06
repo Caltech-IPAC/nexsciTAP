@@ -178,9 +178,17 @@ def uws_content_type(active):
     return 'application/xml' if 'nea-uws' in active else 'text/xml'
 
 
-def async_submit_content_type(active):
-    """Header line in the 303 after an async submit; NEA sends none."""
-    return '' if 'nea-uws' in active else 'Content-Type: text/plain\r\n'
+def async_submit_headers(active, body):
+    """Framing headers of the 303 that starts a job (PHASE=RUN).
+
+    NEA sends none: the response ends when the CGI exits, because the
+    forked worker holds no stdout.  Otherwise: Content-Type, the length of
+    `body` in bytes, and Connection: close.
+    """
+    if 'nea-uws' in active:
+        return ''
+    return ('Content-Type: text/plain\r\nContent-Length: %d\r\n'
+            'Connection: close\r\n' % len(body.encode('utf-8')))
 
 
 # --- nea-tables -------------------------------------------------------------
