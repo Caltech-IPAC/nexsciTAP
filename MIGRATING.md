@@ -17,7 +17,7 @@ line a day to stderr (the web server's error log):
 | `nea-errors` | errors are VOTable documents; a table not in TAP_SCHEMA returns 400 | plain text; 403 |
 | `nea-tables` | `/tables` uses VODataService `<flag>` elements | per-column `<principal>`, `<indexed>`, `<std>`, `<column_index>`, `<arraysize>` |
 | `nea-votable` | VOTable results are `application/xml`, non-char FIELDs carry no DESCRIPTION (units are still written) | `text/xml`, with descriptions on every FIELD |
-| `nea-uws` | job documents use `executionDuration`, `application/xml`, no `Z` on `destruction`; the 303 that starts a job (`PHASE=RUN`) carries no `Content-Type`, `Content-Length` or `Connection` lines, because the response ends when the CGI exits; `/async/<id>/executionDuration` (camelCase) is accepted as well as `/executionduration` | `executionduration`, `text/xml`, `Z`; the 303 carries `Content-Type: text/plain`, `Content-Length` and `Connection: close`; only `/executionduration` is a valid key |
+| `nea-uws` | job documents are `application/xml`, no `Z` on `destruction`; the 303 that starts a job (`PHASE=RUN`) carries no `Content-Type`, `Content-Length` or `Connection` lines, because the response ends when the CGI exits; `/async/<id>/executionDuration` (camelCase) is accepted as well as `/executionduration`; job URLs join `HTTP_URL` and `CGI_PGM` with `/` as written, so `CGI_PGM=/TAP` gives `//TAP` | `text/xml`, `Z`; the 303 carries `Content-Type: text/plain`, `Content-Length` and `Connection: close`; only `/executionduration` is a valid key; job URLs have one `/` between `HTTP_URL` and `CGI_PGM` |
 
 ## Moving to the 3.x layout
 
@@ -48,22 +48,27 @@ Compatibility mode reproduces 1.2's responses, with these exceptions:
 - Errors raised before `TAP.conf` is read (a missing or broken `TAP.conf`, a
   malformed request path) use the 3.x error format, since the mode isn't known
   yet.
-- `/availability` and `/capabilities` create a workspace directory per
-  request, so workspace cleanup must cover them.
 - The async job document escapes quotes in the query text as `&#x27;`; it
   parses to the same XML.
-- A job's `status.xml` written under one mode is read correctly under the
-  other (either spelling of the duration element), so switching `nea-uws` off
-  doesn't break jobs in flight.
+- Both modes write the job document's duration as `executionDuration` (the
+  UWS name) and read either spelling, so jobs written by an earlier release
+  or under the other mode read correctly.
+- Both modes follow UWS where 1.2 did not: a job can be deleted
+  (`POST ACTION=DELETE` or HTTP `DELETE`, answered with 303 to the job list),
+  an unknown job id is 404, `GET` on the job list returns an empty
+  `<uws:jobs>` instead of creating a job, and an unset job value (such as
+  `/destruction` before the job runs) is empty text instead of `None`.
 
 `COMPAT` is read only from `[WEB]`; placing it in any other section, including
 a 1.x `[webserver]`, is a configuration error.
 
 ## Release plan
 
-- **3.1.0**: compatibility mode, the 1.x reader, this guide.
-- **3.x**: where the shared behavior is to change (for example
-  `executionDuration` casing and VOTable errors, which IVOA standards
-  require), the release notes say so before any default changes.
+- **3.1.0**: compatibility mode, the 1.x reader, this guide.  The default
+  job document now spells the duration `executionDuration`, as UWS
+  requires, which retires that part of `nea-uws`.
+- **3.x**: where the shared behavior is to change (for example VOTable
+  errors, which IVOA standards require), the release notes say so before
+  any default changes.
 - **4.0.0**: compatibility mode, the `COMPAT` key and the 1.x reader are
   removed; a 1.x `TAP.conf` then fails at startup with a pointer here.
