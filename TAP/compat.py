@@ -86,3 +86,18 @@ def load_config(conf):
         return translate_legacy(conf), ALL
     web = conf['WEB'] if 'WEB' in conf else {}
     return conf, parse_names(web.get('COMPAT'))
+
+
+# --- nea-vosi-headers -------------------------------------------------------
+
+def vosi_head(active):
+    """Status line and headers NEA's nph- CGI writes before a VOSI document."""
+    if 'nea-vosi-headers' not in active:
+        return ''
+    return ('HTTP/1.1 200 OK\r\nContent-type: application/xml\r\n'
+            'Connection: close\r\n\r\n')
+
+
+def vosi_tail(active):
+    """NEA ends its VOSI documents with one more CRLF."""
+    return '\r\n' if 'nea-vosi-headers' in active else ''

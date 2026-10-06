@@ -1,0 +1,23 @@
+# NEA's 1.x TAP.conf layout ([webserver] + [sqlite3] + ADQL_*), for the
+# compat-mode tests.  Same SQLite data as TAP.conf.template; placeholders
+# are filled by the legacy_tap_server fixture in tests/conftest.py.
+[webserver]
+DBMS=sqlite3
+TAP_WORKDIR={TEST_WORKDIR}
+TAP_WORKURL=/workspace
+HTTP_URL=http://{TEST_HTTP_HOST}
+HTTP_PORT={TEST_HTTP_PORT}
+CGI_PGM=TAP
+RACOL=ra
+DECCOL=dec
+ADQL_MODE=HTM
+ADQL_LEVEL=20
+ADQL_XCOL=x
+ADQL_YCOL=y
+ADQL_ZCOL=z
+ADQL_COLNAME=sptind
+ADQL_ENCODING=BASE10
+
+[sqlite3]
+DB={TEST_DB_PATH}
+TAP_SCHEMA={TEST_TAP_SCHEMA}

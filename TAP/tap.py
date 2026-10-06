@@ -19,7 +19,7 @@ from ADQL.adql import ADQL
 from bs4 import BeautifulSoup
 from spatial_index import SpatialIndex
 
-from TAP import compat  # noqa: F401  (used from Task 3)
+from TAP import compat
 from TAP.configparam import configParam
 from TAP.propfilter import propFilter
 from TAP.tablenames import TableNames
@@ -3246,6 +3246,7 @@ class Tap:
         # { printVosiAvailability
         #
 
+        sys.stdout.write(compat.vosi_head(self.compat))
         print ('<?xml version="1.0" encoding="UTF-8"?>')
         print ('')
         print ('<vosi:availability')
@@ -3256,6 +3257,7 @@ class Tap:
         print ('    <vosi:note>TAP service available.</vosi:note>')
         print ('</vosi:availability>')
 
+        sys.stdout.write(compat.vosi_tail(self.compat))
         sys.exit()
 
         #
@@ -3269,6 +3271,7 @@ class Tap:
         # { printVosiCapability
         #
 
+        sys.stdout.write(compat.vosi_head(self.compat))
         print ('<?xml version="1.0" encoding="UTF-8"?>')
         print ('')
         print ('<vosi:capabilities')
@@ -3372,6 +3375,7 @@ class Tap:
         print ('')
         print ('</vosi:capabilities>')
 
+        sys.stdout.write(compat.vosi_tail(self.compat))
         sys.exit()
 
         #
