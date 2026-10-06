@@ -6,6 +6,8 @@ function returns what the default code does unless its behavior is active,
 so call sites hold no conditionals, and retiring compat means deleting this
 module and compat_vositables.py.  See MIGRATING.md for the plan.
 """
+import html
+
 import configobj
 
 NAMES = ('nea-vosi-headers', 'nea-errors', 'nea-tables', 'nea-votable', 'nea-uws')
@@ -101,3 +103,31 @@ def vosi_head(active):
 def vosi_tail(active):
     """NEA ends its VOSI documents with one more CRLF."""
     return '\r\n' if 'nea-vosi-headers' in active else ''
+
+
+# --- nea-errors -------------------------------------------------------------
+
+def table_denied_status(active):
+    """Status for a table outside TAP_SCHEMA: NEA answers 400, the shared line 403."""
+    return '400' if 'nea-errors' in active else '403'
+
+
+def error_document(active, errmsg, errcode):
+    """NEA's error response: a VOTable error document whatever the format.
+
+    Returns the whole response, or None when nea-errors is inactive.  Markup
+    is escaped so the document stays well-formed; quotes are not, matching
+    NEA's bytes for ordinary messages.
+    """
+    if 'nea-errors' not in active:
+        return None
+    return ('HTTP/1.1 %s ERROR\r\n' % errcode
+            + 'Content-type: application/xml\r\n\r\n'
+            + '<?xml version="1.0" encoding="UTF-8"?>\n'
+            + '<VOTABLE version="1.4" xmlns="http://www.ivoa.net/xml/VOTable/v1.3">\n'
+            + '<RESOURCE type="results">\n'
+            + '<INFO name="QUERY_STATUS" value="ERROR">\n'
+            + html.escape(str(errmsg), quote=False) + '\n'
+            + '</INFO>\n'
+            + '</RESOURCE>\n'
+            + '</VOTABLE>\n')

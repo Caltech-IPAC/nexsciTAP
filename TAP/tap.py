@@ -1503,7 +1503,7 @@ class Tap:
         try:
             TableValidator.validate_statement(query_adql, debug=self.debug)
         except Exception as e:
-            errcode = '403' if isinstance(e, TableValidationError) else '400'
+            errcode = compat.table_denied_status(self.compat) if isinstance(e, TableValidationError) else '400'
             if(self.tapcontext == 'async'):
                 self.phase = 'ERROR'
                 self.__writeAsyncError__(str(e), self.statuspath,
@@ -1745,7 +1745,7 @@ class Tap:
                 # TableValidationError means the query referenced a table
                 # not in TAP_SCHEMA — access denied (403). All other errors
                 # are bad requests (400).
-                errcode = '403' if isinstance(e, TableValidationError) else '400'
+                errcode = compat.table_denied_status(self.compat) if isinstance(e, TableValidationError) else '400'
 
                 if(self.tapcontext == 'async'):
 
@@ -1806,7 +1806,7 @@ class Tap:
                 # TableValidationError means the query referenced a table
                 # not in TAP_SCHEMA — access denied (403). All other errors
                 # are bad requests (400).
-                errcode = '403' if isinstance(e, TableValidationError) else '400'
+                errcode = compat.table_denied_status(self.compat) if isinstance(e, TableValidationError) else '400'
 
                 if(self.tapcontext == 'async'):
 
@@ -2555,6 +2555,12 @@ class Tap:
         errcode = '200'
         if ('errcode' in kwargs):
             errcode = kwargs['errcode']
+
+        nea = compat.error_document(self.compat, errmsg, errcode)
+        if nea is not None:          # nea-errors replaces the whole response
+            sys.stdout.write(nea)
+            sys.stdout.flush()
+            sys.exit()
 
         httphdr = "HTTP/1.1 " + str(errcode)  + " ERROR\r"
         print(httphdr)
