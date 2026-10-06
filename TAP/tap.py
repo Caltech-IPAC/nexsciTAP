@@ -25,7 +25,6 @@ from TAP.propfilter import propFilter
 from TAP.tablenames import TableNames
 from TAP.tablevalidator import TableValidationError, TableValidator
 from TAP.tapquery import tapQuery
-from TAP.vositables import vosiTables
 
 
 class Tap:
@@ -3190,7 +3189,7 @@ class Tap:
                 logging.debug('')
                 logging.debug('call vosiTables')
 
-            vosiTables (connectInfo=self.config.connectInfo, dbms=dbms, \
+            compat.vosi_tables_class(self.compat) (connectInfo=self.config.connectInfo, dbms=dbms, \
                 dbserver=dbserver, \
                 userid=userid, \
                 password=password, \

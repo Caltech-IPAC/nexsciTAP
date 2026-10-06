@@ -120,3 +120,14 @@ def test_uws_unchanged_in_default_mode(tap_server):
     job = ET.fromstring(r.text)
     assert job.find(UWS + "executionduration") is not None
     assert job.find(UWS + "destruction").text.endswith("Z")
+
+
+def test_tables_is_neas_layout(legacy_tap_server):
+    r = requests.get(legacy_tap_server + "/cgi-bin/TAP/nph-tap.py/tables", timeout=60)
+    assert r.status_code == 200, r.text[:300]
+
+
+def test_tables_unchanged_in_default_mode(tap_server):
+    r = requests.get(tap_server + "/cgi-bin/TAP/nph-tap.py/tables", timeout=60)
+    assert r.status_code == 200, r.text[:300]
+    assert "<flag>principal</flag>" not in r.text

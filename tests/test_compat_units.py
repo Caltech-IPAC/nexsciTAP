@@ -41,3 +41,9 @@ def test_uws_functions():
     assert compat.uws_content_type(compat.NONE) == 'text/xml'
     assert compat.async_submit_content_type(compat.ALL) == ''
     assert compat.async_submit_content_type(compat.NONE) == 'Content-Type: text/plain\r\n'
+
+
+def test_vosi_tables_class():
+    from TAP import compat_vositables, vositables
+    assert compat.vosi_tables_class(compat.ALL) is compat_vositables.vosiTables
+    assert compat.vosi_tables_class(compat.NONE) is vositables.vosiTables

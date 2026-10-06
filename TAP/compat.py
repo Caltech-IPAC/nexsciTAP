@@ -178,3 +178,14 @@ def uws_content_type(active):
 def async_submit_content_type(active):
     """Header line in the 303 after an async submit; NEA sends none."""
     return '' if 'nea-uws' in active else 'Content-Type: text/plain\r\n'
+
+
+# --- nea-tables -------------------------------------------------------------
+
+def vosi_tables_class(active):
+    """The /tables writer: NEA's (prod's vositables.py, verbatim) or the shared one."""
+    if 'nea-tables' in active:
+        from TAP.compat_vositables import vosiTables
+    else:
+        from TAP.vositables import vosiTables
+    return vosiTables
