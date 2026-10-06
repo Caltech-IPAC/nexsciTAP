@@ -1,0 +1,2 @@
+include HOTFIX-3.0.2.md
+include tests/conftest.py

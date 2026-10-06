@@ -198,7 +198,6 @@ class tapQuery:
 
                 if self.debug:
                     logging.debug(f'userid   = {self.userid:s}')
-                    logging.debug(f'password = {self.password:s}')
                     logging.debug(f'dbserver = {self.dbserver:s}')
 
 
@@ -297,7 +296,6 @@ class tapQuery:
                     logging.debug(self.socket)
                     logging.debug(f'db   = {self.db:s}')
                     logging.debug(f'userid   = {self.userid:s}')
-                    logging.debug(f'password = {self.password:s}')
 
 
             # POSTGRESQL
@@ -350,7 +348,6 @@ class tapQuery:
                     logging.debug(f'hostname = {self.hostname:s}')
                     logging.debug(f'database = {self.database:s}')
                     logging.debug(f'username = {self.username:s}')
-                    logging.debug(f'password = {self.password:s}')
 
 
 

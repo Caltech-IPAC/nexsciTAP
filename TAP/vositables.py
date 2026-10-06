@@ -171,10 +171,6 @@ class vosiTables:
                 raise Exception (self.msg)
 
      
-            if self.debug:
-                logging.debug('')
-                logging.debug(f'password= {self.password:s}')
-        
         elif (self.dbms.lower() == 'sqlite3'):
 
             if ((self.db is None) or (len(self.db) == 0)):

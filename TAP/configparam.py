@@ -73,11 +73,6 @@ class configParam:
 
         if self.debug:
             logging.debug('')
-            logging.debug('      confobj:')
-            logging.debug('      %s', confobj)
-
-        if self.debug:
-            logging.debug('')
             logging.debug('ConfigObj instantiated successfully')
 
         
@@ -560,7 +555,6 @@ class configParam:
             logging.debug('self.hostname          = %s', self.hostname)
             logging.debug('self.userid            = %s', self.userid)
             logging.debug('self.username          = %s', self.username)
-            logging.debug('self.password          = %s', self.password)
             logging.debug('self.db                = %s', self.db)
             logging.debug('self.database          = %s', self.database)
             logging.debug('self.tap_schema        = %s', self.tap_schema)
@@ -659,7 +653,6 @@ class configParam:
             logging.debug('      hostname          = ' + str(self.hostname))
             logging.debug('      userid            = ' + str(self.userid))
             logging.debug('      username          = ' + str(self.username))
-            logging.debug('      password          = ' + str(self.password))
             logging.debug('      db                = ' + str(self.db))
             logging.debug('      database          = ' + str(self.database))
             logging.debug('      tap_schema        = ' + str(self.tap_schema))
