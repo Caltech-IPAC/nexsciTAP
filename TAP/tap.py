@@ -980,7 +980,7 @@ class Tap:
                 self.statdict['starttime'] = job['uws:startTime']
                 self.statdict['endtime'] = job['uws:endTime']
                 self.statdict['destruction'] = job['uws:destruction']
-                self.statdict['duration'] = job['uws:executionduration']
+                self.statdict['duration'] = job['uws:' + compat.duration_element(self.compat)]
 
                 if self.debug:
                     logging.debug ('')
@@ -1075,7 +1075,7 @@ class Tap:
 
                 starttime = stime.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-4]
                 destruction = \
-                    destructtime.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-4] + 'Z'
+                    destructtime.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-4] + compat.destruction_suffix(self.compat)
 
                 if self.debug:
                     logging.debug('')
@@ -2067,7 +2067,7 @@ class Tap:
 
         if(outtype == 'xml'):
 
-            print("Content-type: text/xml\r")
+            print("Content-type: %s\r" % compat.uws_content_type(self.compat))
             print("\r")
             print('<?xml version="1.0" encoding="UTF-8"?>')
 
@@ -2169,7 +2169,7 @@ class Tap:
                 logging.debug('Return status.xml to user and exit.')
 
             print("HTTP/1.1 200 OK\r")
-            print("Content-type: text/xml\r")
+            print("Content-type: %s\r" % compat.uws_content_type(self.compat))
             print("\r")
             print(data)
             sys.exit()
@@ -2267,7 +2267,7 @@ class Tap:
             # { Single value return
             #
             retval = 'None'
-            keystr = 'uws:' + key
+            keystr = 'uws:' + compat.uws_key(self.compat, key)
             outstr = ''
 
             if((key == 'phase')
@@ -2766,7 +2766,7 @@ class Tap:
 
         sys.stdout.write('HTTP/1.1 303 See Other\r\n')
         sys.stdout.write('Location: %s\r\n' % statusurl)
-        sys.stdout.write('Content-Type: text/plain\r\n')
+        sys.stdout.write(compat.async_submit_content_type(self.compat))
         sys.stdout.write('Content-Length: %d\r\n'
                          % len(body.encode('utf-8')))
         sys.stdout.write('Connection: close\r\n')
@@ -3048,7 +3048,8 @@ class Tap:
 
         fp.write(f"    <uws:endTime>{statdict['endtime']:s}</uws:endTime>\n")
 
-        fp.write(f"    <uws:executionduration>{statdict['duration']:d}</uws:executionduration>\n")
+        el = compat.duration_element(self.compat)
+        fp.write(f"    <uws:{el}>{statdict['duration']:d}</uws:{el}>\n")
 
         if (statdict['destruction'] is None):
             fp.write('    <uws:destruction xsi:nil="true"/>\n')

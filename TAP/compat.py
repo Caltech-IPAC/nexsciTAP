@@ -151,3 +151,30 @@ def field_description(active, desc, coltype):
     if 'nea-votable' in active and coltype != 'char':
         return ''
     return desc
+
+
+# --- nea-uws ----------------------------------------------------------------
+
+def duration_element(active):
+    """UWS names it executionDuration; the shared line writes it lowercase."""
+    return 'executionDuration' if 'nea-uws' in active else 'executionduration'
+
+
+def uws_key(active, key):
+    """Status-document element for a job sub-resource key from the URL."""
+    return duration_element(active) if key == 'executionduration' else key
+
+
+def destruction_suffix(active):
+    """NEA writes the destruction time without a trailing 'Z'."""
+    return '' if 'nea-uws' in active else 'Z'
+
+
+def uws_content_type(active):
+    """Content type of the job document: NEA sends application/xml."""
+    return 'application/xml' if 'nea-uws' in active else 'text/xml'
+
+
+def async_submit_content_type(active):
+    """Header line in the 303 after an async submit; NEA sends none."""
+    return '' if 'nea-uws' in active else 'Content-Type: text/plain\r\n'

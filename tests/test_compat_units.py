@@ -28,3 +28,16 @@ def test_field_description_blanks_only_non_char_columns():
     assert compat.field_description(compat.ALL, 'Julian date', 'double') == ''
     assert compat.field_description(compat.ALL, 'Program ID', 'char') == 'Program ID'
     assert compat.field_description(compat.NONE, 'Julian date', 'double') == 'Julian date'
+
+
+def test_uws_functions():
+    assert compat.duration_element(compat.ALL) == 'executionDuration'
+    assert compat.duration_element(compat.NONE) == 'executionduration'
+    assert compat.uws_key(compat.ALL, 'executionduration') == 'executionDuration'
+    assert compat.uws_key(compat.ALL, 'phase') == 'phase'
+    assert compat.destruction_suffix(compat.ALL) == ''
+    assert compat.destruction_suffix(compat.NONE) == 'Z'
+    assert compat.uws_content_type(compat.ALL) == 'application/xml'
+    assert compat.uws_content_type(compat.NONE) == 'text/xml'
+    assert compat.async_submit_content_type(compat.ALL) == ''
+    assert compat.async_submit_content_type(compat.NONE) == 'Content-Type: text/plain\r\n'

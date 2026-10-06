@@ -2,8 +2,11 @@
 responses (legacy_tap_server); the 3.x config is unchanged (tap_server)."""
 from __future__ import annotations
 
+import time
+import xml.etree.ElementTree as ET
+
 import requests
-from _helpers import raw_get, tap_sync_url
+from _helpers import raw_get, tap_async_url, tap_sync_url
 
 VOSI_HEAD = (b"HTTP/1.1 200 OK\r\nContent-type: application/xml\r\n"
              b"Connection: close\r\n\r\n")
@@ -67,3 +70,53 @@ def test_votable_unchanged_in_default_mode(tap_server):
     assert r.status_code == 200, r.text[:300]
     assert r.headers["Content-Type"] == "text/xml"
     assert "Julian date of observation." in r.text
+
+
+UWS = "{http://www.ivoa.net/xml/UWS/v1.0}"
+
+
+def _completed_job(server):
+    """Submit, run and wait; returns (the 303 answering RUN, status URL).
+
+    The 303 to the initial submit (job left PENDING) is written by a different
+    code path and carries no Content-Type in either mode; the one answering
+    PHASE=RUN is what ``async_submit_content_type`` controls.
+    """
+    sub = requests.post(tap_async_url(server),
+                        data={"query": "select obsjd from data_l0", "format": "csv"},
+                        allow_redirects=False, timeout=60)
+    assert sub.status_code == 303, sub.text[:300]
+    url = sub.headers["Location"]
+    run = requests.post(url + "/phase", data={"PHASE": "RUN"},
+                        allow_redirects=False, timeout=60)
+    assert run.status_code == 303, run.text[:300]
+    deadline = time.time() + 30
+    while time.time() < deadline:
+        if requests.get(url + "/phase", timeout=30).text.strip() in ("COMPLETED", "ERROR"):
+            break
+        time.sleep(0.2)
+    return run, url
+
+
+def test_uws_is_neas_form(legacy_tap_server):
+    run, url = _completed_job(legacy_tap_server)
+    assert "Content-Type" not in run.headers
+    r = requests.get(url, timeout=30)
+    assert r.headers["Content-Type"] == "application/xml"
+    job = ET.fromstring(r.text)
+    assert job.find(UWS + "phase").text == "COMPLETED"
+    assert job.find(UWS + "executionDuration") is not None
+    assert job.find(UWS + "executionduration") is None
+    assert not job.find(UWS + "destruction").text.endswith("Z")
+    dur = requests.get(url + "/executionduration", timeout=30)
+    assert dur.status_code == 200 and dur.text.strip().isdigit(), dur.text[:200]
+
+
+def test_uws_unchanged_in_default_mode(tap_server):
+    run, url = _completed_job(tap_server)
+    assert run.headers["Content-Type"] == "text/plain"
+    r = requests.get(url, timeout=30)
+    assert r.headers["Content-Type"] == "text/xml"
+    job = ET.fromstring(r.text)
+    assert job.find(UWS + "executionduration") is not None
+    assert job.find(UWS + "destruction").text.endswith("Z")
