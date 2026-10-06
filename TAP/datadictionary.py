@@ -186,7 +186,8 @@ class dataDictionary:
             # For SQLite the schema is ATTACHed under a name held in
             # `tap_schema_file`; `tap_schema` is the file path. For
             # Oracle/Postgres/MySQL `tap_schema` is the schema name itself.
-            schema_name = self.connectInfo.get("tap_schema_file") \
+            schema_name = (self.connectInfo.get("tap_schema_file")
+                           if self.connectInfo.get("dbms") == "sqlite3" else None) \
                 or self.connectInfo["tap_schema"]
 
             sql = "select * from " + schema_name + "." + self.connectInfo["columns_table"] + " where lower(table_name) = " \

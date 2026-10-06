@@ -112,7 +112,8 @@ def _run_cgi_with_workdir(tmp_path, fixture_root, path_info: str) -> bytes:
     conf.write_text(
         (FIXTURES / "TAP.conf.template").read_text().format(
             TEST_WORKDIR=str(workdir),
-            TEST_HTTP_URL="http://127.0.0.1:8099",
+            TEST_HTTP_HOST="127.0.0.1",
+            TEST_HTTP_PORT="8099",
             TEST_DB_PATH=str(fixture_root / "test_data.db"),
             TEST_TAP_SCHEMA=str(fixture_root / "tap_schema.db"),
         )

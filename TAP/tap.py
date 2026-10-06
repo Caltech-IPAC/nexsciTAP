@@ -19,12 +19,12 @@ from ADQL.adql import ADQL
 from bs4 import BeautifulSoup
 from spatial_index import SpatialIndex
 
+from TAP import compat
 from TAP.configparam import configParam
 from TAP.propfilter import propFilter
 from TAP.tablenames import TableNames
 from TAP.tablevalidator import TableValidationError, TableValidator
 from TAP.tapquery import tapQuery
-from TAP.vositables import vosiTables
 
 
 class Tap:
@@ -143,6 +143,7 @@ class Tap:
 
     uwsheader   = ''
 
+    compat = frozenset()     # active compat names; set once TAP.conf loads
 
     def __init__(self, **kwargs):
 
@@ -470,6 +471,8 @@ class Tap:
         self.config = None
         try:
             self.config = configParam(self.configpath, instance=self.instance, debug=self.debug)
+            self.compat = self.config.compat
+            compat.warn_once_per_day(self.compat, self.config.workdir)
 
             if self.debug:
                 logging.debug('')
@@ -875,7 +878,8 @@ class Tap:
                     logging.debug('case: getStatus')
 
                 try:
-                    self.__getStatus__(self.workdir, self.id, self.statuskey, \
+                    self.__getStatus__(self.workdir, self.id,
+                                       compat.uws_url_key(self.compat, self.statuskey), \
                                        self.param)
                 except Exception as e:
 
@@ -982,7 +986,7 @@ class Tap:
                 self.statdict['starttime'] = job['uws:startTime']
                 self.statdict['endtime'] = job['uws:endTime']
                 self.statdict['destruction'] = job['uws:destruction']
-                self.statdict['duration'] = job['uws:executionduration']
+                self.statdict['duration'] = compat.duration_value(job)
 
                 if self.debug:
                     logging.debug ('')
@@ -1077,7 +1081,7 @@ class Tap:
 
                 starttime = stime.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-4]
                 destruction = \
-                    destructtime.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-4] + 'Z'
+                    destructtime.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-4] + compat.destruction_suffix(self.compat)
 
                 if self.debug:
                     logging.debug('')
@@ -1285,24 +1289,42 @@ class Tap:
             # } end async bogus value case
             #
 
-            if self.debug:
-                logging.debug('')
-                logging.debug ('call writeStatusMsg')
-                logging.debug (f'statuspath= {self.statuspath:s}')
+            if (self.param['phase'] == 'RUN'):
 
+                #
+                # Publish the job, answer the client, and keep running
+                # the query in a detached child.
+                #
 
-            self.__writeStatusMsg__(self.statuspath, self.statdict,
-                                    self.param)
+                self.__respondAsyncAndDetach__()
 
-            if self.debug:
-                logging.debug('')
-                logging.debug ('call printAsyncResponse')
+                if self.debug:
+                    logging.debug('')
+                    logging.debug('async response sent; job running detached')
 
-            self.__printAsyncResponse__(self.statusurl)
+            else:
 
-            if self.debug:
-                logging.debug('')
-                logging.debug('returned printAsyncResponse')
+                #
+                # ABORT and unrecognized phases are terminal: the branch
+                # above has already decided the phase, so write it,
+                # answer the client and stop. Falling through to the
+                # query path below would run the job the client just
+                # aborted and overwrite ABORTED (or ERROR) with
+                # COMPLETED.
+                #
+
+                if self.debug:
+                    logging.debug('')
+                    logging.debug ('terminal async phase= '
+                                   f"{self.statdict['phase']:s}")
+                    logging.debug (f'statuspath= {self.statuspath:s}')
+
+                self.__writeStatusMsg__(self.statuspath, self.statdict,
+                                        self.param)
+
+                self.__printAsyncResponse__(self.statusurl)
+
+                sys.exit()
 
         #
         # } end async submit case
@@ -1487,7 +1509,7 @@ class Tap:
         try:
             TableValidator.validate_statement(query_adql, debug=self.debug)
         except Exception as e:
-            errcode = '403' if isinstance(e, TableValidationError) else '400'
+            errcode = compat.table_denied_status(self.compat) if isinstance(e, TableValidationError) else '400'
             if(self.tapcontext == 'async'):
                 self.phase = 'ERROR'
                 self.__writeAsyncError__(str(e), self.statuspath,
@@ -1729,7 +1751,7 @@ class Tap:
                 # TableValidationError means the query referenced a table
                 # not in TAP_SCHEMA — access denied (403). All other errors
                 # are bad requests (400).
-                errcode = '403' if isinstance(e, TableValidationError) else '400'
+                errcode = compat.table_denied_status(self.compat) if isinstance(e, TableValidationError) else '400'
 
                 if(self.tapcontext == 'async'):
 
@@ -1790,7 +1812,7 @@ class Tap:
                 # TableValidationError means the query referenced a table
                 # not in TAP_SCHEMA — access denied (403). All other errors
                 # are bad requests (400).
-                errcode = '403' if isinstance(e, TableValidationError) else '400'
+                errcode = compat.table_denied_status(self.compat) if isinstance(e, TableValidationError) else '400'
 
                 if(self.tapcontext == 'async'):
 
@@ -2051,7 +2073,7 @@ class Tap:
 
         if(outtype == 'xml'):
 
-            print("Content-type: text/xml\r")
+            print("Content-type: %s\r" % compat.uws_content_type(self.compat))
             print("\r")
             print('<?xml version="1.0" encoding="UTF-8"?>')
 
@@ -2153,7 +2175,7 @@ class Tap:
                 logging.debug('Return status.xml to user and exit.')
 
             print("HTTP/1.1 200 OK\r")
-            print("Content-type: text/xml\r")
+            print("Content-type: %s\r" % compat.uws_content_type(self.compat))
             print("\r")
             print(data)
             sys.exit()
@@ -2251,7 +2273,7 @@ class Tap:
             # { Single value return
             #
             retval = 'None'
-            keystr = 'uws:' + key
+            keystr = 'uws:' + compat.uws_key(job, key)
             outstr = ''
 
             if((key == 'phase')
@@ -2475,7 +2497,7 @@ class Tap:
                         if(format == 'json'):
                             print("Content-type: application/json\r")
                         elif(format == 'votable'):
-                            print("Content-type: text/xml\r")
+                            print("Content-type: %s\r" % compat.votable_content_type(self.compat))
                         else:
                             print("Content-type: text/plain\r")
                         print("\r")
@@ -2539,6 +2561,12 @@ class Tap:
         errcode = '200'
         if ('errcode' in kwargs):
             errcode = kwargs['errcode']
+
+        nea = compat.error_document(self.compat, errmsg, errcode)
+        if nea is not None:          # nea-errors replaces the whole response
+            sys.stdout.write(nea)
+            sys.stdout.flush()
+            sys.exit()
 
         httphdr = "HTTP/1.1 " + str(errcode)  + " ERROR\r"
         print(httphdr)
@@ -2668,7 +2696,7 @@ class Tap:
         if(format == 'json'):
             print("Content-type: application/json\r")
         elif(format == 'votable'):
-            print("Content-type: text/xml\r")
+            print("Content-type: %s\r" % compat.votable_content_type(self.compat))
         else:
             print("Content-type: text/plain\r")
         print("\r")
@@ -2731,25 +2759,210 @@ class Tap:
     def __printAsyncResponse__(self, statusurl, **kwargs):
 
         #
-        # async: return statusurl and kill the parent process
+        # async: point the client at the job's status URL.
+        #
+        # The body is one line, but it still needs a Content-Length. This
+        # is an nph- script, so nothing downstream supplies one, and a
+        # reverse proxy in front of the CGI has no other way to tell
+        # where the response ends. Earlier versions omitted it and let
+        # the connection dying stand in for the end of the message.
         #
 
-        print("HTTP/1.1 303 See Other\r")
-        print("Location: %s\r\n\r" % statusurl)
-        print("Redirect Location: %s" % statusurl)
+        body = 'Redirect Location: %s\n' % statusurl
+
+        sys.stdout.write('HTTP/1.1 303 See Other\r\n')
+        sys.stdout.write('Location: %s\r\n' % statusurl)
+        sys.stdout.write(compat.async_submit_headers(self.compat, body))
+        sys.stdout.write('\r\n')
+        sys.stdout.write(body)
         sys.stdout.flush()
-
-        time.sleep(2.0)
-
-        #
-        # Shut down parent program
-        #
-
-        os.kill(os.getppid(), signal.SIGKILL)
 
         if self.debug:
             logging.debug('')
-            logging.debug('parent process killed')
+            logging.debug(f'async response sent: statusurl= {statusurl:s}')
+
+        return
+
+
+    def __respondAsyncAndDetach__(self, **kwargs):
+
+        #
+        # { An async submit has to finish an HTTP response now and keep
+        #   executing the query afterwards, and under CGI those two pull
+        #   against each other: the web server completes the response
+        #   when the script closes stdout, and mod_cgi terminates the
+        #   script once the request is cleaned up. The process that runs
+        #   the query can therefore be neither the one holding stdout nor
+        #   part of the request.
+        #
+        #   So fork. The parent names the child as the job's runId,
+        #   writes the status document, sends the 303 and exits, which
+        #   ends the response the way any other CGI would. The child
+        #   leaves the request's process group, points its standard
+        #   streams away from the server pipe, waits for the parent to
+        #   confirm the job is published, and returns to run the query.
+        #
+        #   Earlier versions sent the response and then SIGKILLed
+        #   os.getppid(). Under CGI that parent is the web server child
+        #   serving the request: killing it truncates the response, and
+        #   behind a reverse proxy it leaves the proxy holding a dead
+        #   upstream connection, which the proxy reports as 503 on the
+        #   next request or two routed over it.
+        #
+
+        try:
+            readfd, writefd = os.pipe()
+            pid = os.fork()
+
+        except OSError as e:
+
+            #
+            # No fork available: answer the request from this process and
+            # run the job here. The response is still well formed; the
+            # job now lives and dies with the request.
+            #
+
+            logging.error(f'Could not fork async worker: {str(e)}')
+
+            self.__writeStatusMsg__(self.statuspath, self.statdict,
+                                    self.param)
+
+            self.__printAsyncResponse__(self.statusurl)
+
+            return
+
+        if (pid > 0):
+        #
+        # { parent: publish the job, answer the client, exit
+        #
+            os.close(readfd)
+
+            self.statdict['process_id'] = pid
+
+            published = False
+
+            try:
+                self.__writeStatusMsg__(self.statuspath, self.statdict,
+                                        self.param)
+
+                published = True
+
+                self.__printAsyncResponse__(self.statusurl)
+
+            except Exception as e:
+
+                #
+                # Most likely the client or the proxy hung up while the
+                # response was going out. Nothing can be sent about it
+                # now; the job's own fate is decided in the finally
+                # clause below.
+                #
+
+                logging.error(f'Async response failed: {str(e)}')
+
+            finally:
+
+                #
+                # The child blocks on this byte, so a fast query cannot
+                # overwrite the status document written above. Once the
+                # job is published the child has to be released even if
+                # the response itself failed: a client that hung up does
+                # not make the job go away, and a child that exits here
+                # would leave the job stuck in EXECUTING forever. If the
+                # status write is what failed, the byte is withheld and
+                # the child exits, because there is no job document for
+                # it to update.
+                #
+
+                if published:
+                    try:
+                        os.write(writefd, b'1')
+
+                    except OSError as e:
+                        logging.error(
+                            f'Could not release async worker: {str(e)}')
+
+                os.close(writefd)
+
+            sys.exit(0)
+        #
+        # } end parent
+        #
+
+        #
+        # { child: detach from the request, then run the query
+        #
+        os.close(writefd)
+
+        self.pid = os.getpid()
+        self.statdict['process_id'] = self.pid
+
+        self.__detachFromServer__()
+
+        published = b''
+
+        try:
+            published = os.read(readfd, 1)
+
+        except OSError as e:
+            logging.error(f'Async worker handshake failed: {str(e)}')
+
+        os.close(readfd)
+
+        if (len(published) == 0):
+
+            #
+            # The parent exited before it published the job, so there is
+            # no status document for this run to update.
+            #
+
+            logging.error('Async parent exited before publishing the job')
+
+            os._exit(1)
+
+        if self.debug:
+            logging.debug('')
+            logging.debug(f'async worker detached: pid= {self.pid:d}')
+
+        return
+        #
+        # } end child
+        #
+
+
+    def __detachFromServer__(self, **kwargs):
+
+        #
+        # Give up the web server's request context: leave the request's
+        # process group so the server cannot reap this process along with
+        # the request, and replace the inherited stdio with /dev/null so
+        # the response the parent just sent is neither held open by nor
+        # corrupted from here.
+        #
+
+        try:
+            os.setsid()
+
+        except OSError as e:
+            logging.error(f'setsid failed in async worker: {str(e)}')
+
+        try:
+            sys.stdout.flush()
+            sys.stderr.flush()
+
+        except (OSError, ValueError) as e:
+            logging.error(f'Could not flush async worker stdio: {str(e)}')
+
+        devnull = os.open(os.devnull, os.O_RDWR)
+
+        try:
+            os.dup2(devnull, 0)
+            os.dup2(devnull, 1)
+            os.dup2(devnull, 2)
+
+        finally:
+            if (devnull > 2):
+                os.close(devnull)
 
         return
 
@@ -2838,7 +3051,8 @@ class Tap:
 
         fp.write(f"    <uws:endTime>{statdict['endtime']:s}</uws:endTime>\n")
 
-        fp.write(f"    <uws:executionduration>{statdict['duration']:d}</uws:executionduration>\n")
+        el = compat.duration_element(self.compat)
+        fp.write(f"    <uws:{el}>{statdict['duration']:d}</uws:{el}>\n")
 
         if (statdict['destruction'] is None):
             fp.write('    <uws:destruction xsi:nil="true"/>\n')
@@ -2979,7 +3193,7 @@ class Tap:
                 logging.debug('')
                 logging.debug('call vosiTables')
 
-            vosiTables (connectInfo=self.config.connectInfo, dbms=dbms, \
+            compat.vosi_tables_class(self.compat) (connectInfo=self.config.connectInfo, dbms=dbms, \
                 dbserver=dbserver, \
                 userid=userid, \
                 password=password, \
@@ -3042,19 +3256,7 @@ class Tap:
         # { printVosiAvailability
         #
 
-        #
-        #    nph- CGI: emit the full HTTP response ourselves.  The status
-        #    line and each header must end in CRLF, and a bare CRLF line
-        #    closes the header block -- nginx and Cloudflare reject the
-        #    response otherwise.  The terminator is spelled out via end=
-        #    rather than a trailing \r leaning on print's implicit \n,
-        #    so the CRLF requirement is visible at a glance.
-        #
-
-        print ('HTTP/1.1 200 OK', end='\r\n')
-        print ('Content-type: application/xml', end='\r\n')
-        print ('', end='\r\n')
-
+        sys.stdout.write(compat.vosi_head(self.compat))
         print ('<?xml version="1.0" encoding="UTF-8"?>')
         print ('')
         print ('<vosi:availability')
@@ -3065,6 +3267,7 @@ class Tap:
         print ('    <vosi:note>TAP service available.</vosi:note>')
         print ('</vosi:availability>')
 
+        sys.stdout.write(compat.vosi_tail(self.compat))
         sys.exit()
 
         #
@@ -3078,19 +3281,7 @@ class Tap:
         # { printVosiCapability
         #
 
-        #
-        #    nph- CGI: emit the full HTTP response ourselves.  The status
-        #    line and each header must end in CRLF, and a bare CRLF line
-        #    closes the header block -- nginx and Cloudflare reject the
-        #    response otherwise.  The terminator is spelled out via end=
-        #    rather than a trailing \r leaning on print's implicit \n,
-        #    so the CRLF requirement is visible at a glance.
-        #
-
-        print ('HTTP/1.1 200 OK', end='\r\n')
-        print ('Content-type: application/xml', end='\r\n')
-        print ('', end='\r\n')
-
+        sys.stdout.write(compat.vosi_head(self.compat))
         print ('<?xml version="1.0" encoding="UTF-8"?>')
         print ('')
         print ('<vosi:capabilities')
@@ -3194,6 +3385,7 @@ class Tap:
         print ('')
         print ('</vosi:capabilities>')
 
+        sys.stdout.write(compat.vosi_tail(self.compat))
         sys.exit()
 
         #

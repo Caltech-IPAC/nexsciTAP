@@ -13,6 +13,10 @@ configobj
 sqlparse
 astropy
 beautifulsoup4
+# tap.py asks BeautifulSoup for the 'lxml' tree builder by name when it
+# reads a job status document (TAP/tap.py:904, 2162), so bs4 alone is not
+# enough for the async flow.
+lxml
 xmltodict
 
 # pyneid is not currently used — tests/test_pyneid_compat.py is skipped
