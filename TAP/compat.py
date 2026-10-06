@@ -87,6 +87,9 @@ def translate_legacy(conf):
 
 def load_config(conf):
     """(ConfigObj as read) -> (ConfigObj in 3.x layout, active compat names)."""
+    for name in conf.sections:
+        if name != 'WEB' and 'COMPAT' in conf[name]:
+            raise CompatConfigError('COMPAT belongs in [WEB], found in [%s]' % name)
     if 'WEB' not in conf and 'webserver' in conf:
         return translate_legacy(conf), ALL
     web = conf['WEB'] if 'WEB' in conf else {}
@@ -163,9 +166,34 @@ def duration_element(active):
     return 'executionDuration' if 'nea-uws' in active else 'executionduration'
 
 
-def uws_key(active, key):
-    """Status-document element for a job sub-resource key from the URL."""
-    return duration_element(active) if key == 'executionduration' else key
+def uws_key(job, key):
+    """Element of a parsed status.xml that answers a job sub-resource key.
+
+    The duration is spelled as the document spells it (see duration_value).
+    """
+    if key == 'executionduration' and 'uws:executionDuration' in job:
+        return 'executionDuration'
+    return key
+
+
+def uws_url_key(active, key):
+    """The job sub-resource key from the URL, as the code compares it.
+
+    NEA's /async/<id>/executionDuration (UWS spelling) is accepted next to the
+    lowercase form pyvo uses; the shared line knows only the lowercase one.
+    """
+    if 'nea-uws' in active and key == 'executionDuration':
+        return 'executionduration'
+    return key
+
+
+def duration_value(job):
+    """The duration in a parsed status.xml, whichever spelling wrote it.
+
+    A job written under one mode may be read under the other (jobs live up
+    to four days), so reading tolerates both; writing uses duration_element.
+    """
+    return job.get('uws:executionDuration', job.get('uws:executionduration'))
 
 
 def destruction_suffix(active):

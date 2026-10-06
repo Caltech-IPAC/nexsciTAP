@@ -112,6 +112,9 @@ def test_uws_is_neas_form(legacy_tap_server):
     assert not job.find(UWS + "destruction").text.endswith("Z")
     dur = requests.get(url + "/executionduration", timeout=30)
     assert dur.status_code == 200 and dur.text.strip().isdigit(), dur.text[:200]
+    camel = requests.get(url + "/executionDuration", timeout=30)
+    assert camel.status_code == 200 and camel.text.strip().isdigit(), camel.text[:200]
+    assert camel.text == dur.text
 
 
 def test_uws_unchanged_in_default_mode(tap_server):
@@ -124,6 +127,45 @@ def test_uws_unchanged_in_default_mode(tap_server):
     job = ET.fromstring(r.text)
     assert job.find(UWS + "executionduration") is not None
     assert job.find(UWS + "destruction").text.endswith("Z")
+
+
+def test_camelcase_duration_key_unchanged_in_default_mode(tap_server):
+    run, url = _completed_job(tap_server)
+    r = requests.get(url + "/executionDuration", timeout=30)
+    assert r.status_code == 200
+    assert r.headers["Content-Type"] == "text/plain"
+    assert r.text == "key executionDuration is not a valid key\n"
+
+
+def _respell_duration(fixture_root, url, old, new):
+    """Rewrite one job's status.xml as if the other mode had written it."""
+    jobid = url.rstrip("/").rsplit("/", 1)[1]
+    paths = list(fixture_root.glob("workdir*/**/%s/status.xml" % jobid))
+    assert len(paths) == 1, paths
+    text = paths[0].read_text()
+    assert "uws:" + old in text
+    paths[0].write_text(text.replace("uws:" + old, "uws:" + new))
+
+
+def _read_back(url):
+    whole = requests.get(url, timeout=30)
+    assert whole.status_code == 200 and "<uws:phase>COMPLETED<" in whole.text, whole.text[:300]
+    dur = requests.get(url + "/executionduration", timeout=30)
+    assert dur.status_code == 200 and dur.text.strip().isdigit(), dur.text[:300]
+    phase = requests.get(url + "/phase", timeout=30)
+    assert phase.text.strip() == "COMPLETED", phase.text[:300]
+
+
+def test_status_written_by_default_mode_reads_in_compat(legacy_tap_server, fixture_root):
+    _, url = _completed_job(legacy_tap_server)
+    _respell_duration(fixture_root, url, "executionDuration", "executionduration")
+    _read_back(url)
+
+
+def test_status_written_by_compat_reads_in_default_mode(tap_server, fixture_root):
+    _, url = _completed_job(tap_server)
+    _respell_duration(fixture_root, url, "executionduration", "executionDuration")
+    _read_back(url)
 
 
 def test_tables_is_neas_layout(legacy_tap_server):

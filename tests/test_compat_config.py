@@ -121,3 +121,15 @@ def test_legacy_without_its_db_section_is_an_error(tmp_path):
     with pytest.raises(compat.CompatConfigError, match=r'no \[oracle\] section'):
         compat.translate_legacy(__import__('configobj').ConfigObj(
             write(tmp_path, 'TAP.conf', text)))
+
+
+def test_compat_outside_web_is_an_error(tmp_path):
+    text = CURRENT_ORACLE.replace('Password=secret\n', 'Password=secret\nCOMPAT = nea-uws\n')
+    with pytest.raises(compat.CompatConfigError, match=r'\[DBMS\]'):
+        configParam(write(tmp_path, 'TAP.conf', text, compat=''))
+
+
+def test_compat_in_legacy_webserver_is_an_error(tmp_path):
+    text = LEGACY_ORACLE.replace('DBMS=oracle\n', 'DBMS=oracle\nCOMPAT=nea-uws\n', 1)
+    with pytest.raises(compat.CompatConfigError, match=r'\[webserver\]'):
+        configParam(write(tmp_path, 'TAP.conf', text))

@@ -873,7 +873,8 @@ class Tap:
                     logging.debug('case: getStatus')
 
                 try:
-                    self.__getStatus__(self.workdir, self.id, self.statuskey, \
+                    self.__getStatus__(self.workdir, self.id,
+                                       compat.uws_url_key(self.compat, self.statuskey), \
                                        self.param)
                 except Exception as e:
 
@@ -980,7 +981,7 @@ class Tap:
                 self.statdict['starttime'] = job['uws:startTime']
                 self.statdict['endtime'] = job['uws:endTime']
                 self.statdict['destruction'] = job['uws:destruction']
-                self.statdict['duration'] = job['uws:' + compat.duration_element(self.compat)]
+                self.statdict['duration'] = compat.duration_value(job)
 
                 if self.debug:
                     logging.debug ('')
@@ -2267,7 +2268,7 @@ class Tap:
             # { Single value return
             #
             retval = 'None'
-            keystr = 'uws:' + compat.uws_key(self.compat, key)
+            keystr = 'uws:' + compat.uws_key(job, key)
             outstr = ''
 
             if((key == 'phase')

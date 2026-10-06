@@ -36,8 +36,14 @@ def test_field_description_blanks_only_non_char_columns():
 def test_uws_functions():
     assert compat.duration_element(compat.ALL) == 'executionDuration'
     assert compat.duration_element(compat.NONE) == 'executionduration'
-    assert compat.uws_key(compat.ALL, 'executionduration') == 'executionDuration'
-    assert compat.uws_key(compat.ALL, 'phase') == 'phase'
+    assert compat.uws_key({'uws:executionDuration': '1'}, 'executionduration') == 'executionDuration'
+    assert compat.uws_key({'uws:executionduration': '1'}, 'executionduration') == 'executionduration'
+    assert compat.uws_key({'uws:executionDuration': '1'}, 'phase') == 'phase'
+    assert compat.uws_url_key(compat.ALL, 'executionDuration') == 'executionduration'
+    assert compat.uws_url_key(compat.ALL, 'executionduration') == 'executionduration'
+    assert compat.uws_url_key(compat.ALL, 'phase') == 'phase'
+    assert compat.uws_url_key(compat.NONE, 'executionDuration') == 'executionDuration'
+    assert compat.uws_url_key(compat.NONE, 'executionduration') == 'executionduration'
     assert compat.destruction_suffix(compat.ALL) == ''
     assert compat.destruction_suffix(compat.NONE) == 'Z'
     assert compat.uws_content_type(compat.ALL) == 'application/xml'
@@ -81,3 +87,11 @@ def test_warning_never_fails_a_request(tmp_path):
     out = io.StringIO()
     assert compat.warn_once_per_day(compat.ALL, str(blocker), None, out) is False
     assert compat.warn_once_per_day(compat.ALL, None, None, out) is False
+
+
+def test_duration_value_reads_either_spelling():
+    lower = {'uws:executionduration': '30'}
+    camel = {'uws:executionDuration': '30'}
+    assert compat.duration_value(lower) == '30'
+    assert compat.duration_value(camel) == '30'
+    assert compat.duration_value({}) is None
