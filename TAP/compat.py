@@ -169,9 +169,15 @@ def field_description(active, desc, coltype):
 
 # --- nea-uws ----------------------------------------------------------------
 
-def duration_element(active):
-    """UWS names it executionDuration; the shared line writes it lowercase."""
-    return 'executionDuration' if 'nea-uws' in active else 'executionduration'
+def service_url(active, httpurl, cgipgm):
+    """The service URL that job URLs extend.
+
+    NEA's carry a double slash (HTTP_URL + '/' + CGI_PGM=/TAP); the shared
+    line joins the parts with one.
+    """
+    if 'nea-uws' in active:
+        return httpurl + '/' + cgipgm
+    return httpurl.rstrip('/') + '/' + cgipgm.strip('/')
 
 
 def uws_key(job, key):
@@ -199,7 +205,8 @@ def duration_value(job):
     """The duration in a parsed status.xml, whichever spelling wrote it.
 
     A job written under one mode may be read under the other (jobs live up
-    to four days), so reading tolerates both; writing uses duration_element.
+    to four days, and 3.1.0 and earlier wrote it lowercase), so reading
+    tolerates both; writing uses the UWS spelling.
     """
     return job.get('uws:executionDuration', job.get('uws:executionduration'))
 

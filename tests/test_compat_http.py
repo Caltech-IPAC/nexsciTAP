@@ -119,7 +119,7 @@ def test_uws_is_neas_form(legacy_tap_server):
     assert camel.text == dur.text
 
 
-def test_uws_unchanged_in_default_mode(tap_server):
+def test_uws_in_default_mode(tap_server):
     run, url = _completed_job(tap_server)
     assert run.headers["Content-Type"] == "text/plain"
     assert int(run.headers["Content-Length"]) == len(run.content)
@@ -127,7 +127,7 @@ def test_uws_unchanged_in_default_mode(tap_server):
     r = requests.get(url, timeout=30)
     assert r.headers["Content-Type"] == "text/xml"
     job = ET.fromstring(r.text)
-    assert job.find(UWS + "executionduration") is not None
+    assert job.find(UWS + "executionDuration") is not None   # UWS spelling, as of 3.1.0
     assert job.find(UWS + "destruction").text.endswith("Z")
 
 
@@ -140,7 +140,7 @@ def test_camelcase_duration_key_unchanged_in_default_mode(tap_server):
 
 
 def _respell_duration(fixture_root, url, old, new):
-    """Rewrite one job's status.xml as if the other mode had written it."""
+    """Rewrite one job's status.xml as an earlier release would have written it."""
     jobid = url.rstrip("/").rsplit("/", 1)[1]
     paths = list(fixture_root.glob("workdir*/**/%s/status.xml" % jobid))
     assert len(paths) == 1, paths
@@ -158,15 +158,18 @@ def _read_back(url):
     assert phase.text.strip() == "COMPLETED", phase.text[:300]
 
 
-def test_status_written_by_default_mode_reads_in_compat(legacy_tap_server, fixture_root):
+# Jobs live four days, so a job written lowercase by an earlier release can
+# be read after an upgrade, in either mode.
+
+def test_lowercase_status_reads_in_compat(legacy_tap_server, fixture_root):
     _, url = _completed_job(legacy_tap_server)
     _respell_duration(fixture_root, url, "executionDuration", "executionduration")
     _read_back(url)
 
 
-def test_status_written_by_compat_reads_in_default_mode(tap_server, fixture_root):
+def test_lowercase_status_reads_in_default_mode(tap_server, fixture_root):
     _, url = _completed_job(tap_server)
-    _respell_duration(fixture_root, url, "executionduration", "executionDuration")
+    _respell_duration(fixture_root, url, "executionDuration", "executionduration")
     _read_back(url)
 
 

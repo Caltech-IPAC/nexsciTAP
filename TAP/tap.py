@@ -9,6 +9,8 @@ import html
 import logging
 import math
 import os
+import re
+import shutil
 import signal
 import sys
 import tempfile
@@ -170,7 +172,13 @@ class Tap:
         # { tap.init()
         #
 
-        if('debug' in self.form):
+        # A request with no form fields (an HTTP DELETE) has no list, and
+        # FieldStorage raises 'not indexable' on any lookup into it.
+        self.fields = self.form.keys() if self.form.list is not None else []
+        self.request_method = os.environ.get('REQUEST_METHOD', '').upper()
+        self.action = ''
+
+        if('debug' in self.fields):
             self.debug = 1
 
         if(self.debug):
@@ -227,7 +235,7 @@ class Tap:
         self.uwsheader = '<uws:job xmlns:uws="http://www.ivoa.net/xml/UWS/v1.0" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema" xsi:schemaLocation="http://www.ivoa.net/xml/UWS/v1.0 http://www.ivoa.net/xml/UWS/v1.0">'
 
 
-        for key in self.form:
+        for key in self.fields:
             if self.debug:
                 logging.debug(f'      key: {key:<15}   val: {self.form[key].value:s}')
 
@@ -266,6 +274,9 @@ class Tap:
 
             if(key.lower() == 'token'):
                 self.token = self.form[key].value
+
+            if(key.lower() == 'action'):
+                self.action = self.form[key].value.strip().upper()
 
         self.nparam = len(self.param)
 
@@ -526,27 +537,6 @@ class Tap:
 
 
 
-        #  Special case:  HTTP DELETE.  We only need
-        #  the REQUEST_METHOD and PATH_INFO environment
-        #  variable.  The first must be DELETE and the
-        #  second is the directory of th TAP job we wish
-        #  to delete.
-        #
-
-        # if("REQUEST_METHOD" in os.environ):
-        #     self.request_method = os.environ["REQUEST_METHOD"]
-        # else:
-        #     self.request_method = ''
-        #
-        # if self.request_method == 'DELETE':
-        #
-        #     delete_dir = self.workdir + self.pathinfo
-        #
-        #     if self.debug:
-        #         logging.debug('')
-        #         logging.debug(f'DELETE: {delete_dir:s}')
-
-
         #
         # Initialize statdict dict
         #
@@ -587,6 +577,15 @@ class Tap:
         #
         #} end VOSI static endpoints
         #
+
+        #
+        # GET on the job list must not create a job: clients follow the
+        # redirect that answers a job deletion with a GET here.
+        #
+        if ((self.tapcontext == 'async') and (self.getstatus == 0) and
+                (self.querykey == 0) and (len(self.param['phase']) == 0) and
+                (self.request_method != 'POST')):
+            self.__printJobList__()
 
         #
         # sync or async without input workspace id: make workspace,
@@ -656,6 +655,15 @@ class Tap:
             #   Retrieve workspace from id
             #
 
+            #
+            #    A job id names a directory that tempfile.mkdtemp made under
+            #    <workdir>/TAP; anything else ('..', '.') would reach outside
+            #    it, and a deletion removes what the id names.
+            #
+            if not re.fullmatch(r'tap_[A-Za-z0-9_]+', self.id):
+                self.__printError__('votable', 'Job not found: ' + self.id,
+                                    errcode='404')
+
             self.workspace = self.id
             self.userWorkdir = self.workdir + '/TAP/' + self.workspace
 
@@ -663,11 +671,18 @@ class Tap:
             #
             #    check if workspace exists
             #
-            isExist = os.path.exists(self.userWorkdir)
+            isExist = os.path.isdir(self.userWorkdir)
 
             if (isExist == 0):
-                self.msg = 'work directory based on input jobid does not exist.'
-                self.__printError__('votable', self.msg, errcode='500')
+                self.__printError__('votable', 'Job not found: ' + self.id,
+                                    errcode='404')
+
+            if ((self.tapcontext == 'async') and
+                    (self.statuskey.strip('/') == '') and
+                    ((self.request_method == 'DELETE') or
+                     ((self.request_method == 'POST') and
+                      (self.action == 'DELETE')))):
+                self.__deleteJob__()
 
             #
             # } end of retrieve workspace
@@ -712,7 +727,8 @@ class Tap:
 
         self.statustbl = 'status.xml'
         self.statuspath = self.userWorkdir + '/' + self.statustbl
-        self.statusurl = self.httpurl + '/' + self.cgipgm + \
+        self.statusurl = \
+            compat.service_url(self.compat, self.httpurl, self.cgipgm) + \
             '/' + self.tapcontext + '/' + self.workspace
 
         if self.debug:
@@ -2284,7 +2300,11 @@ class Tap:
                     or (key == 'jobId')
                     or (key == 'runId')):
 
-                retval = job[keystr]
+                # xmltodict reads an empty element as None and a nil one
+                # as a dict; both are an unset value, which is empty text.
+                retval = job.get(keystr)
+                if (retval is None) or isinstance(retval, dict):
+                    retval = ''
                 outstr = retval
 
             elif((key == 'ownerId') or (key == 'quote')):
@@ -2756,6 +2776,69 @@ class Tap:
         #
 
 
+    def __printJobList__(self, **kwargs):
+
+        #
+        # UWS job list (GET /async).  Jobs carry no owner, so the list
+        # shows none of them rather than everyone's.
+        #
+
+        body = ('<?xml version="1.0" encoding="UTF-8"?>\n'
+                '<uws:jobs xmlns:uws="http://www.ivoa.net/xml/UWS/v1.0"'
+                ' xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1"/>\n')
+
+        sys.stdout.write('HTTP/1.1 200 OK\r\n')
+        sys.stdout.write(f'Content-Type: {compat.uws_content_type(self.compat)}\r\n')
+        sys.stdout.write(f'Content-Length: {len(body.encode("utf-8"))}\r\n')
+        sys.stdout.write('Connection: close\r\n\r\n')
+        sys.stdout.write(body)
+        sys.stdout.flush()
+        sys.exit()
+
+
+    def __deleteJob__(self, **kwargs):
+
+        #
+        # UWS job deletion (POST ACTION=DELETE, or HTTP DELETE): stop the
+        # job if it is running, remove its workspace, and send the client
+        # to the job list.  The job id was checked against the workspace
+        # name pattern before userWorkdir was built from it.
+        #
+
+        try:
+            with open(self.userWorkdir + '/status.xml', 'r') as fp:
+                job = xmltodict.parse(fp.read())['uws:job']
+
+            if (job.get('uws:phase') == 'EXECUTING'):
+                pid = int(job.get('uws:runId') or 0)
+                if (pid > 0) and (pid != os.getpid()):
+                    os.kill(pid, signal.SIGKILL)
+
+        except Exception as e:
+
+            # A job whose status can't be read or whose process is gone
+            # is still deleted.
+            if self.debug:
+                logging.debug(f'deleteJob: {str(e):s}')
+
+        try:
+            shutil.rmtree(self.userWorkdir)
+
+        except OSError as e:
+            self.__printError__('votable', 'Failed to delete job ' +
+                                self.workspace + ': ' + str(e), errcode='500')
+
+        joblist = compat.service_url(self.compat, self.httpurl, self.cgipgm) + \
+            '/async'
+
+        sys.stdout.write('HTTP/1.1 303 See Other\r\n')
+        sys.stdout.write(f'Location: {joblist}\r\n')
+        sys.stdout.write('Content-Length: 0\r\n')
+        sys.stdout.write('Connection: close\r\n\r\n')
+        sys.stdout.flush()
+        sys.exit()
+
+
     def __printAsyncResponse__(self, statusurl, **kwargs):
 
         #
@@ -3051,8 +3134,8 @@ class Tap:
 
         fp.write(f"    <uws:endTime>{statdict['endtime']:s}</uws:endTime>\n")
 
-        el = compat.duration_element(self.compat)
-        fp.write(f"    <uws:{el}>{statdict['duration']:d}</uws:{el}>\n")
+        fp.write(f"    <uws:executionDuration>{statdict['duration']:d}"
+                 "</uws:executionDuration>\n")
 
         if (statdict['destruction'] is None):
             fp.write('    <uws:destruction xsi:nil="true"/>\n')
