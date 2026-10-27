@@ -3,10 +3,13 @@
 #   https://github.com/Caltech-IPAC/nexsciTAP/blob/master/LICENSE
 
 
-import os
 import logging
-import configobj
+import os
 import pprint
+
+import configobj
+
+from TAP import compat
 
 
 class configParam:
@@ -31,7 +34,7 @@ class configParam:
 
     def __init__(self, path, **kwargs):
 
-        pp = pprint.PrettyPrinter(indent=3)
+        pprint.PrettyPrinter(indent=3)
 
 
 
@@ -70,12 +73,13 @@ class configParam:
             raise Exception(self.msg)
 
         confobj = configobj.ConfigObj(self.configpath)
+        confobj, self.compat = compat.load_config(confobj)
 
         if self.debug:
             logging.debug('')
             logging.debug('ConfigObj instantiated successfully')
 
-        
+
         ### Web server config parameters ############
 
         self.web = 'WEB'
@@ -115,7 +119,7 @@ class configParam:
 
         # HTTP_URL  (includingt HTTP_PORT)
 
-        self.httpurl = None 
+        self.httpurl = None
         if ('HTTP_URL' in confobj[self.web]):
             self.httpurl = confobj[self.web]['HTTP_URL']
 
@@ -124,7 +128,7 @@ class configParam:
             self.msg = 'Failed to find HTTP_URL in config_file'
             raise Exception(self.msg)
 
-        self.port = None 
+        self.port = None
         if('HTTP_PORT' in confobj[self.web]):
             self.port = confobj[self.web]['HTTP_PORT']
 
@@ -134,23 +138,23 @@ class configParam:
 
         # CGIPGM
 
-        self.cgipgm = None 
+        self.cgipgm = None
         if ('CGI_PGM' in confobj[self.web]):
             self.cgipgm = confobj[self.web]['CGI_PGM']
 
 
         # ARRAYSIZE
 
-        self.arraysize = 10000 
+        self.arraysize = 10000
         if ('ArraySize' in confobj[self.web]):
             self.arraysize = confobj[self.web]['ArraySize']
 
 
         # INFOMSG
 
-        self.infomsg = ''                                                      
-        if('INFOMSG' in confobj[self.web]):                                 
-            self.infomsg = confobj[self.web]['INFOMSG']                     
+        self.infomsg = ''
+        if('INFOMSG' in confobj[self.web]):
+            self.infomsg = confobj[self.web]['INFOMSG']
 
         if self.debug:
             logging.debug('')
@@ -160,10 +164,10 @@ class configParam:
             logging.debug('arraysize     = %s', self.infomsg)
 
 
-        
+
         ### Configuration ###########################
 
-        # If there was an input configuration 'instance', read 'db_connection' 
+        # If there was an input configuration 'instance', read 'db_connection'
         # and 'sptind_config' section names from there.  Otherwise use the
         # following defaults:
 
@@ -181,7 +185,7 @@ class configParam:
                 self.status = 'error'
                 self.msg = 'Failed to find DB_CONNECTION in config_file'
                 raise Exception(self.msg)
-           
+
 
             self.sptind_config =  None
             if('SPTIND_CONFIG' in confobj[self.instance]):
@@ -217,9 +221,9 @@ class configParam:
         self.socket            = None
         self.dbschema          = None
 
-        self.cookiename        = '' 
-        self.accesstbl         = '' 
-        self.usertbl           = '' 
+        self.cookiename        = ''
+        self.accesstbl         = ''
+        self.usertbl           = ''
         self.propfilter        = ''
         self.fileid            = ''
         self.accessid          = ''
@@ -242,7 +246,7 @@ class configParam:
             if self.debug:
                 logging.debug('')
                 logging.debug('dbms          = %s', self.dbms)
-           
+
 
             # ORACLE Connection
 
@@ -304,15 +308,15 @@ class configParam:
 
                 # KOA Proprietary Access parameters
 
-                self.cookiename = '' 
+                self.cookiename = ''
                 if('COOKIENAME' in confobj[self.db_connection]):
                     self.cookiename = confobj[self.db_connection]['COOKIENAME']
 
-                self.accesstbl = '' 
+                self.accesstbl = ''
                 if('ACCESS_TBL' in confobj[self.db_connection]):
                     self.accesstbl = confobj[self.db_connection]['ACCESS_TBL']
 
-                self.usertbl = '' 
+                self.usertbl = ''
                 if('USERS_TBL' in confobj[self.db_connection]):
                     self.usertbl = confobj[self.db_connection]['USERS_TBL']
 
@@ -423,7 +427,7 @@ class configParam:
                     self.msg = 'Failed to MySQL DBMS user ID in config_file'
                     raise Exception(self.msg)
 
- 
+
                 # PASSWORD
 
                 if ('Password' in confobj[self.db_connection]):
@@ -485,7 +489,7 @@ class configParam:
 
 
                 # DATABASE
-                
+
                 if 'DataBase' in confobj[self.db_connection]:
                     self.database = confobj[self.db_connection]['DataBase']
 
@@ -506,7 +510,7 @@ class configParam:
                     self.msg = 'Failed to find PostgreSQL username in config_file.'
                     raise Exception(self.msg)
 
- 
+
                 # PASSWORD
 
                 if 'Password' in confobj[self.db_connection]:
@@ -640,6 +644,7 @@ class configParam:
         self.connectInfo['columns_table']     = self.columns_table
         self.connectInfo['keys_table']        = self.keys_table
         self.connectInfo['key_columns_table'] = self.key_columns_table
+        self.connectInfo['compat']            = self.compat
         self.connectInfo['port']              = self.dbport
         self.connectInfo['socket']            = self.socket
         self.connectInfo['dbschema']          = self.dbschema
@@ -679,5 +684,5 @@ class configParam:
             logging.debug('      accessid          = ' + str(self.accessid))
             logging.debug('      racol             = ' + str(self.racol))
             logging.debug('      deccol            = ' + str(self.deccol))
-        
-        return 
+
+        return

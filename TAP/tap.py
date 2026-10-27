@@ -2,34 +2,31 @@
 # This code is released with a BSD 3-clause license. License information is at
 #   https://github.com/Caltech-IPAC/nexsciTAP/blob/master/LICENSE
 
-import os
-import sys
+import cgi
+import datetime
 import fcntl
 import html
-
 import logging
-
-import datetime
-import time
+import math
+import os
+import re
+import shutil
 import signal
-import math 
-
-import cgi
+import sys
 import tempfile
+import time
 
 import xmltodict
-from bs4 import BeautifulSoup
-
 from ADQL.adql import ADQL
-
+from bs4 import BeautifulSoup
 from spatial_index import SpatialIndex
 
-from TAP.tapquery import tapQuery
+from TAP import compat
 from TAP.configparam import configParam
 from TAP.propfilter import _require_filterable, propFilter
 from TAP.tablenames import TableNames
-from TAP.vositables import vosiTables
 from TAP.tablevalidator import TableValidationError, TableValidator
+from TAP.tapquery import tapQuery
 
 
 class Tap:
@@ -148,6 +145,7 @@ class Tap:
 
     uwsheader   = ''
 
+    compat = frozenset()     # active compat names; set once TAP.conf loads
 
     def __init__(self, **kwargs):
 
@@ -174,6 +172,13 @@ class Tap:
         # { tap.init()
         #
 
+        # A request with no form fields (an HTTP DELETE) has no list, and
+        # FieldStorage raises 'not indexable' on any lookup into it.
+        self.fields = self.form.keys() if self.form.list is not None else []
+        self.request_method = os.environ.get('REQUEST_METHOD', '').upper()
+        self.action = ''
+
+        # Only the server environment may turn on request debugging.
         self.debug = 1 if os.environ.get('TAP_DEBUG') == '1' else 0
 
         if(self.debug):
@@ -217,7 +222,7 @@ class Tap:
 
         if self.debug:
             logging.debug('')
-            logging.debug('nexsciTAP version 3.0.2\n\n')
+            logging.debug('nexsciTAP version 3.1.0\n\n')
             logging.debug('HTTP request keywords:\n')
 
         self.lang      = 'ADQL'
@@ -230,8 +235,8 @@ class Tap:
 
         self.uwsheader = '<uws:job xmlns:uws="http://www.ivoa.net/xml/UWS/v1.0" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema" xsi:schemaLocation="http://www.ivoa.net/xml/UWS/v1.0 http://www.ivoa.net/xml/UWS/v1.0">'
 
-        
-        for key in self.form:
+
+        for key in self.fields:
             if self.debug:
                 logging.debug(f'      key: {key:<15}')
 
@@ -244,7 +249,7 @@ class Tap:
             if(key.lower() == 'lang'):
                 self.lang = self.form[key].value
                 self.param['lang'] = self.form[key].value
-            
+
             if(key.lower() == 'request'):
                 self.param['request'] = self.form[key].value
 
@@ -270,6 +275,9 @@ class Tap:
 
             if(key.lower() == 'token'):
                 self.token = self.form[key].value
+
+            if(key.lower() == 'action'):
+                self.action = self.form[key].value.strip().upper()
 
         self.nparam = len(self.param)
 
@@ -305,7 +313,7 @@ class Tap:
 
                 self.maxrec = int(maxrec_dbl)
 
-            except Exception as e:
+            except Exception:
 
                 self.msg = "Failed to convert input maxrec value [" + \
                     self.param['maxrec'] + "] to integer."
@@ -314,7 +322,7 @@ class Tap:
 
         if (len(self.lang) == 0):
             self.lang = 'ADQL'
-            self.param['lang'] = 'ADQL' 
+            self.param['lang'] = 'ADQL'
 
         self.nparam = len(self.param)
 
@@ -354,11 +362,11 @@ class Tap:
             self.configext = arr[0]
             arr = arr[1:]
             narr = len(arr)
-            
+
             if self.debug:
                 logging.debug('')
                 logging.debug(f'id= {self.id:s} configext= {self.configext:s}')
-            
+
 
         if(arr[0] == 'async'):
             self.tapcontext = 'async'
@@ -370,7 +378,7 @@ class Tap:
             self.tapcontext = 'capabilities'
         elif (arr[0] == 'tables'):
             self.tapcontext = 'tables'
-         
+
         if (len(self.tapcontext) == 0):
             self.msg = 'PATH_INFO: sync or async not found.'
             self.__printError__('votable', self.msg, errcode='404')
@@ -382,17 +390,17 @@ class Tap:
 
         if(narr > 1 and len(arr[1]) > 0):
         #
-        #{    narr > 1: 
+        #{    narr > 1:
         #    input query contains more than TAP/(sync/async)/statuskey for
-        #    retrive status.xml, we set getstatus=1; 
-        # 
+        #    retrive status.xml, we set getstatus=1;
+        #
             self.getstatus = 1
             self.id = arr[1]
 
             if self.debug:
                 logging.debug('')
                 logging.debug(f'id= {self.id:s} getstatus= {self.getstatus:d}')
-            
+
             if (len(self.id) == 0):
                 self.msg = 'Failed to find jobid for getStatus request.'
                 self.__printError__('votable', self.msg, errcode='404')
@@ -400,7 +408,7 @@ class Tap:
 
             len_id = len(self.id)
             ind = self.pathinfo.find(self.id)
-            
+
 
             i = ind + len_id + 1
             self.statuskey = self.pathinfo[i:]
@@ -423,16 +431,16 @@ class Tap:
             logging.debug(f'setstatus  = {self.setstatus:d}')
             logging.debug(f'id         = {self.id:s}')
         #
-        #} end parsing pathinfo for narr > 1: 
+        #} end parsing pathinfo for narr > 1:
         #    input query contains more than TAP/(sync/async)/statuskey for
-        #    retrive status.xml, we set getstatus=1; 
-        # 
+        #    retrive status.xml, we set getstatus=1;
+        #
 
 
         self.cookiestr = os.getenv('HTTP_COOKIE', default='')
 
         if (len(self.cookiestr) == 0):
-            
+
             self.cookiestr = self.token
 
         #
@@ -464,10 +472,12 @@ class Tap:
         self.config = None
         try:
             self.config = configParam(self.configpath, instance=self.instance, debug=self.debug)
-        
+            self.compat = self.config.compat
+            compat.warn_once_per_day(self.compat, self.config.workdir)
+
             if self.debug:
                 logging.debug('')
-                logging.debug(f'returned configParam:')
+                logging.debug('returned configParam:')
                 logging.debug('%s', self.config)
 
         except Exception as e:
@@ -475,7 +485,7 @@ class Tap:
             if self.debug:
                 logging.debug('')
                 logging.debug(f'config exception: {str(e):s}')
-            
+
             self.msg = 'Internal system error: config variables read error.'
             self.__printError__('votable', str(e), errcode='500')
 
@@ -489,7 +499,7 @@ class Tap:
             logging.debug('')
             logging.debug(f'workdir    = {self.workdir:s}')
 
-        
+
         self.arraysize = self.config.arraysize
 
         self.cookiename = self.config.cookiename
@@ -517,27 +527,6 @@ class Tap:
 
 
 
-        #  Special case:  HTTP DELETE.  We only need 
-        #  the REQUEST_METHOD and PATH_INFO environment
-        #  variable.  The first must be DELETE and the
-        #  second is the directory of th TAP job we wish
-        #  to delete.
-        #
-
-        # if("REQUEST_METHOD" in os.environ):
-        #     self.request_method = os.environ["REQUEST_METHOD"]
-        # else:
-        #     self.request_method = ''
-        #
-        # if self.request_method == 'DELETE':
-        #
-        #     delete_dir = self.workdir + self.pathinfo
-        #
-        #     if self.debug:
-        #         logging.debug('')
-        #         logging.debug(f'DELETE: {delete_dir:s}')
-
-        
         #
         # Initialize statdict dict
         #
@@ -559,10 +548,34 @@ class Tap:
         self.statdict['destruction'] = ''
         self.statdict['endtime'] = ''
         self.statdict['duration'] = 0
-        
+
         self.statdict['stime'] = None
 
         self.statdict['resulturl'] = ''
+
+        #
+        #{ availability and capabilities are static VOSI documents: they need
+        #  no workspace, so answer them before workspace resolution.  Going
+        #  through it treated the empty jobid as a workspace name and failed
+        #  with a 500 whenever <workdir>/TAP did not already exist.
+        #
+        if (self.tapcontext == 'availability'):
+            self.__printVosiAvailability__ ()
+
+        if (self.tapcontext == 'capabilities'):
+            self.__printVosiCapability__ ()
+        #
+        #} end VOSI static endpoints
+        #
+
+        #
+        # GET on the job list must not create a job: clients follow the
+        # redirect that answers a job deletion with a GET here.
+        #
+        if ((self.tapcontext == 'async') and (self.getstatus == 0) and
+                (self.querykey == 0) and (len(self.param['phase']) == 0) and
+                (self.request_method != 'POST')):
+            self.__printJobList__()
 
         #
         # sync or async without input workspace id: make workspace,
@@ -577,7 +590,7 @@ class Tap:
 
             #
             # {  Make workspace:
-            #    make TAP subdir if it doesn't exist, 
+            #    make TAP subdir if it doesn't exist,
             #    make a workspace name with unique id
             #
 
@@ -628,9 +641,18 @@ class Tap:
 
         else:
             #
-            # { input jobid exists:  
+            # { input jobid exists:
             #   Retrieve workspace from id
             #
+
+            #
+            #    A job id names a directory that tempfile.mkdtemp made under
+            #    <workdir>/TAP; anything else ('..', '.') would reach outside
+            #    it, and a deletion removes what the id names.
+            #
+            if not re.fullmatch(r'tap_[A-Za-z0-9_]+', self.id):
+                self.__printError__('votable', 'Job not found: ' + self.id,
+                                    errcode='404')
 
             self.workspace = self.id
             self.userWorkdir = self.workdir + '/TAP/' + self.workspace
@@ -639,11 +661,18 @@ class Tap:
             #
             #    check if workspace exists
             #
-            isExist = os.path.exists(self.userWorkdir)
+            isExist = os.path.isdir(self.userWorkdir)
 
             if (isExist == 0):
-                self.msg = 'work directory based on input jobid does not exist.'
-                self.__printError__('votable', self.msg, errcode='500')
+                self.__printError__('votable', 'Job not found: ' + self.id,
+                                    errcode='404')
+
+            if ((self.tapcontext == 'async') and
+                    (self.statuskey.strip('/') == '') and
+                    ((self.request_method == 'DELETE') or
+                     ((self.request_method == 'POST') and
+                      (self.action == 'DELETE')))):
+                self.__deleteJob__()
 
             #
             # } end of retrieve workspace
@@ -655,16 +684,6 @@ class Tap:
             logging.debug(f'userWorkdir = {self.userWorkdir:s}')
 
         #
-        #{ if tapcontext is one of vosiEnpoint, take care of take care of VOSI
-        #  output and return 
-        #
-        if (self.tapcontext == 'availability'):
-            self.__printVosiAvailability__ ()
-
-        if (self.tapcontext == 'capabilities'):
-            self.__printVosiCapability__ ()
-        
-        #
         # vositable: make up vositbl filepath
         #
 
@@ -675,11 +694,11 @@ class Tap:
             logging.debug(f'vosipath  = {self.vosipath:s}')
 
         if (self.tapcontext == 'tables'):
-            
+
             if self.debug:
-            
+
                 logging.debug('')
-                logging.debug(f'call printVosiTables:')
+                logging.debug('call printVosiTables:')
                 logging.debug(f'statuspath   = {self.statuspath:s}')
 
                 self.__printVosiTables__ (self.config.connectInfo, \
@@ -691,14 +710,15 @@ class Tap:
         #
         #} end vosiEnpoint outputs
         #
-        
+
         #
         # Make up status file name
         #
 
         self.statustbl = 'status.xml'
         self.statuspath = self.userWorkdir + '/' + self.statustbl
-        self.statusurl = self.httpurl + '/' + self.cgipgm + \
+        self.statusurl = \
+            compat.service_url(self.compat, self.httpurl, self.cgipgm) + \
             '/' + self.tapcontext + '/' + self.workspace
 
         if self.debug:
@@ -709,7 +729,7 @@ class Tap:
         #
         # If async and phase == PENDING: send 303 with statusurl and exit
         #
-        # If async and phase != RUN and != ABORT, i.e. bogus value: 
+        # If async and phase != RUN and != ABORT, i.e. bogus value:
         # return with 400 client error immediately.
         #
 
@@ -729,13 +749,13 @@ class Tap:
 
         if ((self.tapcontext == 'async') and \
             (self.getstatus == 0)):
-            
+
             if (len(self.param['phase']) == 0):
 
             #
             # { If phase not specified: set to PENDING and exit
             #
-        
+
                 if self.debug:
                     logging.debug('')
                     logging.debug('case: set to PENDING')
@@ -760,23 +780,23 @@ class Tap:
             #
             # } end of PENDING case
             #
-       
+
             elif (self.param['phase'].lower() == 'abort'):
             #
             # { If phase is abort
             #
-        
+
                 if self.debug:
                     logging.debug('')
                     logging.debug('case bad phase input: abort')
 
                 self.msg = "There is no existing job to be aborted."
-                
+
                 self.statdict['phase'] = 'ABORTED'
                 self.statdict['jobid'] = self.workspace
                 self.statdict['errmsg'] = self.msg
 
-                
+
                 """
                 self.__printError__('votable', self.msg, errcode='400')
 
@@ -800,14 +820,14 @@ class Tap:
                     logging.debug('Return HTTP redirect status.xml and exit.')
 
                 sys.exit()
-        
+
             elif ((self.param['phase'].lower() != 'run') and \
                 (self.param['phase'].lower() != 'abort')):
-                    
+
             #
             # { If phase is bogus value
             #
-        
+
                 if self.debug:
                     logging.debug('')
                     logging.debug('case bad phase input:')
@@ -817,7 +837,7 @@ class Tap:
                 self.statdict['jobid'] = self.workspace
                 self.statdict['errmsg'] = self.msg
 
-                
+
                 """
                 self.__printError__('votable', self.msg, errcode='400')
 
@@ -827,7 +847,7 @@ class Tap:
 
                 sys.exit()
                 """
-                
+
                 self.__writeStatusMsg__(self.statuspath, self.statdict,
                                         self.param)
 
@@ -847,41 +867,42 @@ class Tap:
         #
         # } end of async and getstatus=0 case
         #
-       
-        
+
+
         if ((self.tapcontext == 'async') and (self.getstatus == 1)):
         #
         #{ async and getstatus=1 case:
         #
-            
+
             if (len(self.param['phase']) == 0):
             #
-            #{ async getStatus case: tap query includes jobid but 
-            #                        input phase is blank 
+            #{ async getStatus case: tap query includes jobid but
+            #                        input phase is blank
             #
                 if self.debug:
                     logging.debug('')
                     logging.debug('case: getStatus')
-            
+
                 try:
-                    self.__getStatus__(self.workdir, self.id, self.statuskey, \
+                    self.__getStatus__(self.workdir, self.id,
+                                       compat.uws_url_key(self.compat, self.statuskey), \
                                        self.param)
                 except Exception as e:
-                   
+
                     self.__printError__(self.format, str(e))
-                    
+
             #
             # } end getStatus and printError will exit when done
             #
-            
+
             else:
-            # 
-            # {Tap input with jobid and phase: need to 
+            #
+            # {Tap input with jobid and phase: need to
             #  parse statuspath to retrieve input parameters
             #
                 if self.debug:
                     logging.debug('')
-                    logging.debug (f'case: retrieve parameters from workspace')
+                    logging.debug ('case: retrieve parameters from workspace')
                     logging.debug (f'statuspath= {self.statuspath:s}')
 
                 xmlstruct = None
@@ -957,10 +978,10 @@ class Tap:
                 doc = xmltodict.parse (xmlstruct)
 
                 job = doc['uws:job']
-        
+
                 if self.debug:
                     logging.debug ('')
-                    logging.debug (f'job= ')
+                    logging.debug ('job= ')
                     logging.debug (job)
 
                 self.statdict['jobid'] = job['uws:jobId']
@@ -971,28 +992,28 @@ class Tap:
                 self.statdict['starttime'] = job['uws:startTime']
                 self.statdict['endtime'] = job['uws:endTime']
                 self.statdict['destruction'] = job['uws:destruction']
-                self.statdict['duration'] = job['uws:executionduration']
+                self.statdict['duration'] = compat.duration_value(job)
 
                 if self.debug:
                     logging.debug ('')
-                    logging.debug (f'param retrieved from status.xml:')
-                    logging.debug (f'jobid: ')
+                    logging.debug ('param retrieved from status.xml:')
+                    logging.debug ('jobid: ')
                     logging.debug (self.statdict["jobid"])
-                    logging.debug (f'process_id:')
+                    logging.debug ('process_id:')
                     logging.debug (self.statdict["process_id"])
-                    logging.debug (f'ownerId:')
+                    logging.debug ('ownerId:')
                     logging.debug (self.statdict["ownerId"])
-                    logging.debug (f'phase:')
+                    logging.debug ('phase:')
                     logging.debug (self.statdict["phase"])
-                    logging.debug (f'quote:')
+                    logging.debug ('quote:')
                     logging.debug (self.statdict["quote"])
-                    logging.debug (f'starttime:')
+                    logging.debug ('starttime:')
                     logging.debug (self.statdict["starttime"])
-                    logging.debug (f'endtime:')
+                    logging.debug ('endtime:')
                     logging.debug (self.statdict["endtime"])
-                    logging.debug (f'destruction:')
+                    logging.debug ('destruction:')
                     logging.debug (self.statdict["destruction"])
-                    logging.debug (f'duration:')
+                    logging.debug ('duration:')
                     logging.debug (self.statdict["duration"])
 
             #
@@ -1001,8 +1022,8 @@ class Tap:
         #
         #} end async and getstatus=1 case
         #
-        
-        
+
+
         #
         # Make result table names
         #
@@ -1066,7 +1087,7 @@ class Tap:
 
                 starttime = stime.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-4]
                 destruction = \
-                    destructtime.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-4] + 'Z'
+                    destructtime.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-4] + compat.destruction_suffix(self.compat)
 
                 if self.debug:
                     logging.debug('')
@@ -1090,7 +1111,7 @@ class Tap:
                 #
 
                 self.__printAsyncResponse__(self.statusurl)
-            
+
                 if self.debug:
                     logging.debug('')
                     logging.debug(f'returned printAsyncResponse')
@@ -1099,7 +1120,7 @@ class Tap:
             #
             # } end async RUN case
             #
-            
+
             elif (self.param['phase'] == 'ABORT'):
             #
             # { async ABORT case
@@ -1114,8 +1135,8 @@ class Tap:
 
                     if self.debug:
                         logging.debug('')
-                        logging.debug(f'currently executing:')
-                    
+                        logging.debug('currently executing:')
+
                     pid = self.statdict['process_id']
                     if self.debug:
                         logging.debug('')
@@ -1124,8 +1145,8 @@ class Tap:
                     try:
                         os.kill (pid, signal.SIGKILL)
 
-                    except Exception as e:
-                    
+                    except Exception:
+
                         if self.debug:
                             logging.debug('')
                             logging.debug(f'Error abort job: pid = {pid:d}')
@@ -1141,97 +1162,97 @@ class Tap:
                     destructtime = datetime.datetime.now()
                     destruction = \
                         destructtime.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-4]
-                
+
                     etime = datetime.datetime.now()
                     endtime = etime.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-4]
                     if self.debug:
                         logging.debug('')
-                        logging.debug(f'got here0-3')
-                        logging.debug(f'etime:')
+                        logging.debug('got here0-3')
+                        logging.debug('etime:')
                         logging.debug(etime)
-                    
+
                     starttimestr = self.statdict['starttime']
-                   
+
                     stime = datetime.datetime.strptime \
                         (starttimestr, '%Y-%m-%dT%H:%M:%S.%f')
 
                     if self.debug:
                         logging.debug('')
-                        logging.debug(f'stime:')
+                        logging.debug('stime:')
                         logging.debug(stime)
-                    
-                    durationtime = etime - stime 
+
+                    durationtime = etime - stime
                     if self.debug:
                         logging.debug('')
-                        logging.debug(f'got here0-4')
-                        logging.debug(f'durationtime:')
+                        logging.debug('got here0-4')
+                        logging.debug('durationtime:')
                         logging.debug(durationtime)
-                    
+
                     durationstr = str(durationtime.total_seconds())[:50]
                     if self.debug:
                         logging.debug('')
-                        logging.debug(f'got here0-5')
+                        logging.debug('got here0-5')
                         logging.debug(f'durationstr= {durationstr:s}')
-            
+
                     duration_dbl = float(durationstr)
                     if self.debug:
                         logging.debug('')
-                        logging.debug(f'got here0-6')
-                    
+                        logging.debug('got here0-6')
+
                     duration = math.ceil(duration_dbl)
                     if self.debug:
                         logging.debug('')
-                        logging.debug(f'got here0-7')
-                    
+                        logging.debug('got here0-7')
+
 
                     self.statdict['endtime'] = endtime
                     if self.debug:
                         logging.debug('')
-                        logging.debug(f'got here0-8')
-                    
+                        logging.debug('got here0-8')
+
                     self.statdict['duration'] = duration
                     if self.debug:
                         logging.debug('')
-                        logging.debug(f'got here0-9')
-                    
+                        logging.debug('got here0-9')
+
                     self.statdict['destruction'] = destruction
                     if self.debug:
                         logging.debug('')
-                        logging.debug(f'got here0-10')
-                    
+                        logging.debug('got here0-10')
+
 
                     self.statdict['phase'] = 'ABORTED'
-                    self.statdict['errmsg'] = '' 
+                    self.statdict['errmsg'] = ''
 
                     if self.debug:
                         logging.debug('')
-                        logging.debug(f'got here0-11')
-                    
+                        logging.debug('got here0-11')
+
                     """
                     self.__writeStatusMsg__(self.statuspath, self.statdict,
                                             self.param)
 
                     self.__printAsyncResponse__(self.statusurl)
-            
+
                     if self.debug:
                         logging.debug('')
                         logging.debug(f'returned printAsyncResponse')
                     """
-                
+
                 elif (self.statdict['phase'] == 'PENDING'):
 
                     errmsg = 'PENDING job aborted'
 
                     if self.debug:
                         logging.debug('')
-                        logging.debug(f'call writeAsyncError:')
+                        logging.debug('call writeAsyncError:')
                         logging.debug(f'errmsg= {errmsg:s}')
-                    
-                    
+
+
                     self.statdict['starttime'] = ''
                     self.statdict['endtime'] = ''
-                    self.statdict['duration'] = 0 
-        
+                    self.statdict['duration'] = 0
+
                     self.statdict['phase'] = 'ABORTED'
                     self.statdict['errmsg'] = errmsg
 
@@ -1240,7 +1261,7 @@ class Tap:
                                             self.param)
 
                     self.__printAsyncResponse__(self.statusurl)
-            
+
                     if self.debug:
                         logging.debug('')
                         logging.debug(f'returned printAsyncResponse')
@@ -1252,7 +1273,7 @@ class Tap:
 
             else:
             #
-            # { any other bogus values: this only occured in the initial 
+            # { any other bogus values: this only occured in the initial
             #   PENDING case; the other case that the client send in bogus
             #   case first time around would have been returned by a HTTP
             #   400 error immediately.
@@ -1262,56 +1283,74 @@ class Tap:
                     logging.debug ('case bogus phase value')
 
                 errmsg = "Unknown input job phase=" + self.param['phase']
-               
+
                 self.statdict['starttime'] = ''
                 self.statdict['endtime'] = ''
-                self.statdict['duration'] = 0 
-        
+                self.statdict['duration'] = 0
+
                 self.statdict['phase'] = 'ERROR'
                 self.statdict['errmsg'] = errmsg
-            
+
             #
             # } end async bogus value case
             #
 
-            if self.debug:
-                logging.debug('')
-                logging.debug ('call writeStatusMsg')
-                logging.debug (f'statuspath= {self.statuspath:s}')
+            if (self.param['phase'] == 'RUN'):
 
+                #
+                # Publish the job, answer the client, and keep running
+                # the query in a detached child.
+                #
 
-            self.__writeStatusMsg__(self.statuspath, self.statdict,
-                                    self.param)
+                self.__respondAsyncAndDetach__()
 
-            if self.debug:
-                logging.debug('')
-                logging.debug ('call printAsyncResponse')
+                if self.debug:
+                    logging.debug('')
+                    logging.debug('async response sent; job running detached')
 
-            self.__printAsyncResponse__(self.statusurl)
-            
-            if self.debug:
-                logging.debug('')
-                logging.debug(f'returned printAsyncResponse')
+            else:
+
+                #
+                # ABORT and unrecognized phases are terminal: the branch
+                # above has already decided the phase, so write it,
+                # answer the client and stop. Falling through to the
+                # query path below would run the job the client just
+                # aborted and overwrite ABORTED (or ERROR) with
+                # COMPLETED.
+                #
+
+                if self.debug:
+                    logging.debug('')
+                    logging.debug ('terminal async phase= '
+                                   f"{self.statdict['phase']:s}")
+                    logging.debug (f'statuspath= {self.statuspath:s}')
+
+                self.__writeStatusMsg__(self.statuspath, self.statdict,
+                                        self.param)
+
+                self.__printAsyncResponse__(self.statusurl)
+
+                sys.exit()
 
         #
-        # } end async submit case 
+        # } end async submit case
         #
 
         #
-        # { Before running query -- both sync and async cases, check 
-        #   input parameters to reject obvious input errors 
-        # 
-            
+        # { Before running query -- both sync and async cases, check
+        #   input parameters to reject obvious input errors
+        #
+
         if self.debug:
             logging.debug('')
-            logging.debug(f'continue: check lang')
+            logging.debug('continue: check lang')
 
         if (self.param['lang'].lower() != 'adql' and \
                 self.param['lang'].lower() != 'adql-2.0'):
-            
+
             self.msg = "Input parameter (lang=" + self.param['lang'] + \
-                ") error: only lang=ADQL is implemented." 
-            
+                ") error: only lang=ADQL is implemented."
+
             if(self.tapcontext == 'async'):
                 self.__writeAsyncError__(self.msg, self.statuspath,
                                          self.statdict, self.param)
@@ -1322,10 +1361,10 @@ class Tap:
         if ((self.tapcontext == 'async') and \
             (self.param['phase'].lower() != 'run') and\
             (self.param['phase'].lower() != 'abort')):
-                    
+
             self.statdict['phase'] = 'ERROR'
             self.statdict['jobid'] = self.workspace
-                
+
             self.msg = "Unknown input job phase=" + self.param['phase']
 
             self.__writeAsyncError__(self.msg, self.statuspath,
@@ -1335,7 +1374,7 @@ class Tap:
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'continue: check format')
+            logging.debug('continue: check format')
 
         if ((self.format != 'votable') and \
             (self.format != 'ipac') and \
@@ -1361,7 +1400,7 @@ class Tap:
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'continue: check maxrec')
+            logging.debug('continue: check maxrec')
             logging.debug(f'self.maxrecstr= {self.maxrecstr:s}')
 
 
@@ -1476,7 +1515,7 @@ class Tap:
         try:
             TableValidator.validate_statement(query_adql, debug=self.debug)
         except Exception as e:
-            errcode = '403' if isinstance(e, TableValidationError) else '400'
+            errcode = compat.table_denied_status(self.compat) if isinstance(e, TableValidationError) else '400'
             if(self.tapcontext == 'async'):
                 self.phase = 'ERROR'
                 self.__writeAsyncError__(str(e), self.statuspath,
@@ -1530,7 +1569,7 @@ class Tap:
 
             if self.debug:
                 logging.debug('')
-                logging.debug(f'ADQL initialized')
+                logging.debug('ADQL initialized')
 
 
             self.query = adql.sql(query_adql)
@@ -1564,7 +1603,7 @@ class Tap:
             tables = tn.extract_tables(self.query)
             self.dbtable = tables[0]
 
-        except Exception as e:
+        except Exception:
             if self.debug:
                 logging.debug('')
                 logging.debug('TableName exception')
@@ -1573,9 +1612,9 @@ class Tap:
         if len(self.dbtable) == 0:
 
             self.msg = 'No table name found in ADQL query.'
-            
+
             if(self.tapcontext == 'async'):
-                
+
                 self.__writeAsyncError__(self.msg, self.statuspath,
                                          self.statdict, self.param)
             else:
@@ -1706,7 +1745,7 @@ class Tap:
 
                 if self.debug:
                     logging.debug('')
-                    logging.debug(f'tapQuery parameters:')
+                    logging.debug('tapQuery parameters:')
                     logging.debug(f'query     = [{self.query:s}]')
                     logging.debug(f'workdir   = [{self.userWorkdir:s}]')
                     logging.debug(f'format    = [{self.format:s}]')
@@ -1741,7 +1780,7 @@ class Tap:
                 # TableValidationError means the query referenced a table
                 # not in TAP_SCHEMA — access denied (403). All other errors
                 # are bad requests (400).
-                errcode = '403' if isinstance(e, TableValidationError) else '400'
+                errcode = compat.table_denied_status(self.compat) if isinstance(e, TableValidationError) else '400'
 
                 if(self.tapcontext == 'async'):
 
@@ -1802,7 +1841,7 @@ class Tap:
                 # TableValidationError means the query referenced a table
                 # not in TAP_SCHEMA — access denied (403). All other errors
                 # are bad requests (400).
-                errcode = '403' if isinstance(e, TableValidationError) else '400'
+                errcode = compat.table_denied_status(self.compat) if isinstance(e, TableValidationError) else '400'
 
                 if(self.tapcontext == 'async'):
 
@@ -1842,7 +1881,7 @@ class Tap:
 
             etime = datetime.datetime.now()
             durationtime = etime - self.statdict['stime']
-            
+
             if self.debug:
                 logging.debug('')
                 logging.debug('durationtime:')
@@ -1857,7 +1896,7 @@ class Tap:
             if self.debug:
                 logging.debug('')
                 logging.debug(f'duration_dbl= {duration_dbl:f}')
-            
+
             duration = math.ceil(duration_dbl)
 
             if self.debug:
@@ -2032,7 +2071,7 @@ class Tap:
         #
         # Header
         #
-        
+
         retvalstr = str(retval)
         if self.debug:
             logging.debug('')
@@ -2046,16 +2085,16 @@ class Tap:
 
         uwsschema = ' xmlns:uws="http://www.ivoa.net/xml/UWS/v1.0" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema" xsi:schemaLocation="http://www.ivoa.net/xml/UWS/v1.0 http://www.ivoa.net/xml/UWS/v1.0">'
 
-        
+
         if ((key == 'error')
             or (key == 'errorSummary')
             or (key == 'errmsg')):
-            
+
             if(outtype == 'xml'):
-                self.__printError__ ('votable', retval) 
+                self.__printError__ ('votable', retval)
             else:
-                self.__printError__ ('plain', retval) 
-        
+                self.__printError__ ('plain', retval)
+
         #
         #    parameters and results vosi endpoints
         #
@@ -2063,43 +2102,43 @@ class Tap:
 
         if(outtype == 'xml'):
 
-            print("Content-type: text/xml\r")
+            print("Content-type: %s\r" % compat.uws_content_type(self.compat))
             print("\r")
             print('<?xml version="1.0" encoding="UTF-8"?>')
-           
+
             if(key == 'parameters'):
-                
+
                 if self.debug:
                     logging.debug('')
                     logging.debug('key = parameters')
-                
+
                 ind = retvalstr.index('>')
                 if self.debug:
                     logging.debug('')
                     logging.debug('ind=')
                     logging.debug(ind)
-                
+
                 if self.debug:
                     logging.debug('')
                     logging.debug(f'retvalstr[0:ind]= {retvalstr[0:ind-1]:s}')
                     logging.debug(f'retvalstr[ind+1]= {retvalstr[ind+1]:s}')
-                
-                val = retvalstr[0:ind] + uwsschema + retvalstr[ind+1:]   
+
+                val = retvalstr[0:ind] + uwsschema + retvalstr[ind+1:]
                 if self.debug:
                     logging.debug('')
                     logging.debug(f'val= {val:s}')
-                
+
                 print(val)
                 sys.stdout.flush()
 
             elif(key == 'results'):
-                
+
                 ind = retvalstr.index('>')
-                val = retvalstr[0:ind] + uwsschema + retvalstr[ind+1:]   
+                val = retvalstr[0:ind] + uwsschema + retvalstr[ind+1:]
                 if self.debug:
                     logging.debug('')
                     logging.debug(f'val= {val:s}')
-                
+
                 print(val)
                 sys.stdout.flush()
 
@@ -2109,10 +2148,10 @@ class Tap:
 
             print (retval)
             sys.stdout.flush()
-        
+
         if self.debug:
             logging.debug('Write status to user and exit.')
-        
+
         sys.exit()
         #
         # } end of printStatus
@@ -2124,7 +2163,7 @@ class Tap:
 
         #
         # { initialize format to votable but after extracting format
-        #   the output should follow the format 
+        #   the output should follow the format
         #
         if self.debug:
             logging.debug('')
@@ -2132,7 +2171,7 @@ class Tap:
             logging.debug('key= ')
             logging.debug(key)
 
-        
+
         isExist = os.path.exists(self.statuspath)
 
         if(isExist == 0):
@@ -2165,7 +2204,7 @@ class Tap:
                 logging.debug('Return status.xml to user and exit.')
 
             print("HTTP/1.1 200 OK\r")
-            print("Content-type: text/xml\r")
+            print("Content-type: %s\r" % compat.uws_content_type(self.compat))
             print("\r")
             print(data)
             sys.exit()
@@ -2231,13 +2270,13 @@ class Tap:
                 logging.debug('')
                 logging.debug('key == parameters')
                 logging.debug('call __printStatus')
-            
+
             self.__printStatus__('parameters', parameters, 'xml')
 
         #
         # } end key=parameters
         #
-        
+
         elif ((key == 'phase')
                 or (key == 'startTime')
                 or (key == 'endTime')
@@ -2258,12 +2297,12 @@ class Tap:
             if self.debug:
                 logging.debug('')
                 logging.debug(\
-                    f'key == phase, executionduration or destruction etc.')
+                    'key == phase, executionduration or destruction etc.')
             #
             # { Single value return
             #
             retval = 'None'
-            keystr = 'uws:' + key
+            keystr = 'uws:' + compat.uws_key(job, key)
             outstr = ''
 
             if((key == 'phase')
@@ -2274,7 +2313,11 @@ class Tap:
                     or (key == 'jobId')
                     or (key == 'runId')):
 
-                retval = job[keystr]
+                # xmltodict reads an empty element as None and a nil one
+                # as a dict; both are an unset value, which is empty text.
+                retval = job.get(keystr)
+                if (retval is None) or isinstance(retval, dict):
+                    retval = ''
                 outstr = retval
 
             elif((key == 'ownerId') or (key == 'quote')):
@@ -2308,8 +2351,8 @@ class Tap:
 
             if self.debug:
                 logging.debug('')
-                logging.debug(f'key == error')
-            
+                logging.debug('key == error')
+
             retval = ''
             errmsg = ''
 
@@ -2317,11 +2360,11 @@ class Tap:
 
                 if self.debug:
                     logging.debug('')
-                    logging.debug(f'key == error')
+                    logging.debug('key == error')
 
                 try:
                     errmsg = job['uws:errorSummary']['uws:message']
-                except Exception as e:
+                except Exception:
                     self.printError (\
                         self.format, 'error extracting errorSummary')
 
@@ -2330,17 +2373,17 @@ class Tap:
                 logging.debug(f'errmsg: {errmsg:s}')
 
             if (self.format == 'votable'):
-                
+
                 if (len(errmsg) > 0):
                     outstr = f'        <uws:message>{errmsg:s}</uws:message>'
                 else:
-                    outstr = f'        <uws:message></uws:message>'
+                    outstr = '        <uws:message></uws:message>'
 
                 self.__printStatus__('errorSummary', outstr, 'xml')
-            
+
             else:
                 if (len(errmsg) > 0):
-                    outstr = errmsg 
+                    outstr = errmsg
                 else:
                     outstr = 'No error message'
 
@@ -2363,7 +2406,7 @@ class Tap:
                 logging.debug(\
                     'case results or results/result or results/resulturl')
 
-            
+
             if (key == 'results'):
             #
             # { if results
@@ -2371,7 +2414,7 @@ class Tap:
                 if self.debug:
                     logging.debug('')
                     logging.debug('key= results')
-            
+
                 if (phase.lower() == 'completed'):
                 #
                 # { if reulsts case and phase = completed
@@ -2390,35 +2433,35 @@ class Tap:
                         #    logging.debug(result)
 
                         #results = job['uws:results']
-        
+
                         #if self.debug:
                         #    logging.debug('')
                         #    logging.debug(f'results: {results:s}')
-                
+
                         #outstr = results
 
-                    except Exception as e:
-                    
+                    except Exception:
+
                         if self.debug:
                             logging.debug('')
                             logging.debug('error retrieving results')
-                
+
                         self.__printError__(self.format, \
                             'Failed to extract results', errcode='400')
-        
+
                     if self.debug:
                         logging.debug('')
                         logging.debug('results:')
                         logging.debug(results)
                         logging.debug('result:')
                         logging.debug(result)
-            
+
                     self.__printStatus__(key, results, 'xml')
                     sys.exit()
-                
+
                 #
-                # } end results case 
-                # 
+                # } end results case
+                #
                 else:
                 #
                 # { if reulsts case but phase NOT completed
@@ -2431,13 +2474,13 @@ class Tap:
             #
             # } end if results
             #
-            else: 
+            else:
             #
             # { if results/resulturl or 'results/result:
             #
                 if (phase.lower() == 'completed'):
                 #
-                # { if reulsts/resulturl or results/result cases 
+                # { if reulsts/resulturl or results/result cases
                 #   and phase = completed
                 #
                     try:
@@ -2445,12 +2488,12 @@ class Tap:
                         resulturl = \
                             job['uws:results']['uws:result']['@xlink:href']
 
-                    except Exception as e:
-                    
+                    except Exception:
+
                         if self.debug:
                             logging.debug('')
                             logging.debug('error retrieving result')
-                    
+
                         self.__printError__ (self.format, \
                             'Error retrieving result or resulturl')
 
@@ -2464,7 +2507,7 @@ class Tap:
 
                         self.__printStatus__(key, resulturl, 'plain')
                         sys.exit()
-                
+
                     elif (key == 'results/result'):
 
                         indx = resulturl.find(workspace)
@@ -2478,7 +2521,7 @@ class Tap:
                         fp = None
                         try:
                             fp = open(resultpath, 'r')
-                        except Exception as e:
+                        except Exception:
                             msg = 'Failed to open result file: ' + resultpath
                             self.__printError__(format, msg, errcode='400')
 
@@ -2487,7 +2530,7 @@ class Tap:
                         if(format == 'json'):
                             print("Content-type: application/json\r")
                         elif(format == 'votable'):
-                            print("Content-type: text/xml\r")
+                            print("Content-type: %s\r" % compat.votable_content_type(self.compat))
                         else:
                             print("Content-type: text/plain\r")
                         print("\r")
@@ -2508,31 +2551,31 @@ class Tap:
 
                         fp.close()
                         sys.exit()
-                
+
                 #
-                # } end results/resulturl or results/result  cases 
+                # } end results/resulturl or results/result  cases
                 # and phase completed
-                # 
-                
+                #
+
                 else:
                 #
-                # { if reulsts/resulturl or results/result cases 
+                # { if reulsts/resulturl or results/result cases
                 #   and phase NOT completed
                 #
                     self.__printError__ (self.format, \
                         'No result or resulturl because phase is not COMPLETED')
-            
+
                 #
-                # } end results/resulturl or results/result  cases 
+                # } end results/resulturl or results/result  cases
                 # and phase NOT completed
-                # 
-             
+                #
+
             #
             # } if results/resulturl or 'results/result:
             #
         #
-        # } end results or results/resulturl or results/result  cases 
-        # 
+        # } end results or results/resulturl or results/result  cases
+        #
         else:
             msg = f'key {key:s} is not a valid key'
 
@@ -2547,10 +2590,16 @@ class Tap:
         #
         # {
         #
-        
-        errcode = '200'         
+
+        errcode = '200'
         if ('errcode' in kwargs):
             errcode = kwargs['errcode']
+
+        nea = compat.error_document(self.compat, errmsg, errcode)
+        if nea is not None:          # nea-errors replaces the whole response
+            sys.stdout.write(nea)
+            sys.stdout.flush()
+            sys.exit()
 
         httphdr = "HTTP/1.1 " + str(errcode)  + " ERROR\r"
         print(httphdr)
@@ -2574,7 +2623,7 @@ class Tap:
                 if(self.infomsg[-1] == '?'):
                     print(self.infomsg + 'dbtable=' + html.escape(self.dbtable))
                 else:
-                    print(self.infomsg)                                        
+                    print(self.infomsg)
 
             print('</INFO>')
             print('</RESOURCE>')
@@ -2589,8 +2638,8 @@ class Tap:
                 if(self.infomsg[-1] == '?'):
                     print(self.infomsg + 'dbtable=' + self.dbtable)
                 else:
-                    print(self.infomsg)                                        
-                   
+                    print(self.infomsg)
+
 
         sys.stdout.flush()
         sys.exit()
@@ -2615,22 +2664,22 @@ class Tap:
         #
         # Set status parameters
         #
-        
+
         if self.debug:
             logging.debug('')
-            logging.debug(f'From writeAsyncError')
-            logging.debug(f'statdict["stime"]:')
+            logging.debug('From writeAsyncError')
+            logging.debug('statdict["stime"]:')
             logging.debug(statdict['stime'])
-            
+
         if (statdict['stime'] is not None):
-            
+
             etime = datetime.datetime.now()
             endtime = etime.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-4]
 
             durationtime = etime - statdict['stime']
             durationstr = str(durationtime.total_seconds())[:10]
             duration_dbl = float(durationstr)
-        
+
             duration = math.ceil(duration_dbl)
 
             statdict['endtime'] = endtime
@@ -2639,8 +2688,8 @@ class Tap:
         else:
             statdict['starttime'] = ''
             statdict['endtime'] = ''
-            statdict['duration'] = 0 
-        
+            statdict['duration'] = 0
+
         statdict['phase'] = 'ERROR'
         statdict['errmsg'] = errmsg
 
@@ -2651,8 +2700,8 @@ class Tap:
         #
         # }  end of writeAsyncError
         #
-    
-    
+
+
 
     def __printSyncResult__(self, resultpath, format, **kwargs):
 
@@ -2680,7 +2729,7 @@ class Tap:
         if(format == 'json'):
             print("Content-type: application/json\r")
         elif(format == 'votable'):
-            print("Content-type: text/xml\r")
+            print("Content-type: %s\r" % compat.votable_content_type(self.compat))
         else:
             print("Content-type: text/plain\r")
         print("\r")
@@ -2740,28 +2789,276 @@ class Tap:
         #
 
 
+    def __printJobList__(self, **kwargs):
+
+        #
+        # UWS job list (GET /async).  Jobs carry no owner, so the list
+        # shows none of them rather than everyone's.
+        #
+
+        body = ('<?xml version="1.0" encoding="UTF-8"?>\n'
+                '<uws:jobs xmlns:uws="http://www.ivoa.net/xml/UWS/v1.0"'
+                ' xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1"/>\n')
+
+        sys.stdout.write('HTTP/1.1 200 OK\r\n')
+        sys.stdout.write(f'Content-Type: {compat.uws_content_type(self.compat)}\r\n')
+        sys.stdout.write(f'Content-Length: {len(body.encode("utf-8"))}\r\n')
+        sys.stdout.write('Connection: close\r\n\r\n')
+        sys.stdout.write(body)
+        sys.stdout.flush()
+        sys.exit()
+
+
+    def __deleteJob__(self, **kwargs):
+
+        #
+        # UWS job deletion (POST ACTION=DELETE, or HTTP DELETE): stop the
+        # job if it is running, remove its workspace, and send the client
+        # to the job list.  The job id was checked against the workspace
+        # name pattern before userWorkdir was built from it.
+        #
+
+        try:
+            with open(self.userWorkdir + '/status.xml', 'r') as fp:
+                job = xmltodict.parse(fp.read())['uws:job']
+
+            if (job.get('uws:phase') == 'EXECUTING'):
+                pid = int(job.get('uws:runId') or 0)
+                if (pid > 0) and (pid != os.getpid()):
+                    os.kill(pid, signal.SIGKILL)
+
+        except Exception as e:
+
+            # A job whose status can't be read or whose process is gone
+            # is still deleted.
+            if self.debug:
+                logging.debug(f'deleteJob: {str(e):s}')
+
+        try:
+            shutil.rmtree(self.userWorkdir)
+
+        except OSError as e:
+            self.__printError__('votable', 'Failed to delete job ' +
+                                self.workspace + ': ' + str(e), errcode='500')
+
+        joblist = compat.service_url(self.compat, self.httpurl, self.cgipgm) + \
+            '/async'
+
+        sys.stdout.write('HTTP/1.1 303 See Other\r\n')
+        sys.stdout.write(f'Location: {joblist}\r\n')
+        sys.stdout.write('Content-Length: 0\r\n')
+        sys.stdout.write('Connection: close\r\n\r\n')
+        sys.stdout.flush()
+        sys.exit()
+
+
     def __printAsyncResponse__(self, statusurl, **kwargs):
 
         #
-        # async: return statusurl and kill the parent process
+        # async: point the client at the job's status URL.
+        #
+        # The body is one line, but it still needs a Content-Length. This
+        # is an nph- script, so nothing downstream supplies one, and a
+        # reverse proxy in front of the CGI has no other way to tell
+        # where the response ends. Earlier versions omitted it and let
+        # the connection dying stand in for the end of the message.
         #
 
-        print("HTTP/1.1 303 See Other\r")
-        print("Location: %s\r\n\r" % statusurl)
-        print("Redirect Location: %s" % statusurl)
+        body = 'Redirect Location: %s\n' % statusurl
+
+        sys.stdout.write('HTTP/1.1 303 See Other\r\n')
+        sys.stdout.write('Location: %s\r\n' % statusurl)
+        sys.stdout.write(compat.async_submit_headers(self.compat, body))
+        sys.stdout.write('\r\n')
+        sys.stdout.write(body)
         sys.stdout.flush()
-
-        time.sleep(2.0)
-
-        #
-        # Shut down parent program
-        #
-
-        os.kill(os.getppid(), signal.SIGKILL)
 
         if self.debug:
             logging.debug('')
-            logging.debug('parent process killed')
+            logging.debug(f'async response sent: statusurl= {statusurl:s}')
+
+        return
+
+
+    def __respondAsyncAndDetach__(self, **kwargs):
+
+        #
+        # { An async submit has to finish an HTTP response now and keep
+        #   executing the query afterwards, and under CGI those two pull
+        #   against each other: the web server completes the response
+        #   when the script closes stdout, and mod_cgi terminates the
+        #   script once the request is cleaned up. The process that runs
+        #   the query can therefore be neither the one holding stdout nor
+        #   part of the request.
+        #
+        #   So fork. The parent names the child as the job's runId,
+        #   writes the status document, sends the 303 and exits, which
+        #   ends the response the way any other CGI would. The child
+        #   leaves the request's process group, points its standard
+        #   streams away from the server pipe, waits for the parent to
+        #   confirm the job is published, and returns to run the query.
+        #
+        #   Earlier versions sent the response and then SIGKILLed
+        #   os.getppid(). Under CGI that parent is the web server child
+        #   serving the request: killing it truncates the response, and
+        #   behind a reverse proxy it leaves the proxy holding a dead
+        #   upstream connection, which the proxy reports as 503 on the
+        #   next request or two routed over it.
+        #
+
+        try:
+            readfd, writefd = os.pipe()
+            pid = os.fork()
+
+        except OSError as e:
+
+            #
+            # No fork available: answer the request from this process and
+            # run the job here. The response is still well formed; the
+            # job now lives and dies with the request.
+            #
+
+            logging.error(f'Could not fork async worker: {str(e)}')
+
+            self.__writeStatusMsg__(self.statuspath, self.statdict,
+                                    self.param)
+
+            self.__printAsyncResponse__(self.statusurl)
+
+            return
+
+        if (pid > 0):
+        #
+        # { parent: publish the job, answer the client, exit
+        #
+            os.close(readfd)
+
+            self.statdict['process_id'] = pid
+
+            published = False
+
+            try:
+                self.__writeStatusMsg__(self.statuspath, self.statdict,
+                                        self.param)
+
+                published = True
+
+                self.__printAsyncResponse__(self.statusurl)
+
+            except Exception as e:
+
+                #
+                # Most likely the client or the proxy hung up while the
+                # response was going out. Nothing can be sent about it
+                # now; the job's own fate is decided in the finally
+                # clause below.
+                #
+
+                logging.error(f'Async response failed: {str(e)}')
+
+            finally:
+
+                #
+                # The child blocks on this byte, so a fast query cannot
+                # overwrite the status document written above. Once the
+                # job is published the child has to be released even if
+                # the response itself failed: a client that hung up does
+                # not make the job go away, and a child that exits here
+                # would leave the job stuck in EXECUTING forever. If the
+                # status write is what failed, the byte is withheld and
+                # the child exits, because there is no job document for
+                # it to update.
+                #
+
+                if published:
+                    try:
+                        os.write(writefd, b'1')
+
+                    except OSError as e:
+                        logging.error(
+                            f'Could not release async worker: {str(e)}')
+
+                os.close(writefd)
+
+            sys.exit(0)
+        #
+        # } end parent
+        #
+
+        #
+        # { child: detach from the request, then run the query
+        #
+        os.close(writefd)
+
+        self.pid = os.getpid()
+        self.statdict['process_id'] = self.pid
+
+        self.__detachFromServer__()
+
+        published = b''
+
+        try:
+            published = os.read(readfd, 1)
+
+        except OSError as e:
+            logging.error(f'Async worker handshake failed: {str(e)}')
+
+        os.close(readfd)
+
+        if (len(published) == 0):
+
+            #
+            # The parent exited before it published the job, so there is
+            # no status document for this run to update.
+            #
+
+            logging.error('Async parent exited before publishing the job')
+
+            os._exit(1)
+
+        if self.debug:
+            logging.debug('')
+            logging.debug(f'async worker detached: pid= {self.pid:d}')
+
+        return
+        #
+        # } end child
+        #
+
+
+    def __detachFromServer__(self, **kwargs):
+
+        #
+        # Give up the web server's request context: leave the request's
+        # process group so the server cannot reap this process along with
+        # the request, and replace the inherited stdio with /dev/null so
+        # the response the parent just sent is neither held open by nor
+        # corrupted from here.
+        #
+
+        try:
+            os.setsid()
+
+        except OSError as e:
+            logging.error(f'setsid failed in async worker: {str(e)}')
+
+        try:
+            sys.stdout.flush()
+            sys.stderr.flush()
+
+        except (OSError, ValueError) as e:
+            logging.error(f'Could not flush async worker stdio: {str(e)}')
+
+        devnull = os.open(os.devnull, os.O_RDWR)
+
+        try:
+            os.dup2(devnull, 0)
+            os.dup2(devnull, 1)
+            os.dup2(devnull, 2)
+
+        finally:
+            if (devnull > 2):
+                os.close(devnull)
 
         return
 
@@ -2770,9 +3067,9 @@ class Tap:
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'Enter writeStatusMsg')
+            logging.debug('Enter writeStatusMsg')
             logging.debug(f'phase= {statdict["phase"]:s}')
-        
+
         #
         # { TAP status result always written in XML format
         #   input maxrecstr is stored in self.maxrecstr
@@ -2781,7 +3078,7 @@ class Tap:
         format = param['format'].lower()
 
         maxrecstr = ''
-        
+
         if (len(self.maxrecstr) == 0):
             maxrecstr = str(param['maxrec'])
         else:
@@ -2791,13 +3088,13 @@ class Tap:
             logging.debug('')
             logging.debug(f'maxrecstr= {maxrecstr:s}')
             logging.debug(f"maxrec= {param['maxrec']:d}")
-        
+
         fp = None
         try:
             fp = open(statuspath, 'w+')
             os.chmod(statuspath, 0o664)
 
-        except Exception as e:
+        except Exception:
             msg = 'Failed to open/create status file.'
             self.__printError__(format, msg)
 
@@ -2827,7 +3124,7 @@ class Tap:
         errmsg = statdict['errmsg']
 
         fp.write('<?xml version="1.0" encoding="UTF-8"?>\n')
-        
+
         fp.write (self.uwsheader)
         fp.write ('\n')
 
@@ -2850,7 +3147,8 @@ class Tap:
 
         fp.write(f"    <uws:endTime>{statdict['endtime']:s}</uws:endTime>\n")
 
-        fp.write(f"    <uws:executionduration>{statdict['duration']:d}</uws:executionduration>\n")
+        fp.write(f"    <uws:executionDuration>{statdict['duration']:d}"
+                 "</uws:executionDuration>\n")
 
         if (statdict['destruction'] is None):
             fp.write('    <uws:destruction xsi:nil="true"/>\n')
@@ -2873,7 +3171,7 @@ class Tap:
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'wrote job status file')
+            logging.debug('wrote job status file')
 
 
         #
@@ -2906,7 +3204,7 @@ class Tap:
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'done writeAsyncError')
+            logging.debug('done writeAsyncError')
 
         #
         # Note: closing file automatically released the lock
@@ -2923,7 +3221,7 @@ class Tap:
         #
         # { getDataLevel
         #
-    
+
         if self.debug:
             logging.debug('')
             logging.debug('Enter __getDatalevel__')
@@ -2962,12 +3260,12 @@ class Tap:
         # } end getDataLevel
         #
 
-    
+
     def __printVosiTables__ (self, connectInfo, vosipath, **kwargs):
         #
         # { printVosiTables
         #
-   
+
         if self.debug:
             logging.debug('')
             logging.debug('Enter __printVosiTables__')
@@ -2990,13 +3288,13 @@ class Tap:
                 logging.debug('')
                 logging.debug('call vosiTables')
 
-            vositbl = vosiTables (connectInfo=self.config.connectInfo, dbms=dbms, \
+            compat.vosi_tables_class(self.compat) (connectInfo=self.config.connectInfo, dbms=dbms, \
                 dbserver=dbserver, \
                 userid=userid, \
                 password=password, \
                 outpath=vosipath, \
                 debug=1)
-        
+
             if self.debug:
                 logging.debug('')
                 logging.debug('returned vosiTables')
@@ -3008,7 +3306,7 @@ class Tap:
                 logging.debug('VosiTables exception:')
                 logging.debug(f'exception: {str(e):s}')
 
-            self.__printError__ ('votable', str(e)) 
+            self.__printError__ ('votable', str(e))
 
         #
         #    print out vosi table in the workspace
@@ -3017,7 +3315,7 @@ class Tap:
         fp = None
         try:
             fp = open(vosipath, 'r')
-        except Exception as e:
+        except Exception:
             msg = 'Failed to open vositable path: ' + vosipath
             self.__printError__('votable', msg, errcode='400')
 
@@ -3048,21 +3346,23 @@ class Tap:
 
 
     def __printVosiAvailability__ (self, **kwargs):
-    
+
         #
         # { printVosiAvailability
         #
 
+        sys.stdout.write(compat.vosi_head(self.compat))
         print ('<?xml version="1.0" encoding="UTF-8"?>')
         print ('')
         print ('<vosi:availability')
-        print ('  xmlns:vosi="http://www.ivoa.net/xml/VOSIAvailability/v1.0"') 
-        print ('  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"') 
+        print ('  xmlns:vosi="http://www.ivoa.net/xml/VOSIAvailability/v1.0"')
+        print ('  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"')
         print ('  xsi:schemaLocation="http://www.ivoa.net/xml/VOSIAvailability/v1.0 http://www.ivoa.net/xml/VOSIAvailability/v1.0">')
         print ('    <vosi:available>true</vosi:available>')
         print ('    <vosi:note>TAP service available.</vosi:note>')
         print ('</vosi:availability>')
 
+        sys.stdout.write(compat.vosi_tail(self.compat))
         sys.exit()
 
         #
@@ -3076,6 +3376,7 @@ class Tap:
         # { printVosiCapability
         #
 
+        sys.stdout.write(compat.vosi_head(self.compat))
         print ('<?xml version="1.0" encoding="UTF-8"?>')
         print ('')
         print ('<vosi:capabilities')
@@ -3096,7 +3397,7 @@ class Tap:
         print ('    <interface xsi:type="vod:ParamHTTP" role="std" version="1.1">')
         val = '      <accessURL use="full">' + self.httpurl + '/TAP</accessURL>'
         print (val)
-        
+
         print ('    </interface>')
         print ('')
         print ('    <!-- the ADQL geometry functions in TAP -->')
@@ -3148,10 +3449,10 @@ class Tap:
         print ('  <!-- VOSI table metadata for this TAP service -->')
         print ('  <capability standardID="ivo://ivoa.net/std/VOSI#tables">')
         print ('    <interface xsi:type="vod:ParamHTTP" role="std">')
-        
+
         val = '      <accessURL use="full">' + self.httpurl + '/TAP/tables</accessURL>'
         print (val)
-        
+
         print ('      <queryType>GET</queryType>')
         print ('      <resultType>application/xml</resultType>')
         print ('    </interface>')
@@ -3160,31 +3461,32 @@ class Tap:
         print ('  <!-- VOSI capabilities metadata for this TAP service -->')
         print ('  <capability standardID="ivo://ivoa.net/std/VOSI#capabilities">')
         print ('    <interface xsi:type="vod:ParamHTTP" role="std">')
-        
+
         val = '      <accessURL use="full">' + self.httpurl + '/TAP/capabilities</accessURL>'
         print (val)
-        
+
         print ('    </interface>')
         print ('  </capability>')
         print ('')
         print ('  <!-- VOSI availability metadata for this TAP service -->')
         print ('  <capability standardID="ivo://ivoa.net/std/VOSI#availability">')
         print ('    <interface xsi:type="vod:ParamHTTP" role="std">')
-        
+
         val = '      <accessURL use="full">' + self.httpurl + '/TAP/availability</accessURL>'
         print (val)
-        
+
         print ('    </interface>')
         print ('  </capability>')
         print ('')
-        print ('</vosi:capabilities>') 
-        
+        print ('</vosi:capabilities>')
+
+        sys.stdout.write(compat.vosi_tail(self.compat))
         sys.exit()
-    
+
         #
         # } end printVosiCapability
         #
-    
+
     #
     # } end tap class
     #

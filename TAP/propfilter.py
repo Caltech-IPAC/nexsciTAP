@@ -3,17 +3,15 @@
 #   https://github.com/Caltech-IPAC/nexsciTAP/blob/master/LICENSE
 
 
-import os
 import logging
+import os
 import re
-
-import datetime
 import time
 
-from TAP.writeresult import writeResult
 from TAP.datadictionary import dataDictionary
 from TAP.tablenames import TableNames
-from TAP.tablevalidator import TableValidator, TableValidationError
+from TAP.tablevalidator import TableValidationError, TableValidator
+from TAP.writeresult import writeResult
 
 
 def _filterable(query, wherestr):
@@ -419,7 +417,7 @@ class propFilter:
             try:
                 self.maxrec = int(maxrecstr)
 
-            except Exception as e:
+            except Exception:
 
                 self.msg = "Failed to convert input maxrec value [" + \
                     maxrecstr + "] to integer."
@@ -467,7 +465,7 @@ class propFilter:
                     logging.debug('Connected to Oracle, database ' +
                                   self.dbserver)
 
-            except Exception as e:
+            except Exception:
 
                 self.status = 'error'
                 self.msg = 'Failed to connect to cx_Oracle'
@@ -526,7 +524,7 @@ class propFilter:
                     logging.debug('')
                     logging.debug('TAP_SCHEMA attached')
 
-            except Exception as e:
+            except Exception:
 
                 self.status = 'error'
                 self.msg = 'Failed to connect to SQLite3 databases'
@@ -780,8 +778,8 @@ class propFilter:
             " where " + self.fileid + " in(select " + self.fileid_allowed + \
             " from " + self.tmp_fileidAlloweddbtbl + ")"
 
-        if(len(self.wherestr) > 0):                                            
-            sql = sql + ' and (' + self.wherestr[6:] + ')'        
+        if(len(self.wherestr) > 0):
+            sql = sql + ' and (' + self.wherestr[6:] + ')'
 
         if self.debug:
             logging.debug('')
@@ -877,7 +875,7 @@ class propFilter:
                                   coldesc=self.coldesc,
                                   racol=self.racol,
                                   deccol=self.deccol)
-                                  
+
                                   #deccol=self.deccol,
                                   #debug=self.debug)
 
@@ -894,7 +892,7 @@ class propFilter:
 
             if self.debug:
                 logging.debug('')
-                logging.debug(f'writeResult cursor closed')
+                logging.debug('writeResult cursor closed')
 
 
         self.outpath = wresult.outpath
@@ -902,14 +900,14 @@ class propFilter:
 
         #
         #  Drop all tmp DB tables for oracle because oracle v.12.xxx's
-        #  global temporary table is permanent, not really temporary 
+        #  global temporary table is permanent, not really temporary
         #
 
         if (self.dbms.lower() == 'oracle'):
-            
+
             try:
                 self.conn.close()
-            
+
                 if self.debug:
                     logging.debug ('')
                     logging.debug ('returned from oracle conn.close()')
@@ -919,12 +917,12 @@ class propFilter:
                 if self.debug:
                     logging.debug ('')
                     logging.debug (f'conn.close exception: {str(e):s}')
-            
+
         #
         #  re-connect
         #
-            time.sleep (2.0) 
-                
+            time.sleep (2.0)
+
             userid = self.connectInfo['userid']
             dbserver = self.connectInfo['dbserver']
             password = self.connectInfo['password']
@@ -933,10 +931,10 @@ class propFilter:
 
             if self.debug:
                 logging.debug ('')
-                logging.debug (f'xxx0')
+                logging.debug ('xxx0')
                 logging.debug (f'userid= {userid:s}')
                 logging.debug (f'dbserver= {dbserver:s}')
-           
+
             try:
                 self.conn = cx_Oracle.connect ( \
                     userid, \
@@ -960,25 +958,25 @@ class propFilter:
                     logging.debug('')
                     logging.debug('Failed to re-connected to Oracle ')
                     logging.debug(f'e= {str(e):s}')
-                
-                pass 
-            
+
+                pass
+
             try:
                 self.__dropDbtbl__(self.tmp_fileidAlloweddbtbl)
-                
+
                 if self.debug:
                     logging.debug('')
                     logging.debug( \
                         'returned dropDbtbl: tmp_fileidAlloweddbtbl')
 
             except Exception as e:
-                
+
                 if self.debug:
                     logging.debug('')
                     logging.debug( \
                         f'drop fileidAlloweddbtbl exception: {str(e):s}')
                 pass
-        
+
             if self.debug:
                 logging.debug('')
                 logging.debug('tmp_fileidAlloweddbtbl dropped')
@@ -992,14 +990,14 @@ class propFilter:
 
                 try:
                     self.__dropDbtbl__(self.tmp_accessiddbtbl)
-                
+
                     if self.debug:
                         logging.debug('')
                         logging.debug( \
                             'returned dropDbtbl: tmp_accessiddbtbl')
 
                 except Exception as e:
-                
+
                     if self.debug:
                         logging.debug('')
                         logging.debug( \
@@ -1325,7 +1323,7 @@ class propFilter:
         #
 
         if self.debug:
-            logging.debug(f'cookiename = ' + str(cookiename))
+            logging.debug('cookiename = ' + str(cookiename))
 
         msg = ''
         ind = cookiestr.find(cookiename)
@@ -1354,14 +1352,14 @@ class propFilter:
             return
 
         arr = substr1.split('|')
-        narr = len(arr)
+        len(arr)
 
         self.userid = arr[0]
         self.encodedpass = arr[1]
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'userid      = ' + str(self.userid))
+            logging.debug('userid      = ' + str(self.userid))
 
         if(self.userid == 'anon'):
             self.userid = ''
@@ -1423,7 +1421,7 @@ class propFilter:
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'password = [Not shown for security reasons.]')
+            logging.debug('password = [Not shown for security reasons.]')
 
         if(len(password) == 0):
 
@@ -1606,7 +1604,7 @@ class propFilter:
     # { createTmpAccessiddb
     #
         #
-        # first drop tmp_accessiddbtbl in case table with the same name 
+        # first drop tmp_accessiddbtbl in case table with the same name
         # might already exist
         #
 
@@ -1618,8 +1616,8 @@ class propFilter:
             if self.debug:
                 logging.debug('')
                 logging.debug('returned dropDbtbl')
-                logging.debug(f'temp dbtbl dropped')
-        
+                logging.debug('temp dbtbl dropped')
+
         except Exception as e:
 
             self.msg = 'Failed to create tmp_accessiddbtbl: ' + str(e)
@@ -1661,7 +1659,7 @@ class propFilter:
             logging.debug('')
             logging.debug('tmp_accessiddbtbl created')
 
-        
+
         # Insert into tmp_accessiddbtbl: select accessid allowed
         # by userid: accessidtbl
 
@@ -1687,8 +1685,8 @@ class propFilter:
             raise Exception(self.msg)
 
 
-        #  check rowcount in tmp_accessiddbtbl 
-        
+        #  check rowcount in tmp_accessiddbtbl
+
         sql = "select * from " + tmp_accessiddbtbl
 
         if self.debug:
@@ -1732,10 +1730,10 @@ class propFilter:
 
         if self.debug:
             logging.debug('')
-            logging.debug(f'Enter createTmpFileiddb')
+            logging.debug('Enter createTmpFileiddb')
 
         if (self.dbms.lower() == 'pgsql'):
-            
+
             sql = "create temporary table " + tmp_fileiddbtbl + \
                 "(" + fileid_allowed + " varchar(35)) on commit preserve rows"
         else:
@@ -1770,21 +1768,21 @@ class propFilter:
         if(self.propfilter == 'koa'):
 
             if(len(self.userid) > 0):
-                
+
                 if (self.dbms.lower() == 'oracle'):
 
                     access_constraint = \
                         "((current_date > add_months(date_obs, propint))" + \
                         " or(lower(" + accessid + ") in(select " + \
                         accessid + " from " + tmp_accessiddbtbl + ")))"
-                
+
                 elif (self.dbms.lower() == 'pgsql'):
 
                     access_constraint = "((current_date > " + \
                         "(date_obs + (propint * '1 month'::interval)))" + \
                         " or (lower(" + accessid + ") in (select " + \
                         accessid + " from " + tmp_accessiddbtbl + ")))"
-                
+
             else:
                 if (self.dbms.lower() == 'oracle'):
 
@@ -1796,7 +1794,7 @@ class propFilter:
                     access_constraint = "(current_date > " + \
                         "(date_obs + (propint * '1 month'::interval)))"
 
-                    
+
             if self.debug:
                 logging.debug('')
                 logging.debug(
@@ -1819,20 +1817,20 @@ class propFilter:
                             "add_months(obsdate, l0propint))" + \
                             " or(lower(" + accessid + ") in(select " + \
                             accessid + " from " + tmp_accessiddbtbl + ")))"
-                
+
                     elif (self.dbms.lower() == 'pgsql'):
 
                         access_constraint = "((current_date > " + \
                             "(obsdate + (l0propint * '1 month'::interval)))" + \
                             " or (lower(" + accessid + ") in (select " + \
                             accessid + " from " + tmp_accessiddbtbl + ")))"
-                
+
                 else:
                     if (self.dbms.lower() == 'oracle'):
 
                         access_constraint = \
                             "(current_date > add_months(obsdate, l0propint))"
-                
+
                     elif (self.dbms.lower() == 'pgsql'):
 
                         access_constraint = "(current_date > " + \
@@ -1849,20 +1847,20 @@ class propFilter:
                             "add_months(obsdate, l1propint))" + \
                             " or(lower(" + accessid + ") in(select " + \
                             accessid + " from " + tmp_accessiddbtbl + ")))"
-                
+
                     elif (self.dbms.lower() == 'pgsql'):
 
                         access_constraint = "((current_date > " + \
                             "(obsdate + (l1propint * '1 month'::interval)))" + \
                             " or (lower(" + accessid + ") in (select " + \
                             accessid + " from " + tmp_accessiddbtbl + ")))"
-                
+
                 else:
                     if (self.dbms.lower() == 'oracle'):
 
                         access_constraint = \
                             "(current_date > add_months(obsdate, l1propint))"
-                
+
                     elif (self.dbms.lower() == 'pgsql'):
 
                         access_constraint = "(current_date > " + \
@@ -1878,20 +1876,20 @@ class propFilter:
                             "add_months(obsdate, l2propint))" + \
                             " or(lower(" + accessid + ") in(select " + \
                             accessid + " from " + tmp_accessiddbtbl + ")))"
-                
+
                     elif (self.dbms.lower() == 'pgsql'):
 
                         access_constraint = "((current_date > " + \
                             "(obsdate + (l2propint * '1 month'::interval)))" + \
                             " or (lower(" + accessid + ") in (select " + \
                             accessid + " from " + tmp_accessiddbtbl + ")))"
-                
+
                 else:
                     if (self.dbms.lower() == 'oracle'):
 
                         access_constraint = \
                             "(current_date > add_months(obsdate, l2propint))"
-                
+
                     elif (self.dbms.lower() == 'pgsql'):
 
                         access_constraint = "(current_date > " + \
@@ -1934,7 +1932,7 @@ class propFilter:
                 logging.debug(f'{self.msg:s}')
 
             raise Exception(self.msg)
-        
+
         rowcnt_conditional = cursor.rowcount
         if self.debug:
             logging.debug('')
@@ -2144,13 +2142,13 @@ class propFilter:
                 logging.debug(f'table {dbtable:s} successfully dropped')
 
         except Exception as e:
-            
+
             if self.debug:
                 logging.debug('')
                 logging.debug(f'drop table exception: {str(e):s}')
-            
+
             pass
-    
+
         return
 
         #

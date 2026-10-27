@@ -4,10 +4,10 @@
 
 
 import itertools
-import sqlparse
 
-from sqlparse.sql import IdentifierList, Identifier
-from sqlparse.tokens import Keyword, DML
+import sqlparse
+from sqlparse.sql import Identifier, IdentifierList
+from sqlparse.tokens import DML, Keyword
 
 
 class TableNames:

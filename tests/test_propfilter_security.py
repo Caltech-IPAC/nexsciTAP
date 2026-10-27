@@ -16,6 +16,14 @@ from TAP.tap import Tap
 from TAP.tapquery import tapQuery
 from TAP.taputil import tapUtil
 
+
+class _Form(dict):
+    """Stand-in for cgi.FieldStorage: a key lookup plus the .list Tap checks."""
+
+    @property
+    def list(self):
+        return list(self.values())
+
 ORACLE_CONFIG = """[WEB]
 TAP_WORKDIR={work}/
 TAP_WORKURL=/workspace/
@@ -235,7 +243,7 @@ def test_request_cannot_enable_debug(monkeypatch, tmp_path, capsys, operator_deb
     monkeypatch.setenv("PATH_INFO", "/sync")
     monkeypatch.delenv("TAP_CONF", raising=False)
     app = Tap.__new__(Tap)
-    app.form = {"debug": SimpleNamespace(value="1")} if request_debug else {}
+    app.form = _Form({"debug": SimpleNamespace(value="1")} if request_debug else {})
     app.debug, app.param, app.infomsg, app.dbtable = 0, {}, "", ""
     app.debugfname = str(tmp_path / "tap.debug")
     with pytest.raises(SystemExit):
@@ -250,7 +258,7 @@ def test_operator_debug_does_not_log_cookies_or_tokens(monkeypatch, tmp_path, ca
     monkeypatch.setenv("HTTP_COOKIE", "tapcookie=user|cookie-secret-marker")
     monkeypatch.delenv("TAP_CONF", raising=False)
     app = Tap.__new__(Tap)
-    app.form = {"token": SimpleNamespace(value="tapcookie=user|token-secret-marker")}
+    app.form = _Form({"token": SimpleNamespace(value="tapcookie=user|token-secret-marker")})
     app.debug, app.param, app.infomsg, app.dbtable = 1, {}, "", ""
     app.debugfname = str(tmp_path / "tap.debug")
     with caplog.at_level(logging.DEBUG), pytest.raises(SystemExit):
@@ -280,8 +288,8 @@ def test_unsupported_proprietary_query_returns_400(tmp_path, query, monkeypatch,
     monkeypatch.delenv("TAP_DEBUG", raising=False)
     monkeypatch.delenv("HTTP_COOKIE", raising=False)
     app = Tap.__new__(Tap)
-    app.form = {key: SimpleNamespace(value=value) for key, value in
-                {"query": query, "format": "votable"}.items()}
+    app.form = _Form({key: SimpleNamespace(value=value) for key, value in
+                      {"query": query, "format": "votable"}.items()})
     app.debug, app.propflag, app.param, app.statdict = 0, -1, {}, {}
     with pytest.raises(SystemExit):
         app.__init__()

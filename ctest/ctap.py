@@ -3,10 +3,9 @@
 # This example is as much documentation as processing.  In a real
 # application we would only need parts of it.
 
-from TAP.tapstore  import tapStore
-from TAP.taputil   import tapUtil
-from TAP.tapquery  import tapQuery
-
+from TAP.tapquery import tapQuery
+from TAP.tapstore import tapStore
+from TAP.taputil import tapUtil
 
 # We may run into problems while connecting configuratio information,
 # translating the ADQL query into SQL, or submitting the user query
@@ -42,7 +41,7 @@ def tapc(catalog, select_stmt, result_tbl):
         cursor = conn.cursor()
         cursor.execute('select count(*) from ' + catalog)
         rowcount = cursor.fetchone()[0]
-        
+
 
         # But the main purpose of TAP is to run ADQL queries, including spatial constraints
         # and output formatting (output file type, column width, and number formatting).
@@ -58,7 +57,7 @@ def tapc(catalog, select_stmt, result_tbl):
 
 
         # The returned 'query' object has several internal parameters but the ones most
-        # useful for further processing are the return status, the output file name 
+        # useful for further processing are the return status, the output file name
         # (though this is just the name we put in above), and the return record count.
 
         if status == 'OK':
@@ -66,5 +65,5 @@ def tapc(catalog, select_stmt, result_tbl):
         else:
             return status, msg, 0, 0
 
-    except Exception as e:
+    except Exception:
         return 'ERROR', msg, 0, 0

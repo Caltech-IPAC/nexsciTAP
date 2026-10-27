@@ -1,0 +1,25 @@
+pytest>=7
+# Pinned: ruff's default rule behaviour changes between releases, and an
+# unpinned `ruff>=0.1` turned CI red on untouched code (W291 in
+# TAP/vositables.py) the moment a new ruff shipped. Bump deliberately.
+ruff==0.15.2
+requests
+
+# Runtime deps, repeated from setup.py's install_requires: the CI install
+# uses --no-deps for nexsciTAP itself (to avoid the spatial_index PyPI
+# hole), so they are listed here too.  tests/test_install_requires.py
+# keeps setup.py complete.
+configobj
+sqlparse
+astropy
+beautifulsoup4
+# tap.py asks BeautifulSoup for the 'lxml' tree builder by name when it
+# reads a job status document (TAP/tap.py:904, 2162), so bs4 alone is not
+# enough for the async flow.
+lxml
+xmltodict
+
+# pyneid is not currently used — tests/test_pyneid_compat.py is skipped
+# at module level until async-flow fixture support lands. Listed as a
+# reminder; comment back in when re-enabling.
+# pyneid

@@ -3,7 +3,7 @@ import sqlite3
 import tempfile
 import unittest
 
-from TAP.tablevalidator import TableValidator, TableValidationError
+from TAP.tablevalidator import TableValidationError, TableValidator
 
 
 def _make_db(table_names, schema_name='TAP_SCHEMA', tables_table='tables'):

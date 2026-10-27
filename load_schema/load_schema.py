@@ -1,7 +1,7 @@
 #!/bin/env python
 
-import sqlite3
 import pprint
+import sqlite3
 
 pp = pprint.PrettyPrinter()
 
@@ -29,11 +29,11 @@ cursor = conn.cursor()
 # worked out once; from here on if we were to add tables we would just need
 # to add one "tables" record and its "columns" records.
 
-# Finally, there are two more TAP_SCHEMA tables describing how foreign keys 
+# Finally, there are two more TAP_SCHEMA tables describing how foreign keys
 # in our tables relate the tables to each other (i.e., allow JOINS).  Our one
 # real data table has no such keys but all these TAP_SCHEMA tables themselves
 # do have such relationships (and so must be included).  However, unless we add
-# new data tables which can join with each other, we never need to touch these 
+# new data tables which can join with each other, we never need to touch these
 # two tables again.
 
 
