@@ -5,12 +5,46 @@
 
 import logging
 import os
+import re
 import time
 
 from TAP.datadictionary import dataDictionary
 from TAP.tablenames import TableNames
 from TAP.tablevalidator import TableValidationError, TableValidator
 from TAP.writeresult import writeResult
+
+
+def _filterable(query, wherestr):
+    """Conservatively accept only query shapes this filter can rewrite safely."""
+    q = ' ' + ' '.join(query.lower().split()) + ' '
+    if q.count('select') != 1 or ' from ' not in q:
+        return False
+    # Comments could consume constraints appended to the user's expression.
+    # Reject them even inside literals; this is a deliberately strict hotfix.
+    if any(marker in query for marker in (';', '--', '/*', '*/')):
+        return False
+    if re.search(r'\bjoin\b', q):
+        return False
+    from_part = re.split(r'\b(?:where|group by|order by)\b',
+                         q.split(' from ', 1)[1], maxsplit=1)[0].strip()
+    # The final query reconstructs FROM using only the table name, so aliases
+    # and other FROM modifiers are unsupported as well as multiple tables.
+    identifier = r'(?:[a-z_][a-z0-9_$#]*|"[a-z0-9_$#]+")'
+    if not re.fullmatch(identifier + r'(?:\.' + identifier + r')*', from_part):
+        return False
+    depth = 0
+    for ch in wherestr:
+        depth += (ch == '(') - (ch == ')')
+        if depth < 0:
+            return False
+    return depth == 0 and ';' not in wherestr
+
+
+def _require_filterable(query, wherestr=''):
+    if not _filterable(query, wherestr):
+        raise Exception('This query is not supported on tables with '
+                        'proprietary data: use a single table without '
+                        'aliases, joins, subqueries or SQL comments.')
 
 
 class propFilter:
@@ -226,10 +260,6 @@ class propFilter:
                     logging.debug( 'userid   = [Not shown for security reasons].')
                     logging.debug( 'password = [Not shown for security reasons].')
 
-                #   Change to the following to temporarily debug login
-
-                #   logging.debug(f'userid   = {self.userid:s}')
-                #   logging.debug(f'password = {self.password:s}')
 
 
 
@@ -399,7 +429,6 @@ class propFilter:
             logging.debug('')
             logging.debug('kwargs:')
             logging.debug(f'      userworkdir = {self.userworkdir:s}')
-            logging.debug(f'      cookiestr = {self.cookiestr:s}')
             logging.debug(f'      usertbl = {self.usertbl:s}')
             logging.debug(f'      accesstbl = {self.accesstbl:s}')
             logging.debug(f'      fileid = {self.fileid:s}')
@@ -621,6 +650,8 @@ class propFilter:
         #
 
         self.__parseQuery__(self.query)
+
+        _require_filterable(self.query, self.wherestr)
 
         if self.debug:
             logging.debug('')
@@ -902,7 +933,6 @@ class propFilter:
                 logging.debug ('')
                 logging.debug ('xxx0')
                 logging.debug (f'userid= {userid:s}')
-                logging.debug (f'password= {password:s}')
                 logging.debug (f'dbserver= {dbserver:s}')
 
             try:
@@ -1294,7 +1324,6 @@ class propFilter:
 
         if self.debug:
             logging.debug('cookiename = ' + str(cookiename))
-            logging.debug('cookiestr  = ' + str(cookiestr))
 
         msg = ''
         ind = cookiestr.find(cookiename)
@@ -1330,10 +1359,7 @@ class propFilter:
 
         if self.debug:
             logging.debug('')
-            logging.debug('substr1     = ' + str(substr1))
-            logging.debug('arr         = ' + str(arr))
             logging.debug('userid      = ' + str(self.userid))
-            logging.debug('encodedpass = ' + str(self.encodedpass))
 
         if(self.userid == 'anon'):
             self.userid = ''
@@ -1349,18 +1375,18 @@ class propFilter:
         if(propfilter == 'koa'):
 
             sql = "select passwd from " + usertbl + \
-                " where userid='" + self.userid + "'"
+                " where userid = " + self._bind('userid')
 
         elif(propfilter == 'neid'):
             sql = "select password from " + usertbl + \
-                " where userid='" + self.userid + "'"
+                " where userid = " + self._bind('userid')
 
         if self.debug:
             logging.debug('')
             logging.debug(f'User lookup sql= {sql:s}')
 
         try:
-            self.__executeSql__(cursor, sql)
+            self.__executeSql__(cursor, sql, {'userid': self.userid})
 
         except Exception as e:
 
@@ -1396,8 +1422,6 @@ class propFilter:
         if self.debug:
             logging.debug('')
             logging.debug('password = [Not shown for security reasons.]')
-        #   Change to following to debug password
-        #   logging.debug(f'password = {password:s}')
 
         if(len(password) == 0):
 
@@ -1456,15 +1480,8 @@ class propFilter:
             else:
                 valstr = str(val)
 
-            if self.debug:
-                logging.debug(f'valstr= {valstr:s}')
-
             if(colname.lower() == keyword):
                 keyval = valstr
-
-        if self.debug:
-            logging.debug('')
-            logging.debug(f'keyval= {keyval:s}')
 
         return(keyval)
 
@@ -1648,7 +1665,7 @@ class propFilter:
 
         sql = "insert into " + tmp_accessiddbtbl + \
             "(select lower(" + accessid + ") as " + accessid + \
-            " from " + accesstbl + " where userid = '" + userid + "')"
+            " from " + accesstbl + " where userid = " + self._bind('userid') + ")"
 
         if self.debug:
             logging.debug('')
@@ -1656,7 +1673,7 @@ class propFilter:
 
         cursor = self.conn.cursor()
         try:
-            self.__executeSql__(cursor, sql)
+            self.__executeSql__(cursor, sql, {'userid': userid})
 
         except Exception as e:
 
@@ -1886,8 +1903,9 @@ class propFilter:
 
         selectstr = ''
         if(len(wherestr) > 0):
-            selectstr = "select " + fileid + " from " + dbtable + " " + \
-                wherestr + " and " + access_constraint
+            condition = wherestr.strip()[5:].strip()
+            selectstr = "select " + fileid + " from " + dbtable + \
+                " where (" + condition + ") and " + access_constraint
         else:
             selectstr = "select " + fileid + " from " + dbtable  + \
                 " where " + access_constraint
@@ -2006,14 +2024,21 @@ class propFilter:
     #
 
 
-    def __executeSql__(self, cursor, sql, **kwargs):
+    def _bind(self, name):
+        return '%(' + name + ')s' if self.dbms.lower() == 'pgsql' else ':' + name
+
+
+    def __executeSql__(self, cursor, sql, params=None, **kwargs):
 
         #
         # {
         #
 
         try:
-            cursor.execute(sql)
+            if params is None:
+                cursor.execute(sql)
+            else:
+                cursor.execute(sql, params)
 
         except Exception as e:
 
