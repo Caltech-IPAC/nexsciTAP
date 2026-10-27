@@ -359,6 +359,12 @@ class writeResult:
                 if(ind != -1):
                     dbdatatype = 'TIMESTAMP'
 
+                # cx_Oracle 8+ reports DATE columns as DB_TYPE_DATE, which only
+                # matches 'DATE' above.  Oracle DATE values carry a time of day,
+                # so treat them as DATETIME, as cx_Oracle 7 did.
+                if dbdatatype == 'DATE':
+                    dbdatatype = 'DATETIME'
+
                 ind = dbdatatypestr.find("NUMBER")
                 if(ind != -1):
                     dbdatatype = 'NUMBER'
