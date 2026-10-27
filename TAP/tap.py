@@ -23,7 +23,7 @@ from spatial_index import SpatialIndex
 
 from TAP import compat
 from TAP.configparam import configParam
-from TAP.propfilter import propFilter
+from TAP.propfilter import _require_filterable, propFilter
 from TAP.tablenames import TableNames
 from TAP.tablevalidator import TableValidationError, TableValidator
 from TAP.tapquery import tapQuery
@@ -178,8 +178,8 @@ class Tap:
         self.request_method = os.environ.get('REQUEST_METHOD', '').upper()
         self.action = ''
 
-        if('debug' in self.fields):
-            self.debug = 1
+        # Only the server environment may turn on request debugging.
+        self.debug = 1 if os.environ.get('TAP_DEBUG') == '1' else 0
 
         if(self.debug):
 
@@ -193,7 +193,7 @@ class Tap:
             logging.debug(f'Enter Tap.init(): pid= {self.pid:d}')
 
         #
-        # Print all environ keys, retrieve async/sync spec from PATH_INFO
+        # Print operational environ keys, retrieve async/sync spec from PATH_INFO
         # environ variable
         #
 
@@ -202,8 +202,9 @@ class Tap:
             logging.debug('Environment parameters:')
             logging.debug('')
 
-            for key in os.environ.keys():
-                logging.debug(f'      {key:s}: {os.environ[key]:20s}')
+            for key in ('PATH_INFO', 'REQUEST_METHOD', 'TAP_CONF', 'TAP_DEBUG'):
+                if key in os.environ:
+                    logging.debug(f'      {key:s}: {os.environ[key]:20s}')
 
 
         #
@@ -221,7 +222,7 @@ class Tap:
 
         if self.debug:
             logging.debug('')
-            logging.debug('nexsciTAP version 3.0.1\n\n')
+            logging.debug('nexsciTAP version 3.0.2\n\n')
             logging.debug('HTTP request keywords:\n')
 
         self.lang      = 'ADQL'
@@ -237,7 +238,7 @@ class Tap:
 
         for key in self.fields:
             if self.debug:
-                logging.debug(f'      key: {key:<15}   val: {self.form[key].value:s}')
+                logging.debug(f'      key: {key:<15}')
 
             if(key.lower() == 'instance'):
                 self.instance = self.form[key].value
@@ -438,20 +439,9 @@ class Tap:
 
         self.cookiestr = os.getenv('HTTP_COOKIE', default='')
 
-        if self.debug:
-            logging.debug('')
-            logging.debug(f'cookiestr (http) = {self.cookiestr:s}')
-
         if (len(self.cookiestr) == 0):
 
             self.cookiestr = self.token
-            if self.debug:
-                logging.debug('')
-                logging.debug(f'cookiestr (token) = {self.cookiestr:s}')
-
-        if self.debug:
-            logging.debug('')
-            logging.debug(f'cookiestr (finale) = {self.cookiestr:s}')
 
         #
         #  Extract configfile name from TAP_CONF environment variable
@@ -1647,6 +1637,31 @@ class Tap:
         # Determine whether to use runQuery or propFilter to execute SQL
         #
 
+        # Check every referenced table before the first-table routing and
+        # TAP_SCHEMA exemption. A public outer table must not hide a protected
+        # table referenced by a join or subquery.
+        info = self.config.connectInfo
+        schema_key = 'tap_schema_file' if info['dbms'].lower() == 'sqlite3' else 'tap_schema'
+        metadata_prefix = info.get(schema_key, 'TAP_SCHEMA').lower() + '.'
+        data_tables = [table for table in tables
+                       if not table.lower().startswith(metadata_prefix)]
+        policy = self.config.propfilter.lower()
+        requires_filter = ((policy == 'koa' and bool(data_tables)) or
+                           (policy == 'neid' and any(self.__getDatalevel__(table) != 'l0'
+                                                   for table in data_tables)))
+        if requires_filter:
+            try:
+                _require_filterable(self.query)
+            except Exception as e:
+                self.phase = 'ERROR'
+                if self.tapcontext == 'async':
+                    self.__writeAsyncError__(str(e), self.statuspath,
+                                             self.statdict, self.param)
+                else:
+                    self.__printError__(self.format, str(e), errcode='400')
+                return
+            self.propflag = 1
+
         if(self.propflag == -1):
 
             if((self.config.propfilter.lower() == 'koa')
@@ -1700,9 +1715,7 @@ class Tap:
         # Check if dbtable is THE tap_schema table
         #
 
-        ind = self.dbtable.lower().find('tap_schema')
-
-        if(ind != -1):
+        if not data_tables:
             self.propflag = 0
 
             if self.debug:
@@ -3268,7 +3281,6 @@ class Tap:
             logging.debug(f'dbms= {dbms:s}')
             logging.debug(f'dbserver= {dbserver:s}')
             logging.debug(f'userid= {userid:s}')
-            logging.debug(f'password= {password:s}')
 
 
         try:

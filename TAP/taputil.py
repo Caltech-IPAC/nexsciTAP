@@ -147,7 +147,6 @@ class tapUtil:
                 logging.debug('db       = ' + str(db))
                 logging.debug('database = ' + str(database))
                 logging.debug('userid   = ' + str(userid))
-                logging.debug('password = ' + str(password))
 
         except Exception as e:
             raise Exception(e)
