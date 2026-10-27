@@ -222,7 +222,7 @@ class Tap:
 
         if self.debug:
             logging.debug('')
-            logging.debug('nexsciTAP version 3.0.2\n\n')
+            logging.debug('nexsciTAP version 3.1.0\n\n')
             logging.debug('HTTP request keywords:\n')
 
         self.lang      = 'ADQL'
