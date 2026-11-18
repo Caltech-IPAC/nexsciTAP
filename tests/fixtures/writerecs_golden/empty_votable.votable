@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<VOTABLE version="1.3" xmlns="http://www.ivoa.net/xml/VOTable/v1.3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.ivoa.net/xml/VOTable/v1.3">
+  <RESOURCE type="results">
+  <INFO name="QUERY_STATUS" value="OK"/>
+  <TABLE>
+    <FIELD ID="objname" arraysize="*" datatype="char" name="objname">
+  <DESCRIPTION><![CDATA[ Object name ]]></DESCRIPTION>
+</FIELD>
+    <FIELD ID="ra" datatype="double" name="ra" unit="deg">
+  <DESCRIPTION><![CDATA[ Right ascension ]]></DESCRIPTION>
+    </FIELD>
+    <FIELD ID="dec" datatype="double" name="dec" unit="deg"/>
+    <FIELD ID="mag" datatype="float" name="mag"/>
+    <FIELD ID="n" datatype="int" name="n"/>
+    <FIELD ID="lid" datatype="long" name="lid" unit="counts">
+  <DESCRIPTION><![CDATA[ Long id ]]></DESCRIPTION>
+    </FIELD>
+    <FIELD ID="obsdate" arraysize="*" datatype="char" name="obsdate">
+  <DESCRIPTION><![CDATA[ Observation date ]]></DESCRIPTION>
+</FIELD>
+    <FIELD ID="ts" arraysize="*" datatype="char" name="ts"/>
+  </TABLE>
+  </RESOURCE>
+</VOTABLE>
