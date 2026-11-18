@@ -552,13 +552,10 @@ static char *format_double (PyObject *item, const column_t *c, int ipac)
     if (parse_spec (c->fmt, body, sizeof body, &conv) &&
         strchr ("eEfFgGaA", conv) != NULL) {
 
-        snprintf (fmt, sizeof fmt, "%%-%s%c", body, conv);
-
-        if (!ipac && (dot = strchr (fmt, '.')) != NULL) {
-            char tail[96];
-            snprintf (tail, sizeof tail, "%s", dot);
-            snprintf (fmt, sizeof fmt, "%%%s", tail);
-        }
+        if (!ipac && (dot = strchr (body, '.')) != NULL)
+            snprintf (fmt, sizeof fmt, "%%%s%c", dot, conv);
+        else
+            snprintf (fmt, sizeof fmt, "%%-%s%c", body, conv);
     }
     else
         snprintf (fmt, sizeof fmt, "%s", "%.17g");
