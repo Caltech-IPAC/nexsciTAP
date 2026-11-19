@@ -1,0 +1,4 @@
+|objname     |ra            |dec           |mag       |n       |lid                   |obsdate       |ts                            |
+|char        |double        |double        |float     |int     |long                  |char          |char                          |
+|            |deg           |deg           |          |        |counts                |              |                              |
+|null        |null          |null          |null      |null    |null                  |null          |null                          |

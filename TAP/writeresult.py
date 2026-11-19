@@ -1161,6 +1161,18 @@ class writeResult:
                             f'nrec = {nrec:d} and ibatch = {ibatch:d}')
                         logging.debug ('break to write last batch of data')
 
+                    # The previous batch filled the fetch exactly, so it
+                    # was written without the closing elements (istail=0).
+                    # Write them now, or a result whose size is a multiple
+                    # of arraysize ends without </VOTABLE> or JSON's ']'.
+
+                    if self.istail == 0:
+                        self.istail = 1
+                        writerecs.writerecs(self.outpath, self.format,
+                                            ddlist, [], 0,
+                                            self.coldesc, self.overflow,
+                                            self.istail)
+
                     break
 
                 #
