@@ -15,6 +15,7 @@ import signal
 import sys
 import tempfile
 import time
+import warnings
 
 import xmltodict
 from ADQL.adql import ADQL
@@ -27,6 +28,26 @@ from TAP.propfilter import _require_filterable, propFilter
 from TAP.tablenames import TableNames
 from TAP.tablevalidator import TableValidationError, TableValidator
 from TAP.tapquery import tapQuery
+
+try:
+    from bs4 import XMLParsedAsHTMLWarning
+except ImportError:                     # beautifulsoup4 < 4.11
+    XMLParsedAsHTMLWarning = None
+
+
+def _parse_uws(data):
+    """Read a UWS job status document into a BeautifulSoup tree.
+
+    The document is XML, but it is read with the lxml HTML builder because
+    the look-ups on the tree rely on how that builder names tags (lowercase,
+    prefix kept, as in 'uws:parameters').  beautifulsoup4 4.11 and later
+    warn about XML read as HTML on every call, and the status document is
+    read on every job request, so the warning is silenced here.
+    """
+    with warnings.catch_warnings():
+        if XMLParsedAsHTMLWarning is not None:
+            warnings.simplefilter('ignore', XMLParsedAsHTMLWarning)
+        return BeautifulSoup(data, 'lxml')
 
 
 class Tap:
@@ -222,7 +243,7 @@ class Tap:
 
         if self.debug:
             logging.debug('')
-            logging.debug('nexsciTAP version 3.1.0\n\n')
+            logging.debug('nexsciTAP version 3.1.1\n\n')
             logging.debug('HTTP request keywords:\n')
 
         self.lang      = 'ADQL'
@@ -916,7 +937,7 @@ class Tap:
                     logging.debug(xmlstruct)
                     logging.debug('--------------------------------------')
 
-                soup = BeautifulSoup(xmlstruct, 'lxml')
+                soup = _parse_uws(xmlstruct)
 
                 parameters = soup.find('uws:parameters')
 
@@ -2215,7 +2236,7 @@ class Tap:
         #
         soup = None
         try:
-            soup = BeautifulSoup(data, 'lxml')
+            soup = _parse_uws(data)
 
         except Exception as e:
             self.__printError__('votable', str(e))

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<VOTABLE version="1.3" xmlns="http://www.ivoa.net/xml/VOTable/v1.3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.ivoa.net/xml/VOTable/v1.3">
+  <RESOURCE type="results">
+  <INFO name="QUERY_STATUS" value="OK"/>
+  <TABLE>
+    <FIELD ID="count" datatype="int" name="count"/>
+    <DATA>
+      <TABLEDATA>
+        <TR>
+        <TD>123456</TD>
+        </TR>
+      </TABLEDATA>
+    </DATA>
+  </TABLE>
+  </RESOURCE>
+</VOTABLE>

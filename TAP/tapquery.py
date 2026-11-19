@@ -816,7 +816,7 @@ def main():
         racol   = config.racol
         deccol  = config.deccol
 
-        level   = config.adqlparam['level']
+        level   = int(config.adqlparam['level'])
         colname = config.adqlparam['colname']
 
         encoding = SpatialIndex.BASE4
