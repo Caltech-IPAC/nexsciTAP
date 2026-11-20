@@ -640,7 +640,7 @@ class tapQuery:
             logging.debug(f'sql = {self.sql:s}')
             logging.debug('call execut sql')
 
-        self.msg = self.__executeSql__(cursor, self.sql, debug=1)
+        self.msg = self.__executeSql__(cursor, self.sql)
 
         if self.debug:
             logging.debug('returned executeSql')
@@ -690,15 +690,13 @@ class tapQuery:
         #
 
 
-    def __executeSql__(self, cursor, sql, **kwargs):
+    def __executeSql__(self, cursor, sql):
 
         #
         # {
         #
 
 
-        if('debug' in kwargs):
-            kwargs['debug']
 
         if self.debug:
             logging.debug('Enter executeSql')
