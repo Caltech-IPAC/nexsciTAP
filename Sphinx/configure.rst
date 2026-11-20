@@ -12,7 +12,7 @@ really do anything.  Many of these parameters (such as where to put workspace fi
 and the password to log into the DBMS) cannot be known to the end users.
 
 To consolidate this all in one place, the service reads a number of configuration
-parameters from a file, found by referring to an environment variable "TAP_CONFIG".
+parameters from a file, found by referring to an environment variable ``TAP_CONF``.
 This file is read using the fairly standard ConfigObj package and uses the common
 INI format, originally from Windows.  The data is in simple line-based keyword/value
 format and has (optionally) section labels (in square brackets).  It can be 
@@ -24,7 +24,7 @@ to be explicit for clarity.  Be very careful with this file and its permissions;
 it contains the database password for the TAP user.  Risk can be minimized by
 allowing this user limited access (*e.g.,* read-only to just the TAP-related tables).
 Still, the file itself should also be read-only access and just from an admin 
-account.::
+account.  Below is a complete example::
 
    [webserver]
    DBMS=oracle
@@ -147,4 +147,45 @@ understanding.  Here we will be terse:
 
 - **ADQL_ZCOL** And the z-column name.
 
+
+Debug Logging
+-------------
+
+Debug logging is **off by default** and controlled by the operator only —
+it cannot be enabled by a web request.  To enable it, add ``DEBUG = 1``
+to the ``[WEB]`` section of your ``TAP.conf``::
+
+   [WEB]
+   DEBUG = 1
+
+If your ``TAP.conf`` still uses the 1.x ``[webserver]`` layout shown above,
+put ``DEBUG = 1`` under ``[webserver]`` instead — it is translated to
+``[WEB]`` automatically.  Do **not** add a ``[WEB]`` section to a 1.x file:
+its presence makes the file read as 3.x layout and every request will fail
+with a configuration error.
+
+This writes per-request debug logs to ``/tmp/tap_<pid>.debug``.
+Set ``DEBUG = 0`` or remove the key when done.  Treat the log as
+sensitive and do not leave it enabled in production.
+
+To diagnose failures that occur before the config file loads (e.g. a
+missing or unparseable ``TAP.conf``), set the server environment
+variable ``TAP_DEBUG=1``.  When set, any request that fails before
+``TAP.conf`` loads writes bootstrap records to the **web server error log**
+(stderr / Apache ``error_log``) — not to the per-archive ``/tmp`` debug file.
+This keeps per-archive debug policy under the exclusive control of each
+archive's ``TAP.conf``; ``TAP_DEBUG`` is a server-admin diagnostic tool, not
+an archive setting.  Unset it when done.
+
+.. versionchanged:: 3.1.1
+   In 3.0.2–3.1.0, ``TAP_DEBUG=1`` wrote per-request debug records to
+   ``/tmp/tap_<pid>.debug`` for every request.  From 3.1.1 onward:
+
+   - Per-archive debug requires ``DEBUG = 1`` in that archive's ``TAP.conf``;
+     add it to the ``[WEB]`` block of the archive that needs debugging.
+   - ``TAP_DEBUG=1`` writes only startup diagnostics to the web server error
+     log and never creates a ``/tmp`` file.
+
+   Deployments that relied on ``TAP_DEBUG=1`` for per-request traces must
+   add ``DEBUG = 1`` to the relevant archive's ``TAP.conf``.
 
