@@ -156,6 +156,17 @@ class configParam:
         if('INFOMSG' in confobj[self.web]):
             self.infomsg = confobj[self.web]['INFOMSG']
 
+
+        # DEBUG — operator flag; read from [WEB] only so request parameters
+        # cannot enable it. Strict '1' check matches the TAP_DEBUG env var
+        # convention. Named debug_flag, not self.debug, to avoid colliding with
+        # the debug= constructor kwarg that configParam uses for its own tracing.
+
+        self.debug_flag = 0
+        if 'DEBUG' in confobj[self.web]:
+            if str(confobj[self.web]['DEBUG']).strip() == '1':
+                self.debug_flag = 1
+
         if self.debug:
             logging.debug('')
             logging.debug('httpurl       = %s', self.httpurl)
