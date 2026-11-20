@@ -25,7 +25,7 @@ line a day to stderr (the web server's error log):
 
    | 1.x | 3.x |
    |---|---|
-   | `[webserver]` `TAP_WORKDIR`, `TAP_WORKURL`, `HTTP_URL`, `HTTP_PORT`, `CGI_PGM`, `ArraySize`, `INFOMSG` | `[WEB]`, same keys |
+   | `[webserver]` `TAP_WORKDIR`, `TAP_WORKURL`, `HTTP_URL`, `HTTP_PORT`, `CGI_PGM`, `ArraySize`, `INFOMSG`, `DEBUG` | `[WEB]`, same keys |
    | `[webserver]` `DBMS` | `[DBMS]` `DBMS` |
    | the `[oracle]` / `[sqlite3]` section's keys | `[DBMS]`, same keys |
    | `[webserver]` `COOKIENAME`, `RACOL`, `DECCOL` | `[DBMS]`, same keys |

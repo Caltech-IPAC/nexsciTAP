@@ -21,6 +21,9 @@
     HTTP_URL=http://{TEST_HTTP_HOST}
     HTTP_PORT={TEST_HTTP_PORT}
     CGI_PGM=TAP
+    # DEBUG = 0
+    # Set to 1 to enable per-request debug logging (operator only).
+    # Logs write to /tmp/tap_<pid>.debug. Never leave on in production.
 
 
 # Default configuration instance — no `instance=` HTTP parameter needed.

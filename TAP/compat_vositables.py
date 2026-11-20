@@ -493,7 +493,7 @@ class vosiTables:
             ntable = 0
             try:
                 ntable = self.__getTableQueryArr__(cursor, table_namearr, \
-                    table_descarr, table_typearr, debug=1)
+                    table_descarr, table_typearr)
 
             except Exception as e:
 

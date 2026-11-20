@@ -19,7 +19,7 @@ NONE = frozenset()
 
 # 1.x [webserver] keys that 3.x reads from [WEB].
 _WEB_KEYS = ('TAP_WORKDIR', 'TAP_WORKURL', 'HTTP_URL', 'HTTP_PORT', 'CGI_PGM',
-             'ArraySize', 'INFOMSG')
+             'ArraySize', 'INFOMSG', 'DEBUG')
 # 1.x ADQL_* keys and their 3.x [SPTIND] names.
 _SPTIND_KEYS = {'ADQL_MODE': 'MODE', 'ADQL_LEVEL': 'LEVEL', 'ADQL_XCOL': 'XCOL',
                 'ADQL_YCOL': 'YCOL', 'ADQL_ZCOL': 'ZCOL',

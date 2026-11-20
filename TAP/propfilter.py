@@ -835,10 +835,7 @@ class propFilter:
         cursor = self.conn.cursor()
 
         try:
-            if self.debug:
-                self.__executeSql__(cursor, sql, debug=1)
-            else:
-                self.__executeSql__(cursor, sql)
+            self.__executeSql__(cursor, sql)
 
         except Exception as e:
 

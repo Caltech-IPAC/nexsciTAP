@@ -7,6 +7,7 @@ import datetime
 import fcntl
 import html
 import logging
+import logging.handlers
 import math
 import os
 import re
@@ -100,7 +101,11 @@ class Tap:
 
     debug       = 0
 
-    debugfname  = '/tmp/tap_' + str(pid) + '.debug'
+    debugfname  = '/tmp/tap_' + str(pid) + '.debug'  # nosec B108 — PID-parameterised path, written only when operator enables DEBUG=1 in TAP.conf; DEBUG_DIR follow-up: configurable dir + O_EXCL, 0o600
+
+    _debug_fmt  = logging.Formatter(
+                      '%(levelname)-8s %(relativeCreated)d>  '
+                      '%(filename)s %(lineno)d  (%(funcName)s):   %(message)s')
 
     sql         = ''
     servernamr  = ''
@@ -174,6 +179,7 @@ class Tap:
         # exist even if __run__ throws on its first line.
         self.infomsg = ''
         self.dbtable = ''
+        self._bootstrap_buf = None   # _end_bootstrap reads this; must exist if __run__ throws early
 
         # Wrap all init in __run__ so any uncaught startup exception
         # (e.g. missing TAP.ini in configparam) returns a proper VOTable
@@ -185,6 +191,53 @@ class Tap:
             self.__printError__('votable',
                                 'Internal server error during startup.',
                                 errcode='500')
+
+    def _open_debug_log(self) -> logging.FileHandler:
+        """Open the per-request debug FileHandler and attach it to the root logger.
+
+        Single site in Tap that opens the debug file: sets _debug_fmt on
+        the handler and attaches it to the root logger. Used by _end_bootstrap
+        (buffer flush) and by the config-success path when TAP_DEBUG was not set.
+        The DEBUG_DIR follow-up will add a configurable path, O_EXCL and 0o600.
+        CGI-only: Tap assumes one instance per process. Each request spawns a
+        fresh process and the OS reclaims the handler on exit — no explicit
+        cleanup needed. Not safe for WSGI or any long-lived server model without
+        storing the handler on self and calling removeHandler/close() in a
+        finally block. See the DEBUG_DIR follow-up for the full lifecycle fix.
+        """
+        _fh = logging.FileHandler(self.debugfname)
+        _fh.setFormatter(self._debug_fmt)
+        logging.root.addHandler(_fh)
+        logging.root.setLevel(logging.DEBUG)
+        return _fh
+
+    def _end_bootstrap(self, write_to_file: bool) -> None:
+        """Flush or discard the TAP_DEBUG bootstrap MemoryHandler.
+
+        Called from the config-load path only: on success with DEBUG=1, replay
+        records into the archive's debug file; on success with DEBUG=0, discard.
+        No-op when TAP_DEBUG was not set (_bootstrap_buf is None) or the
+        buffer was already closed.
+
+        Note: __printError__ does NOT call this. Pre-config failures flush
+        to stderr instead (see __printError__), keeping per-archive debug
+        policy under exclusive control of that archive's TAP.conf.
+
+        Args:
+            write_to_file: True  — open debugfname, replay buffered records
+                                   into it, leave the FileHandler on root.
+                           False — discard the buffer; no /tmp file created.
+        """
+        buf, self._bootstrap_buf = self._bootstrap_buf, None   # detach first; re-entry is a no-op
+        if buf is None:
+            return
+        logging.root.removeHandler(buf)
+        if write_to_file:
+            buf.setTarget(self._open_debug_log())
+            buf.flush()
+        else:
+            logging.root.setLevel(logging.WARNING)
+        buf.close()
 
 
     def __run__(self, **kwargs):
@@ -199,16 +252,26 @@ class Tap:
         self.request_method = os.environ.get('REQUEST_METHOD', '').upper()
         self.action = ''
 
-        # Only the server environment may turn on request debugging.
+        # TAP_DEBUG captures early debug in memory only — no file is created.
+        # Pre-config failures (missing TAP.conf, bad format, etc.) flush the
+        # buffer to stderr (web server error_log) via __printError__, not to
+        # the per-archive debug file. The debug file is opened only after the
+        # config loads and confirms DEBUG=1 in that archive's TAP.conf.
+        # Unset TAP_DEBUG on the server when not actively debugging startup.
         self.debug = 1 if os.environ.get('TAP_DEBUG') == '1' else 0
+        self._bootstrap_buf = None
 
-        if(self.debug):
-
-            logging.basicConfig(filename=self.debugfname,
-                                format='%(levelname)-8s %(relativeCreated)d>  '
-                                '%(filename)s %(lineno)d  '
-                                '(%(funcName)s):   %(message)s',
-                                level=logging.DEBUG)
+        if self.debug:
+            # capacity=10000 is a flush-trigger, not a hard bound. With
+            # target=None the auto-flush is a no-op; memory impact is
+            # negligible for the short CGI bootstrap window.
+            self._bootstrap_buf = logging.handlers.MemoryHandler(
+                capacity=10000, flushLevel=logging.CRITICAL, target=None)
+            # MemoryHandler.emit() stores raw LogRecords; setFormatter has
+            # no effect here — formatting is applied by the target handler
+            # when the buffer is flushed. Formatter set in _open_debug_log() instead.
+            logging.root.addHandler(self._bootstrap_buf)
+            logging.root.setLevel(logging.DEBUG)
 
         if self.debug:
             logging.debug(f'Enter Tap.init(): pid= {self.pid:d}')
@@ -501,6 +564,21 @@ class Tap:
                 logging.debug('returned configParam:')
                 logging.debug('%s', self.config)
 
+            # Config is authoritative after load. DEBUG=1 opens the debug file
+            # (replaying any TAP_DEBUG bootstrap records); DEBUG=0 discards the
+            # buffer silently. No /tmp file is created unless debug is on.
+            # Capture had_bootstrap BEFORE _end_bootstrap clears _bootstrap_buf —
+            # the swap in _end_bootstrap makes self._bootstrap_buf None on every
+            # path, so checking it after the call cannot distinguish the two cases.
+            had_bootstrap = self._bootstrap_buf is not None
+            self.debug = self.config.debug_flag
+            self._end_bootstrap(write_to_file=bool(self.debug))
+            if self.debug and not had_bootstrap:
+                # TAP_DEBUG=0 + config DEBUG=1: no bootstrap buffer existed,
+                # so _end_bootstrap was a no-op. Open the debug file now.
+                self._open_debug_log()
+                logging.debug('debug active')
+
         except Exception as e:
 
             if self.debug:
@@ -509,6 +587,8 @@ class Tap:
 
             self.msg = 'Internal system error: config variables read error.'
             self.__printError__('votable', str(e), errcode='500')
+            # Note: __printError__ flushes any bootstrap buffer to stderr
+            # (web server error_log), not to the per-archive debug file.
 
 
         self.workdir = self.config.workdir
@@ -717,16 +797,12 @@ class Tap:
         if (self.tapcontext == 'tables'):
 
             if self.debug:
-
                 logging.debug('')
                 logging.debug('call printVosiTables:')
                 logging.debug(f'statuspath   = {self.statuspath:s}')
 
-                self.__printVosiTables__ (self.config.connectInfo, \
-                    self.vosipath, debug=1)
-            else:
-                self.__printVosiTables__ (self.config.connectInfo, \
-                    self.vosipath)
+            self.__printVosiTables__ (self.config.connectInfo, \
+                self.vosipath)
 
         #
         #} end vosiEnpoint outputs
@@ -2612,6 +2688,22 @@ class Tap:
         # {
         #
 
+        # Flush bootstrap records to stderr (web server error_log), not the
+        # per-archive debug file. The per-archive debug file is only opened
+        # when that archive's own TAP.conf says DEBUG=1. This makes per-archive
+        # debug policy controlled exclusively by TAP.conf — TAP_DEBUG is a
+        # server-admin diagnostic that speaks to the server's own log, never
+        # to any archive's debug output.
+        # No-op when TAP_DEBUG was not set or the bootstrap window already closed.
+        if self._bootstrap_buf is not None:
+            _buf, self._bootstrap_buf = self._bootstrap_buf, None
+            logging.root.removeHandler(_buf)
+            _sh = logging.StreamHandler(sys.stderr)
+            _sh.setFormatter(self._debug_fmt)
+            _buf.setTarget(_sh)
+            _buf.flush()
+            _buf.close()
+
         errcode = '200'
         if ('errcode' in kwargs):
             errcode = kwargs['errcode']
@@ -3314,7 +3406,7 @@ class Tap:
                 userid=userid, \
                 password=password, \
                 outpath=vosipath, \
-                debug=1)
+                debug=self.debug)
 
             if self.debug:
                 logging.debug('')
