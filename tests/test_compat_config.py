@@ -158,3 +158,18 @@ def test_compat_in_legacy_webserver_is_an_error(tmp_path):
     text = LEGACY_ORACLE.replace('DBMS=oracle\n', 'DBMS=oracle\nCOMPAT=nea-uws\n', 1)
     with pytest.raises(compat.CompatConfigError, match=r'\[webserver\]'):
         configParam(write(tmp_path, 'TAP.conf', text))
+
+
+def test_legacy_webserver_debug_translates_to_web(tmp_path):
+    """1.x [webserver] DEBUG=1 must reach configParam.debug_flag via _WEB_KEYS.
+
+    compat.translate_legacy moves every [webserver] key NOT in _WEB_KEYS to
+    [DBMS], where configparam never reads it. Removing 'DEBUG' from _WEB_KEYS
+    would cause this test to fail and silent loss of debug mode on 1.x upgrades.
+    """
+    text = LEGACY_ORACLE.replace('CGI_PGM=/TAP\n', 'CGI_PGM=/TAP\nDEBUG=1\n')
+    cp = configParam(write(tmp_path, 'TAP.conf', text))
+    assert cp.debug_flag == 1, (
+        "'DEBUG' must be in compat._WEB_KEYS so 1.x [webserver] DEBUG=1 "
+        "translates to [WEB] and reaches configParam.debug_flag"
+    )

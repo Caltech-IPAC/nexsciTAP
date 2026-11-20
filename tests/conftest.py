@@ -17,6 +17,7 @@ Layout under the session tmpdir:
 from __future__ import annotations
 
 import http.server
+import logging
 import os
 import shutil
 import socket
@@ -256,3 +257,25 @@ def legacy_tap_server(fixture_root: Path, tap_server: str):
         yield f"http://127.0.0.1:{port}"
     finally:
         httpd.shutdown()
+
+
+@pytest.fixture(autouse=True)
+def clean_root_logger():
+    """Restore root logger handlers and level after each test.
+
+    Prevents a MemoryHandler (attached by Tap.__run__ when TAP_DEBUG=1) or
+    FileHandler (attached when config DEBUG=1) from leaking into subsequent
+    tests if a test exits before they are removed. When __printError__ runs
+    normally it removes the MemoryHandler itself, flushing records to a
+    transient StreamHandler(sys.stderr) that is never added to root — there
+    is nothing for this fixture to remove on that path. Applies to every
+    test as a belt-and-suspenders guard.
+    """
+    before_handlers = logging.root.handlers[:]
+    before_level = logging.root.level
+    yield
+    for h in logging.root.handlers[:]:
+        if h not in before_handlers:
+            logging.root.removeHandler(h)
+            h.close()
+    logging.root.setLevel(before_level)
